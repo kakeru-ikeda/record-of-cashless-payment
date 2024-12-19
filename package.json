@@ -1,0 +1,24 @@
+{
+  "name": "mufg-usage-details-mailbot",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc -p .",
+    "start": "npx ts-node src/index.ts",
+    "docker:build:cloud": "docker build --platform linux/amd64 -t gcr.io/yourproject/template-app .",
+    "docker:push": "docker push gcr.io/yourproject/template-app",
+    "gcloud:config": "gcloud config set project yourproject && gcloud auth configure-docker && gcloud auth configure-docker asia-northeast1-docker.pkg.dev",
+    "gcloud:deploy": "gcloud run deploy template-app --image gcr.io/yourproject/template-app --platform managed --region asia-northeast1 --allow-unauthenticated --update-secrets AGORA_APP_ID=AGORA_APP_ID:latest,AGORA_APP_CERTIFICATE=AGORA_APP_CERTIFICATE:latest",
+    "auth": "npm run gcloud:config && npm run gcloud:activate",
+    "deploy": "npm run build && npm run docker:build:cloud && npm run docker:push && npm run gcloud:deploy"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2"
+  }
+}
