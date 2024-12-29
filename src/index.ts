@@ -23,7 +23,7 @@ async function connectToDatabase() {
         id INTEGER PRIMARY KEY,
         card_name TEXT,
         datetime_of_use TEXT,
-        amount TEXT,
+        amount INTEGER,
         where_to_use TEXT
       )
     `);
@@ -33,7 +33,6 @@ async function connectToDatabase() {
 function convertHtmlToPlainText(html: string): string {
     const text = htmlToText(html, {
         wordwrap: false,
-        // 必要に応じてオプションを追加
     });
     return text;
 }
@@ -41,13 +40,16 @@ function convertHtmlToPlainText(html: string): string {
 async function parseEmailBody(body: string) {
     const cardNameMatch = body.match(/カード名称　：　(.+)/);
     const dateMatch = body.match(/【ご利用日時\(日本時間\)】　([\d年月日 :]+)/);
-    const amountMatch = body.match(/【ご利用金額】　([\d,]+円)/);
+    const amountMatch = body.match(/【ご利用金額】　([\d,]+)円/);
     const whereToUseMatch = body.match(/【ご利用先】　(.+)/);
+
+    const datetime_of_use = dateMatch?.[1]?.trim() || '';
+    const amountStr = amountMatch?.[1]?.replace(/,/g, '') || '0';
 
     return {
         card_name: cardNameMatch?.[1]?.trim() || '',
-        datetime_of_use: dateMatch?.[1]?.trim() || '',
-        amount: amountMatch?.[1]?.trim() || '',
+        datetime_of_use: new Date(datetime_of_use.replace(/年|月/g, '-').replace('日', '')).toISOString(),
+        amount: parseInt(amountStr, 10),
         where_to_use: whereToUseMatch?.[1]?.trim() || '',
     };
 }
@@ -55,18 +57,40 @@ async function parseEmailBody(body: string) {
 async function sendDiscordNotification(data: {
     card_name: string;
     datetime_of_use: string;
-    amount: string;
+    amount: number;
     where_to_use: string;
 }) {
     if (!discordWebhookUrl) return;
+    const formattedDate = new Date(data.datetime_of_use).toLocaleString('ja-JP', {
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+    });
+    const formattedAmount = data.amount.toLocaleString() + '円';
+
     const embeds = [
         {
-            title: "新規利用情報",
+            title: "利用情報",
+            description: `# ${formattedAmount}\nお支払いが完了しました\n-`,
+            color: 14805795,
             fields: [
-                { name: "日時", value: data.datetime_of_use || "不明" },
-                { name: "利用金額", value: data.amount || "不明" },
-                { name: "利用先", value: data.where_to_use || "不明" },
-                { name: "カード名", value: data.card_name || "不明" },
+                {
+                    name: "日時",
+                    value: formattedDate || "不明",
+                    inline: false
+                },
+                {
+                    name: "利用先",
+                    value: data.where_to_use || "不明",
+                    inline: false
+                },
+                {
+                    name: "カード名",
+                    value: data.card_name || "不明"
+                }
             ]
         }
     ];
@@ -87,8 +111,6 @@ async function connectToInbox() {
     client.connect();
 
     client.on("connect", () => {
-        console.log("Connected to IMAP server.");
-
         client.openMailbox("INBOX", (err: any) => {
             if (err) console.log(err);
             console.log("Connected to mailbox.");
@@ -98,20 +120,16 @@ async function connectToInbox() {
     client.on('new', async (message: any) => {
         console.log("New email received.");
 
-        // 送信元アドレスが該当ドメインでない場合はスキップ
-        // if (message.from.address !== "mail@jcbdebit.bk.mufg.jp") return;
         console.log(`address: ${message.from.address}`);
 
         const db = await connectToDatabase();
 
-        // 本文ストリームでメール内容を取得
         const stream = client.createMessageStream(message.UID);
         let body = "";
         stream.on("data", (chunk: Buffer) => {
             body += chunk.toString();
         });
         stream.on("end", async () => {
-            // Quoted-Printableデコード
             const decodedBuffer = quotedPrintable.decode(body);
             const decodedBody = iconv.decode(decodedBuffer, 'UTF-8');
             const plainTextBody = convertHtmlToPlainText(decodedBody);
@@ -119,13 +137,11 @@ async function connectToInbox() {
 
             const { card_name, datetime_of_use, amount, where_to_use } = await parseEmailBody(plainTextBody);
 
-            // DBに登録
             await db.run(
                 `INSERT INTO emails (card_name, datetime_of_use, amount, where_to_use) VALUES (?, ?, ?, ?)`,
                 [card_name, datetime_of_use, amount, where_to_use]
             );
 
-            // Discord通知
             await sendDiscordNotification({ card_name, datetime_of_use, amount, where_to_use });
         });
     });
