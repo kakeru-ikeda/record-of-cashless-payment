@@ -120,8 +120,6 @@ async function connectToInbox() {
     client.on('new', async (message: any) => {
         console.log("New email received.");
 
-        console.log(`address: ${message.from.address}`);
-
         const db = await connectToDatabase();
 
         const stream = client.createMessageStream(message.UID);
@@ -133,7 +131,7 @@ async function connectToInbox() {
             const decodedBuffer = quotedPrintable.decode(body);
             const decodedBody = iconv.decode(decodedBuffer, 'UTF-8');
             const plainTextBody = convertHtmlToPlainText(decodedBody);
-            console.log("Decoded body:", plainTextBody);
+            // console.log("Decoded body:", plainTextBody);
 
             const { card_name, datetime_of_use, amount, where_to_use } = await parseEmailBody(plainTextBody);
 
@@ -148,6 +146,10 @@ async function connectToInbox() {
 
     client.on("error", (error: any) => {
         console.log("IMAP error:", error);
+        if (error.code === 'ETIMEDOUT') {
+            console.log('Reconnecting...');
+            setTimeout(connectToInbox, 5000);
+        }
     });
 
     client.on("close", () => {
