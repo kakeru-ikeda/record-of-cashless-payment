@@ -15,6 +15,10 @@ RUN npm install
 # ソースコードをコピー
 COPY . .
 
+# SQLiteデータベースファイルを作成
+RUN mkdir -p /usr/src/app/db
+RUN touch /usr/src/app/db/mufg-usage-details.sqlite
+
 # TypeScript をコンパイル
 RUN npm run build
 
