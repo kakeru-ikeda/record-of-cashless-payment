@@ -111,9 +111,16 @@ async function connectToInbox() {
     client.connect();
 
     client.on("connect", () => {
-        client.openMailbox("INBOX", (err: any) => {
+        client.listMailboxes((err: any, mailboxes: string[]) => {
+            if (err) {
+                console.error("メールボックスの一覧取得に失敗しました:", err);
+            } else {
+                console.log("利用可能なメールボックス:", mailboxes);
+            }
+        });
+        client.openMailbox("&TgmD8WdxTqw-UFJ&koCITA-", (err: any) => { // 三菱東京UFJ銀行
             if (err) console.log(err);
-            console.log("Connected to mailbox.");
+            console.log("Connected to mailbox: 三菱東京UFJ銀行");
         });
     });
 
