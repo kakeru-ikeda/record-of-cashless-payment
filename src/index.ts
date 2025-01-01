@@ -12,6 +12,8 @@ const server = process.env.IMAP_SERVER || "imap.gmail.com";
 const user = process.env.IMAP_USER;
 const password = process.env.IMAP_PASSWORD;
 const discordWebhookUrl = process.env.DISCORD_WEBHOOK_URL || "";
+let keepAliveTimer: NodeJS.Timeout;
+let client: any;
 
 async function connectToDatabase() {
     const db = await open({
@@ -97,10 +99,20 @@ async function sendDiscordNotification(data: {
     await axios.post(discordWebhookUrl, { embeds });
 }
 
+function setupKeepAlive() {
+    clearInterval(keepAliveTimer);
+    keepAliveTimer = setInterval(() => {
+        if (client && client._state === 'logged in') {
+            client.listMailboxes(() => { });
+        }
+    }, 5 * 60 * 1000);
+}
+
+
 async function connectToInbox() {
     console.log("Connecting to IMAP server...");
 
-    const client = inbox.createConnection(993, server, {
+    client = inbox.createConnection(993, server, {
         secureConnection: true,
         auth: {
             user: user,
@@ -109,6 +121,8 @@ async function connectToInbox() {
     });
 
     client.connect();
+
+    setupKeepAlive();
 
     client.on("connect", () => {
         client.listMailboxes((err: any, mailboxes: string[]) => {
@@ -161,6 +175,8 @@ async function connectToInbox() {
 
     client.on("close", () => {
         console.log("IMAP connection closed.");
+        clearInterval(keepAliveTimer);
+        setTimeout(connectToInbox, 5000);
     });
 }
 
