@@ -4,7 +4,7 @@ import inbox from "inbox";
 import dotenv from "dotenv";
 import axios from "axios";
 import quotedPrintable from 'quoted-printable';
-import * as iconv from 'iconv-lite';
+import * as Encoding from 'encoding-japanese';
 import { htmlToText } from 'html-to-text';
 dotenv.config();
 
@@ -47,6 +47,15 @@ async function parseEmailBody(body: string) {
 
     const datetime_of_use = dateMatch?.[1]?.trim() || '';
     const amountStr = amountMatch?.[1]?.replace(/,/g, '') || '0';
+
+    console.log("Parsed data:", {
+        card_name: cardNameMatch?.[1]?.trim() || '',
+        datetime_of_use,
+        amount: parseInt(amountStr, 10),
+        where_to_use: whereToUseMatch?.[1]?.trim() || '',
+    });
+
+    console.log("datetime_of_use:", new Date(datetime_of_use.replace(/年|月/g, '-').replace('日', '')).toISOString());
 
     return {
         card_name: cardNameMatch?.[1]?.trim() || '',
@@ -150,9 +159,13 @@ async function connectToInbox() {
         });
         stream.on("end", async () => {
             const decodedBuffer = quotedPrintable.decode(body);
-            const decodedBody = iconv.decode(decodedBuffer, 'UTF-8');
+            const decodedBody = Encoding.convert(decodedBuffer, {
+                to: 'UNICODE',
+                from: 'JIS',
+                type: 'string'
+            });
             const plainTextBody = convertHtmlToPlainText(decodedBody);
-            // console.log("Decoded body:", plainTextBody);
+            console.log("Decoded body:", plainTextBody);
 
             const { card_name, datetime_of_use, amount, where_to_use } = await parseEmailBody(plainTextBody);
 
