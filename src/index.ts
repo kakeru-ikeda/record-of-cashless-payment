@@ -40,10 +40,10 @@ function convertHtmlToPlainText(html: string): string {
 }
 
 async function parseEmailBody(body: string) {
-    const cardNameMatch = body.match(/カード名称　：　(.+)/);
-    const dateMatch = body.match(/【ご利用日時\(日本時間\)】　([\d年月日 :]+)/);
-    const amountMatch = body.match(/【ご利用金額】　([\d,]+)円/);
-    const whereToUseMatch = body.match(/【ご利用先】　(.+)/);
+    const cardNameMatch = body.match(/カード名称[　\s]+：[　\s]+(.+?)(?=(【|$))/);
+    const dateMatch = body.match(/【ご利用日時\(日本時間\)】[　\s]+([\d年月日 :]+)/);
+    const amountMatch = body.match(/【ご利用金額】[　\s]+([\d,]+)円/);
+    const whereToUseMatch = body.match(/【ご利用先】[　\s]+(.+?)(?=(【|$))/);
 
     const datetime_of_use = dateMatch?.[1]?.trim() || '';
     const amountStr = amountMatch?.[1]?.replace(/,/g, '') || '0';
