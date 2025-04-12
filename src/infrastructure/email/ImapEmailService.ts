@@ -1,0 +1,267 @@
+import inbox from 'inbox';
+import * as quotedPrintable from 'quoted-printable';
+import * as Encoding from 'encoding-japanese';
+import { htmlToText } from 'html-to-text';
+import { Environment } from '../config/environment';
+
+/**
+ * メールのパース結果の型定義
+ */
+export interface ParsedEmail {
+  subject: string;
+  from: string;
+  body: string;
+  date: Date;
+  uid: string;
+}
+
+/**
+ * IMAP接続とメール処理のサービス
+ */
+export class ImapEmailService {
+  private client: any = null;
+  private keepAliveTimer: NodeJS.Timeout | null = null;
+  
+  /**
+   * インスタンスを初期化
+   * @param server IMAPサーバー
+   * @param user ユーザー名
+   * @param password パスワード
+   */
+  constructor(
+    private readonly server: string = Environment.IMAP_SERVER,
+    private readonly user: string = Environment.IMAP_USER,
+    private readonly password: string = Environment.IMAP_PASSWORD
+  ) {}
+  
+  /**
+   * IMAPサーバーに接続
+   * @param mailboxName 接続するメールボックス名
+   * @param callback 新しいメールを受信した時のコールバック
+   * @returns 接続したクライアント
+   */
+  async connect(
+    mailboxName: string = '&TgmD8WdxTqw-UFJ&koCITA-', // 三菱東京UFJ銀行
+    callback: (email: ParsedEmail) => Promise<void>
+  ): Promise<any> {
+    console.log("IMAPサーバーに接続しています...");
+    
+    this.client = inbox.createConnection(993, this.server, {
+      secureConnection: true,
+      auth: {
+        user: this.user,
+        pass: this.password
+      },
+    });
+    
+    // 接続を開始
+    this.client.connect();
+    
+    // キープアライブタイマーを設定
+    this.setupKeepAlive();
+    
+    // 接続イベント
+    this.client.on("connect", () => {
+      this.client.listMailboxes((err: any, mailboxes: string[]) => {
+        if (err) {
+          console.error("❌ メールボックスの一覧取得に失敗しました:", err);
+        } else {
+          console.log("📬 利用可能なメールボックス:", mailboxes);
+        }
+      });
+      
+      this.client.openMailbox(mailboxName, (err: any) => {
+        if (err) console.log(err);
+        console.log(`✅ メールボックスに接続しました: ${mailboxName}`);
+      });
+    });
+    
+    // 新着メールイベント
+    this.client.on('new', async (message: any) => {
+      console.log("📩 新しいメールを受信しました");
+      
+      try {
+        const parsedEmail = await this.processEmail(message);
+        
+        if (parsedEmail) {
+          await callback(parsedEmail);
+        }
+      } catch (error) {
+        console.error('❌ メール処理中にエラーが発生しました:', error);
+      }
+    });
+    
+    // エラーイベント
+    this.client.on("error", (error: any) => {
+      console.error("❌ IMAPエラー:", error);
+      if (error.code === 'ETIMEDOUT') {
+        console.log('🔄 再接続を試みています...');
+        setTimeout(() => this.reconnect(mailboxName, callback), 5000);
+      }
+    });
+    
+    // 切断イベント
+    this.client.on("close", () => {
+      console.log("🔒 IMAP接続が閉じられました");
+      if (this.keepAliveTimer) {
+        clearInterval(this.keepAliveTimer);
+        this.keepAliveTimer = null;
+      }
+      console.log("🔄 5秒後に再接続を試みます");
+      setTimeout(() => this.reconnect(mailboxName, callback), 5000);
+    });
+    
+    return this.client;
+  }
+  
+  /**
+   * IMAPサーバーに再接続
+   */
+  private async reconnect(mailboxName: string, callback: (email: ParsedEmail) => Promise<void>): Promise<void> {
+    if (this.client) {
+      try {
+        this.client.close();
+      } catch (error) {
+        // 既に閉じている場合は無視
+      }
+      this.client = null;
+    }
+    
+    await this.connect(mailboxName, callback);
+  }
+  
+  /**
+   * キープアライブタイマーを設定
+   */
+  private setupKeepAlive(): void {
+    if (this.keepAliveTimer) {
+      clearInterval(this.keepAliveTimer);
+    }
+    
+    this.keepAliveTimer = setInterval(() => {
+      if (this.client && this.client._state === 'logged in') {
+        this.client.listMailboxes(() => {});
+      }
+    }, 5 * 60 * 1000); // 5分ごと
+  }
+  
+  /**
+   * メールを処理してパースする
+   * @param message メールメッセージ
+   * @returns パース済みのメール内容
+   */
+  private async processEmail(message: any): Promise<ParsedEmail | null> {
+    return new Promise((resolve, reject) => {
+      const stream = this.client.createMessageStream(message.UID);
+      let body = "";
+      
+      stream.on("data", (chunk: Buffer) => {
+        body += chunk.toString();
+      });
+      
+      stream.on("end", () => {
+        try {
+          // メール本文をデコード
+          const decodedBuffer = quotedPrintable.decode(body);
+          const decodedBody = Encoding.convert(decodedBuffer, {
+            to: 'UNICODE',
+            from: 'JIS',
+            type: 'string'
+          });
+          
+          // HTMLをプレーンテキストに変換
+          const plainTextBody = this.convertHtmlToPlainText(decodedBody);
+          
+          resolve({
+            subject: message.title || '',
+            from: message.from?.address || '',
+            body: plainTextBody,
+            date: new Date(message.date || Date.now()),
+            uid: message.UID
+          });
+        } catch (error) {
+          console.error('❌ メールのデコード中にエラーが発生しました:', error);
+          reject(error);
+        }
+      });
+      
+      stream.on("error", (error: any) => {
+        console.error('❌ メールのストリーム取得中にエラーが発生しました:', error);
+        reject(error);
+      });
+    });
+  }
+  
+  /**
+   * HTMLをプレーンテキストに変換
+   * @param html HTMLテキスト
+   * @returns プレーンテキスト
+   */
+  private convertHtmlToPlainText(html: string): string {
+    return htmlToText(html, {
+      wordwrap: false,
+    });
+  }
+  
+  /**
+   * メールから三菱UFJ銀行のカード利用情報を抽出
+   * @param body メール本文
+   * @returns 抽出されたカード利用情報
+   */
+  async parseCardUsageFromEmail(body: string): Promise<{
+    card_name: string;
+    datetime_of_use: string;
+    amount: number;
+    where_to_use: string;
+  }> {
+    // 正規表現パターン
+    const cardNameMatch = body.match(/カード名称[　\s]+：[　\s]+(.+?)(?=[\s\n]いつも|$)/);
+    const dateMatch = body.match(/【ご利用日時\(日本時間\)】[　\s]+([\d年月日 :]+)/);
+    const amountMatch = body.match(/【ご利用金額】[　\s]+([\d,]+)円/);
+    const whereToUseMatch = body.match(/【ご利用先】[　\s]+([^。\n]+?)(?=[\s\n]ご利用先名等|$)/);
+    
+    // データを抽出・整形
+    const datetime_of_use = dateMatch?.[1]?.trim() || '';
+    const amountStr = amountMatch?.[1]?.replace(/,/g, '') || '0';
+    const card_name = cardNameMatch?.[1]?.trim() || '';
+    const where_to_use = whereToUseMatch?.[1]?.trim() || '';
+    
+    // 抽出結果をログ出力
+    console.log("抽出データ:", {
+      card_name,
+      datetime_of_use,
+      amount: parseInt(amountStr, 10),
+      where_to_use,
+    });
+    
+    // 日付文字列をISOフォーマットに変換
+    const isoDate = new Date(datetime_of_use.replace(/年|月/g, '-').replace('日', '')).toISOString();
+    console.log("変換後日時:", isoDate);
+    
+    return {
+      card_name,
+      datetime_of_use: isoDate,
+      amount: parseInt(amountStr, 10),
+      where_to_use,
+    };
+  }
+  
+  /**
+   * 接続を閉じる
+   */
+  close(): void {
+    if (this.keepAliveTimer) {
+      clearInterval(this.keepAliveTimer);
+      this.keepAliveTimer = null;
+    }
+    
+    if (this.client) {
+      try {
+        this.client.close();
+      } catch (error) {
+        console.error('❌ IMAP接続のクローズ中にエラーが発生しました:', error);
+      }
+      this.client = null;
+    }
+  }
+}
