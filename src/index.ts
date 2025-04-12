@@ -20,7 +20,7 @@ if (process.env.DISCORD_WEBHOOK_URL) {
     if (process.env.DISCORD_WEBHOOK_URL.startsWith('https://discord.com/api/webhooks/')) {
         discordWebhookUrl = process.env.DISCORD_WEBHOOK_URL;
     } else {
-        console.warn('⚠️ Discord WebhookのURLが正しくありません:', 
+        console.warn('⚠️ Discord WebhookのURLが正しくありません:',
             process.env.DISCORD_WEBHOOK_URL.substring(0, 30) + '...');
     }
 }
@@ -32,26 +32,46 @@ let client: any;
 function validateEnvironmentVariables() {
     const requiredVars = ['IMAP_SERVER', 'IMAP_USER', 'IMAP_PASSWORD'];
     const missingVars = requiredVars.filter(varName => !process.env[varName]);
-    
+
     if (missingVars.length > 0) {
         console.error('❌ 必須環境変数が設定されていません:', missingVars.join(', '));
         process.exit(1);
     }
-    
+
     if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
         console.warn('⚠️ GOOGLE_APPLICATION_CREDENTIALSが設定されていません。デフォルトパスを使用します。');
     }
-    
+
     console.log('✅ 環境変数の検証が完了しました');
 }
 
 // Firestoreのデータ型定義
 interface CardUsage {
-  card_name: string;
-  datetime_of_use: admin.firestore.Timestamp;
-  amount: number;
-  where_to_use: string;
-  created_at: admin.firestore.Timestamp;
+    card_name: string;
+    datetime_of_use: admin.firestore.Timestamp;
+    amount: number;
+    where_to_use: string;
+    created_at: admin.firestore.Timestamp;
+}
+
+/**
+ * 日付から年と月を抽出し、Firestoreのパスを生成する関数
+ * @param date 日付オブジェクト
+ * @returns パス情報を含むオブジェクト
+ */
+function getFirestorePath(date: Date) {
+    const year = date.getFullYear().toString();
+    // 月は0から始まるので、+1して2桁になるよう整形
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    // タイムスタンプはミリ秒単位のUNIX時間
+    const timestamp = new Date().getTime().toString();
+
+    return {
+        year,
+        month,
+        timestamp,
+        path: `details/${year}/${month}/${timestamp}`
+    };
 }
 
 /**
@@ -62,7 +82,7 @@ async function initializeFirestore() {
     try {
         // サービスアカウントの秘密鍵のパスを取得
         const serviceAccountPath = process.env.GOOGLE_APPLICATION_CREDENTIALS || path.resolve(__dirname, '../firebase-admin-key.json');
-        
+
         // Firebaseの初期化（まだ初期化されていない場合）
         if (admin.apps.length === 0) {
             admin.initializeApp({
@@ -72,7 +92,7 @@ async function initializeFirestore() {
             });
             console.log('✅ Firestoreに正常に接続しました');
         }
-        
+
         // Firestoreインスタンスを返す
         return admin.firestore();
     } catch (error) {
@@ -103,7 +123,7 @@ async function parseEmailBody(body: string) {
 
     const datetime_of_use = dateMatch?.[1]?.trim() || '';
     const amountStr = amountMatch?.[1]?.replace(/,/g, '') || '0';
-    
+
     // 抽出したデータを整形
     const card_name = cardNameMatch?.[1]?.trim() || '';
     const where_to_use = whereToUseMatch?.[1]?.trim() || '';
@@ -219,15 +239,14 @@ async function connectToInbox() {
         try {
             // Firestoreに接続
             const db = await initializeFirestore();
-            const emailsCollection = db.collection('emails');
 
             const stream = client.createMessageStream(message.UID);
             let body = "";
-            
+
             stream.on("data", (chunk: Buffer) => {
                 body += chunk.toString();
             });
-            
+
             stream.on("end", async () => {
                 try {
                     // メール本文をデコード
@@ -243,8 +262,15 @@ async function connectToInbox() {
                     // メール本文を解析
                     const { card_name, datetime_of_use, amount, where_to_use } = await parseEmailBody(plainTextBody);
 
+                    // 日付オブジェクトの作成
+                    const dateObj = new Date(datetime_of_use);
+
                     // Firestoreのタイムスタンプに変換
-                    const firestoreTimestamp = admin.firestore.Timestamp.fromDate(new Date(datetime_of_use));
+                    const firestoreTimestamp = admin.firestore.Timestamp.fromDate(dateObj);
+
+                    // パス情報を取得
+                    const pathInfo = getFirestorePath(dateObj);
+                    console.log(`🗂 保存先: ${pathInfo.path}`);
 
                     // Firestoreトランザクションを使用してデータを保存
                     await db.runTransaction(async (transaction) => {
@@ -257,17 +283,16 @@ async function connectToInbox() {
                             created_at: admin.firestore.FieldValue.serverTimestamp() as admin.firestore.Timestamp
                         };
 
-                        // 新しいドキュメント参照を作成
-                        const docRef = emailsCollection.doc();
-                        
+                        // 階層的なパスでドキュメント参照を作成
+                        const docRef = db.doc(pathInfo.path);
+
                         // トランザクションでドキュメントを設定
                         transaction.set(docRef, docData);
-                        
-                        return docRef.id;
-                    });
-                    
-                    console.log('✅ カード利用データをFirestoreに保存しました');
 
+                        return pathInfo.path;
+                    });
+
+                    console.log('✅ カード利用データをFirestoreに保存しました');
                     // Discord通知を送信
                     await sendDiscordNotification({ card_name, datetime_of_use, amount, where_to_use });
                     console.log('✅ Discord通知を送信しました');
@@ -300,15 +325,15 @@ async function connectToInbox() {
 async function testFirestoreWithSampleMail() {
     try {
         console.log('🧪 サンプルメールを使用したFirestoreテストを開始します...');
-        
+
         // サンプルメールファイルを読み込む
         const sampleMailPath = path.resolve(__dirname, '../samplemail.txt');
         const mailContent = fs.readFileSync(sampleMailPath, 'utf8');
-        
+
         // HTMLメール本文の部分を抽出（全文から本文部分のみを取得）
         const bodyMatch = mailContent.match(/Content - Type: text \/ plain;[\s\S]+?------/);
         let decodedBody = '';
-        
+
         if (bodyMatch && bodyMatch[0]) {
             decodedBody = bodyMatch[0];
             console.log('📧 メール本文を抽出しました');
@@ -316,22 +341,28 @@ async function testFirestoreWithSampleMail() {
             console.log('⚠️ メール本文の抽出に失敗しました。サンプルファイル全体を使用します。');
             decodedBody = mailContent;
         }
-        
+
         // メール本文をテキストに変換
         const plainTextBody = convertHtmlToPlainText(decodedBody);
         console.log('📝 デコードされたメール本文のサンプル:', plainTextBody.substring(0, 200) + '...');
-        
+
         // メール本文を解析
         const { card_name, datetime_of_use, amount, where_to_use } = await parseEmailBody(plainTextBody);
         console.log('🔍 解析結果:', { card_name, datetime_of_use, amount, where_to_use });
-        
+
         // Firestoreに接続
         const db = await initializeFirestore();
-        const emailsCollection = db.collection('emails');
-        
+
+        // 日付オブジェクトの作成
+        const dateObj = new Date(datetime_of_use);
+
         // Firestoreのタイムスタンプに変換
-        const firestoreTimestamp = admin.firestore.Timestamp.fromDate(new Date(datetime_of_use));
-        
+        const firestoreTimestamp = admin.firestore.Timestamp.fromDate(dateObj);
+
+        // パス情報を取得
+        const pathInfo = getFirestorePath(dateObj);
+        console.log(`🗂 保存先: ${pathInfo.path}`);
+
         // ドキュメントデータを準備
         const docData: CardUsage = {
             card_name,
@@ -340,23 +371,28 @@ async function testFirestoreWithSampleMail() {
             where_to_use,
             created_at: admin.firestore.FieldValue.serverTimestamp() as admin.firestore.Timestamp
         };
-        
-        // Firestoreにデータを保存
-        const docRef = await emailsCollection.add(docData);
-        
-        console.log('✅ テストデータをFirestoreに保存しました。ドキュメントID:', docRef.id);
-        
-        // Discord通知を送信（オプション）
-        if (process.env.DISCORD_WEBHOOK_URL) {
-            await sendDiscordNotification({ card_name, datetime_of_use, amount, where_to_use });
-            console.log('✅ Discord通知を送信しました');
-        } else {
-            console.log('ℹ️ DISCORD_WEBHOOK_URLが設定されていないため、Discord通知はスキップされました');
+
+        try {
+            // 階層的なパスを使用してドキュメントを保存
+            const docRef = db.doc(pathInfo.path);
+            await docRef.set(docData);
+
+            console.log('✅ テストデータをFirestoreに保存しました。パス:', pathInfo.path);
+
+            // Discord通知を送信（オプション）
+            if (process.env.DISCORD_WEBHOOK_URL) {
+                await sendDiscordNotification({ card_name, datetime_of_use, amount, where_to_use });
+                console.log('✅ Discord通知を送信しました');
+            } else {
+                console.log('ℹ️ DISCORD_WEBHOOK_URLが設定されていないため、Discord通知はスキップされました');
+            }
+
+            console.log('🎉 テストが正常に完了しました！');
+        } catch (error) {
+            console.error('❌ テスト実行中にエラーが発生しました:', error);
         }
-        
-        console.log('🎉 テストが正常に完了しました！');
     } catch (error) {
-        console.error('❌ テスト実行中にエラーが発生しました:', error);
+        console.error('❌ サンプルメールのテスト中にエラーが発生しました:', error);
     }
 }
 
