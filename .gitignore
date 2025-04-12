@@ -31,4 +31,4 @@ out/
 
 # Ignore Service Account JSON files
 serviceAccountKey.json
-firebaseConfig.json
+firebase-config.json
