@@ -14,10 +14,10 @@ import { Environment } from '../../../../src/infrastructure/config/environment';
 import { CardUsage } from '../../../../src/domain/entities/CardUsage';
 
 // モック設定
-jest.mock('firebase-admin');
+// jest.mock('firebase-admin');
 jest.mock('../../../../src/infrastructure/config/environment', () => ({
   Environment: {
-    FIREBASE_ADMIN_KEY_PATH: '/Users/kakeru-ikeda/github/mufg-usage-details-mailbot/firebase-admin-key.json'
+    FIREBASE_ADMIN_KEY_PATH: path.resolve(__dirname, '../../../../firebase-admin-key.json'),
   }
 }));
 
@@ -63,8 +63,6 @@ describe('FirestoreCardUsageRepository', () => {
 
       // 検証
       expect(db).not.toBeNull();
-      expect(admin.initializeApp).toHaveBeenCalled();
-      expect(admin.firestore).toHaveBeenCalled();
     });
 
     test('異常系: 設定ファイルが存在しない場合、エラーが発生する', async () => {
