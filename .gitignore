@@ -31,4 +31,5 @@ out/
 
 # Ignore Service Account JSON files
 serviceAccountKey.json
-firebase-config.json
+firebase-admin-key.json
+samplemail.txt
