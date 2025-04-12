@@ -33,3 +33,4 @@ out/
 serviceAccountKey.json
 firebase-admin-key.json
 samplemail.txt
+.DS_Store
