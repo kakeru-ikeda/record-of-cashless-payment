@@ -6,9 +6,14 @@
         "moduleResolution": "node",
         "sourceMap": true,
         "resolveJsonModule": true,
-        "outDir": "dist"
+        "outDir": "dist",
+        "baseUrl": "."
     },
     "lib": [
         "es2015"
+    ],
+    "include": [
+        "src/**/*",
+        "shared/**/*"
     ]
 }

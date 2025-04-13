@@ -1,11 +1,13 @@
-import { CardUsageNotification } from '../../src/domain/entities/CardUsage';
-import { DiscordNotifier } from '../../src/interfaces/presenters/DiscordNotifier';
+import { CardUsageNotification } from '../../shared/types/CardUsageNotification';
+import { WeeklyReportNotification } from '../../shared/types/WeeklyReportNotification';
+import { DiscordNotifier } from '../../shared/discord/DiscordNotifier';
 
 /**
  * Discord通知のモッククラス
  */
 export class MockDiscordNotifier implements DiscordNotifier {
     private notifications: CardUsageNotification[] = [];
+    private weeklyReportNotifications: WeeklyReportNotification[] = [];
     private shouldFail: boolean = false;
 
     /**
@@ -13,6 +15,7 @@ export class MockDiscordNotifier implements DiscordNotifier {
      */
     constructor() {
         this.notifications = [];
+        this.weeklyReportNotifications = [];
         this.shouldFail = false;
     }
 
@@ -30,6 +33,19 @@ export class MockDiscordNotifier implements DiscordNotifier {
     }
 
     /**
+     * 週次レポートを通知する
+     * @param data 週次レポート情報
+     * @returns 成功時はtrue、失敗時はfalse
+     */
+    async notifyWeeklyReport(data: WeeklyReportNotification): Promise<boolean> {
+        if (this.shouldFail) {
+            throw new Error('週次レポート通知の送信に失敗しました（モック）');
+        }
+        this.weeklyReportNotifications.push({ ...data });
+        return true;
+    }
+
+    /**
      * 全ての通知を取得する
      * @returns 通知の配列
      */
@@ -38,11 +54,27 @@ export class MockDiscordNotifier implements DiscordNotifier {
     }
 
     /**
+     * 全ての週次レポート通知を取得する
+     * @returns 週次レポート通知の配列
+     */
+    getWeeklyReportNotifications(): WeeklyReportNotification[] {
+        return [...this.weeklyReportNotifications];
+    }
+
+    /**
      * 最後に送信された通知を取得する
      * @returns 最後の通知またはundefined
      */
     getLastNotification(): CardUsageNotification | undefined {
         return this.notifications[this.notifications.length - 1];
+    }
+
+    /**
+     * 最後に送信された週次レポート通知を取得する
+     * @returns 最後の週次レポート通知またはundefined
+     */
+    getLastWeeklyReportNotification(): WeeklyReportNotification | undefined {
+        return this.weeklyReportNotifications[this.weeklyReportNotifications.length - 1];
     }
 
     /**
@@ -58,5 +90,6 @@ export class MockDiscordNotifier implements DiscordNotifier {
      */
     clear(): void {
         this.notifications = [];
+        this.weeklyReportNotifications = [];
     }
 }

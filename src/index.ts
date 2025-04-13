@@ -3,7 +3,7 @@ import * as path from 'path';
 import { Environment } from './infrastructure/config/environment';
 import { ImapEmailService } from './infrastructure/email/ImapEmailService';
 import { FirestoreCardUsageRepository } from './infrastructure/firebase/FirestoreCardUsageRepository';
-import { DiscordWebhookNotifier } from './interfaces/presenters/DiscordNotifier';
+import { DiscordWebhookNotifier } from '../shared/discord/DiscordNotifier'; // パスを更新
 import { ProcessEmailUseCase } from './usecases/ProcessEmailUseCase';
 import { EmailController } from './interfaces/controllers/EmailController';
 

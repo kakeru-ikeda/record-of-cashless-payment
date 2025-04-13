@@ -1,9 +1,9 @@
-
 import * as admin from 'firebase-admin';
-import { CardUsage, CardUsageNotification } from '../domain/entities/CardUsage';
+import { CardUsage } from '../domain/entities/CardUsage';
+import { CardUsageNotification } from '../../shared/types/CardUsageNotification';
 import { ICardUsageRepository } from '../domain/repositories/ICardUsageRepository';
 import { ImapEmailService } from '../infrastructure/email/ImapEmailService';
-import { DiscordNotifier } from '../interfaces/presenters/DiscordNotifier';
+import { DiscordNotifier } from '../../shared/discord/DiscordNotifier';
 
 /**
  * メール処理のユースケース
