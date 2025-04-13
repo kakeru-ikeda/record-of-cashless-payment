@@ -57,8 +57,8 @@ export class FirestoreCardUsageRepository implements ICardUsageRepository {
     const year = date.getFullYear().toString();
     // 月は0から始まるので、+1して2桁になるよう整形
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    // タイムスタンプはミリ秒単位のUNIX時間
-    const timestamp = date.getTime().toString();
+    // タイムスタンプはミリ秒単位のUNIX時間（プログラム実行時刻）を使用
+    const timestamp = new Date().getTime().toString();
 
     return {
       year,
