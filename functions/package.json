@@ -4,7 +4,7 @@
     "lint": "eslint --ext .js,.ts .",
     "build": "tsc && npm run fix-paths && node fix-imports.js",
     "fix-paths": "mkdir -p lib && cp -f lib/functions/src/index.js* lib/ || true",
-    "prepare-shared": "mkdir -p src/shared/discord src/shared/types src/shared/utils src/shared/firebase && cp -f ../shared/discord/DiscordNotifier.ts src/shared/discord/ && cp -f ../shared/types/*.ts src/shared/types/ && cp -f ../shared/utils/*.ts src/shared/utils/ && cp -f ../shared/firebase/*.ts src/shared/firebase/",
+    "prepare-shared": "mkdir -p src/shared/discord src/shared/types src/shared/utils src/shared/firebase src/shared/errors src/shared/config && cp -f ../shared/discord/DiscordNotifier.ts src/shared/discord/ && cp -f ../shared/types/*.ts src/shared/types/ && cp -f ../shared/utils/*.ts src/shared/utils/ && cp -f ../shared/firebase/*.ts src/shared/firebase/ && cp -f ../shared/errors/*.ts src/shared/errors/ && cp -f ../shared/config/*.ts src/shared/config/",
     "clean-shared": "rm -rf src/shared",
     "clean:lib": "rm -rf lib",
     "build:watch": "tsc --watch",
@@ -21,6 +21,7 @@
   "main": "lib/index.js",
   "dependencies": {
     "axios": "^1.8.4",
+    "dotenv": "^16.5.0",
     "firebase-admin": "^12.6.0",
     "firebase-functions": "^6.0.1"
   },
