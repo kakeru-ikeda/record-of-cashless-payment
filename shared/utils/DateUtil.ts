@@ -89,13 +89,18 @@ export class DateUtil {
 
         // パス形式を生成
         const path = `details/${dateInfo.year}/${dateInfo.month}/${dateInfo.term}/${dateInfo.day}/${now.getTime()}`;
-        // 週次レポートのパス
-        const weekReportPath = `details/${dateInfo.year}/${dateInfo.month}/${dateInfo.term}`;
+
+        // 各種レポートのパス
+        const weeklyReportPath = `details/${dateInfo.year}/${dateInfo.month}/${dateInfo.term}`;
+        const dailyReportPath = `details/${dateInfo.year}/${dateInfo.month}/${dateInfo.term}/${dateInfo.day}/reports`;
+        const monthlyReportPath = `details/${dateInfo.year}/${dateInfo.month}/reports`;
 
         return {
             ...dateInfo,
             path,
-            weekReportPath
+            weekReportPath: weeklyReportPath,
+            dailyReportPath,
+            monthlyReportPath
         };
     }
 

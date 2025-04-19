@@ -20,9 +20,15 @@ try {
     );
 
     // types関連のインポートパスを修正
+    // 新しいレポート関連のパス
     content = content.replace(
-        /require\("\.\.\/\.\.\/shared\/types\/WeeklyReportNotification"\)/g,
-        'require("./shared/types/WeeklyReportNotification")'
+        /require\("\.\.\/\.\.\/shared\/types\/reports\/ReportTypes"\)/g,
+        'require("./shared/types/reports/ReportTypes")'
+    );
+
+    content = content.replace(
+        /require\("\.\.\/\.\.\/shared\/types\/reports\/ReportNotifications"\)/g,
+        'require("./shared/types/reports/ReportNotifications")'
     );
 
     content = content.replace(
@@ -62,6 +68,27 @@ try {
     content = content.replace(
         /require\("\.\.\/\.\.\/shared\/config\/Environment"\)/g,
         'require("./shared/config/Environment")'
+    );
+
+    // レポートサービス関連のインポートパスを修正 - ビルド後のパスに合わせて変更
+    content = content.replace(
+        /require\("\.\/services\/reports\/BaseReportService"\)/g,
+        'require("./functions/src/services/reports/BaseReportService")'
+    );
+
+    content = content.replace(
+        /require\("\.\/services\/reports\/DailyReportService"\)/g,
+        'require("./functions/src/services/reports/DailyReportService")'
+    );
+
+    content = content.replace(
+        /require\("\.\/services\/reports\/WeeklyReportService"\)/g,
+        'require("./functions/src/services/reports/WeeklyReportService")'
+    );
+
+    content = content.replace(
+        /require\("\.\/services\/reports\/MonthlyReportService"\)/g,
+        'require("./functions/src/services/reports/MonthlyReportService")'
     );
 
     // 修正内容を書き込む
