@@ -2,6 +2,8 @@ import * as functions from 'firebase-functions';
 import { BaseReportService } from './BaseReportService';
 import { DailyReport } from '../../../../shared/types/reports/ReportTypes';
 import { AppError, ErrorType } from '../../../../shared/errors/AppError';
+import { DateUtil } from '../../../../shared/utils/DateUtil';
+import { DailyReportNotification } from '../../../../shared/types/reports/ReportNotifications';
 
 /**
  * デイリーレポート処理サービス
@@ -70,6 +72,100 @@ export class DailyReportService extends BaseReportService {
 
             console.error('❌ ' + appError.toLogString());
             throw appError;
+        }
+    }
+
+    /**
+     * デイリーレポートを取得してDiscordに送信する
+     * 毎日0時に自動実行される定期タスクから呼び出される
+     * @param year 年
+     * @param month 月
+     * @param term 週番号
+     * @param day 日
+     * @returns 処理結果
+     */
+    async sendDailyReport(
+        year: string,
+        month: string,
+        term: string,
+        day: string
+    ): Promise<{ success: boolean; message: string; data?: any }> {
+        try {
+            if (!this.discordNotifier) {
+                return {
+                    success: false,
+                    message: 'Discord通知モジュールが設定されていないためスキップしました',
+                };
+            }
+
+            // レポートパス
+            const dailyReportPath = `details/${year}/${month}/term${term}/${day}/reports`;
+
+            // レポートデータを取得
+            const reportData = await this.firestoreService.getDocument<DailyReport>(dailyReportPath);
+
+            if (!reportData) {
+                return {
+                    success: false,
+                    message: `デイリーレポートが存在しません: ${dailyReportPath}`,
+                };
+            }
+
+            // 日付オブジェクトを作成
+            const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            const formattedDate = DateUtil.formatDate(dateObj, 'yyyy/MM/dd');
+            const dayOfWeek = DateUtil.getJapaneseDayOfWeek(dateObj);
+
+            // 通知データを作成
+            const notification: DailyReportNotification = {
+                title: `${year}年${month}月${day}日(${dayOfWeek}) デイリーレポート`,
+                date: formattedDate,
+                totalAmount: reportData.totalAmount,
+                totalCount: reportData.totalCount,
+                additionalInfo: reportData.totalCount > 0
+                    ? `平均支出: ${Math.round(reportData.totalAmount / reportData.totalCount).toLocaleString()}円/件`
+                    : '利用なし',
+            };
+
+            // Discordに送信
+            console.log('📤 デイリーレポートを送信します...');
+            const success = await this.discordNotifier.notifyDailyReport(notification);
+
+            if (success) {
+                // 通知フラグを更新
+                if (!reportData.hasNotified) {
+                    await this.firestoreService.updateDocument(dailyReportPath, {
+                        hasNotified: true,
+                        lastUpdated: this.getServerTimestamp(),
+                        lastUpdatedBy: 'daily-report-schedule',
+                    });
+                }
+
+                return {
+                    success: true,
+                    message: 'デイリーレポートを送信しました',
+                    data: notification,
+                };
+            } else {
+                return {
+                    success: false,
+                    message: 'デイリーレポートの送信に失敗しました',
+                    data: notification,
+                };
+            }
+        } catch (error) {
+            const appError = error instanceof AppError ? error : new AppError(
+                'デイリーレポート送信中にエラーが発生しました',
+                ErrorType.GENERAL,
+                { year, month, term, day },
+                error instanceof Error ? error : undefined
+            );
+
+            console.error('❌ ' + appError.toLogString());
+            return {
+                success: false,
+                message: appError.message,
+            };
         }
     }
 }

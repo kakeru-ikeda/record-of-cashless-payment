@@ -9,9 +9,25 @@ export class DateUtil {
      * @returns 日付の詳細情報
      */
     static getDateInfo(date: Date) {
-        const year = date.getFullYear().toString();
-        const month = (date.getMonth() + 1).toString().padStart(2, '0');
-        const day = date.getDate().toString().padStart(2, '0');
+        const baseInfo = this._getBaseDateInfo(date);
+
+        // 最終日の判定情報を追加
+        return {
+            ...baseInfo,
+            isLastDayOfTerm: this.isLastDayOfTerm(date),
+            isLastDayOfMonth: this.isLastDayOfMonth(date)
+        };
+    }
+
+    /**
+     * 基本的な日付情報を取得（内部メソッド）
+     * @param date 対象の日付
+     * @returns 基本的な日付情報
+     */
+    static _getBaseDateInfo(date: Date) {
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1;
+        const day = date.getDate();
         const timestamp = date.getTime();
 
         // 週番号の計算
@@ -21,7 +37,7 @@ export class DateUtil {
         const startOfMonthDay = firstDayOfMonth.getDay();
         // 現在の日の月内週番号を計算
         const weekNumber = Math.ceil((date.getDate() + startOfMonthDay) / 7);
-        const term = `term${weekNumber}`;
+        const term = weekNumber;
 
         // 週の開始日（日曜日）を計算 - 日本時間の午前0時（UTC+9）を設定
         const dayOfWeek = date.getDay(); // 0: 日曜, 1: 月曜, ...
@@ -232,5 +248,58 @@ export class DateUtil {
      */
     static getLastDayOfMonth(date: Date): Date {
         return new Date(date.getFullYear(), date.getMonth() + 1, 0);
+    }
+
+    /**
+     * 指定した日付から前の週（term）の情報を取得する
+     * @param date 基準日
+     * @returns 前週の日付情報
+     */
+    static getLastTermInfo(date: Date) {
+        // 1週間前の日付を計算
+        const lastWeekDate = new Date(date);
+        lastWeekDate.setDate(date.getDate() - 7);
+
+        // 前週の日付情報を取得
+        return this.getDateInfo(lastWeekDate);
+    }
+
+    /**
+     * 指定した日付から前月の情報を取得する
+     * @param date 基準日
+     * @returns 前月の日付情報
+     */
+    static getLastMonthInfo(date: Date) {
+        // 前月の同じ日を計算（月が短い場合は自動調整される）
+        const lastMonthDate = new Date(date.getFullYear(), date.getMonth() - 1, date.getDate());
+
+        // 前月の日付情報を取得
+        return this.getDateInfo(lastMonthDate);
+    }
+
+    /**
+     * 指定した日付が属する週（term）の最終日かどうかを判定する
+     * @param date 判定する日付
+     * @returns 週の最終日の場合はtrue
+     */
+    static isLastDayOfTerm(date: Date): boolean {
+        const nextDay = new Date(date);
+        nextDay.setDate(date.getDate() + 1);
+
+        const currentInfo = this.getDateInfo(date);
+        const nextInfo = this.getDateInfo(nextDay);
+
+        // 次の日のtermが異なる場合、または月が変わる場合は週の最終日
+        return currentInfo.term !== nextInfo.term || currentInfo.month !== nextInfo.month;
+    }
+
+    /**
+     * 指定した日付が月の最終日かどうかを判定する
+     * @param date 判定する日付
+     * @returns 月の最終日の場合はtrue
+     */
+    static isLastDayOfMonth(date: Date): boolean {
+        const lastDay = this.getLastDayOfMonth(date);
+        return date.getDate() === lastDay.getDate();
     }
 }

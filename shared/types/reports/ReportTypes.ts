@@ -14,6 +14,7 @@ export interface WeeklyReport {
     hasNotifiedLevel1: boolean;
     hasNotifiedLevel2: boolean;
     hasNotifiedLevel3: boolean;
+    hasReportSent?: boolean; // 定期レポートとして送信済みかどうか
 }
 
 /**
@@ -43,6 +44,7 @@ export interface MonthlyReport {
     hasNotifiedLevel1: boolean;
     hasNotifiedLevel2: boolean;
     hasNotifiedLevel3: boolean;
+    hasReportSent?: boolean; // 定期レポートとして送信済みかどうか
 }
 
 /**

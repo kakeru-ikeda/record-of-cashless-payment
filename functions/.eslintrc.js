@@ -33,5 +33,6 @@ module.exports = {
     'indent': 'off',
     'object-curly-spacing': 'off',
     'valid-jsdoc': 'off',
+    'operator-linebreak': 'off',
   },
 };

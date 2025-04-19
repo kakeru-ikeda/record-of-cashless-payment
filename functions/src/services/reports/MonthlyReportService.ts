@@ -48,6 +48,7 @@ export class MonthlyReportService extends BaseReportService {
                     hasNotifiedLevel1: false,
                     hasNotifiedLevel2: false,
                     hasNotifiedLevel3: false,
+                    hasReportSent: false,
                 };
 
                 await this.firestoreService.saveDocument(monthlyReportPath, monthlyReport);
@@ -67,9 +68,9 @@ export class MonthlyReportService extends BaseReportService {
                 console.log(`✅ マンスリーレポート更新完了: ${monthlyReportPath}`);
             }
 
-            // 通知条件チェック
+            // 通知条件チェック（しきい値超過時のアラート）
             const { updated, alertLevel, updatedReport } =
-                await this.checkAndNotify(monthlyReport, year, month);
+                await this.checkAndSendAlert(monthlyReport, year, month);
 
             // 通知フラグ更新
             if (updated) {
@@ -96,12 +97,12 @@ export class MonthlyReportService extends BaseReportService {
     }
 
     /**
-     * マンスリーレポートの通知条件チェック
+     * マンスリーレポートのアラート条件チェック（しきい値超過時の通知）
      * @param monthlyReport マンスリーレポートデータ
      * @param year 年
      * @param month 月
      */
-    private async checkAndNotify(
+    private async checkAndSendAlert(
         monthlyReport: MonthlyReport,
         year: string,
         month: string
@@ -157,7 +158,7 @@ export class MonthlyReportService extends BaseReportService {
 
                 // 通知データ作成
                 const notification: MonthlyReportNotification = {
-                    title: `${year}年${month}月 マンスリーレポート`,
+                    title: `${year}年${month}月 マンスリーアラート`,
                     period: formattedPeriod,
                     totalAmount: monthlyReport.totalAmount,
                     totalCount: monthlyReport.totalCount,
@@ -189,6 +190,135 @@ export class MonthlyReportService extends BaseReportService {
 
             console.error('❌ ' + appError.toLogString());
             return { updated: false, alertLevel: 0, updatedReport: monthlyReport };
+        }
+    }
+
+    /**
+     * マンスリーレポートを取得してDiscordに定期レポートとして送信する
+     * 毎月1日0時に自動実行される定期タスクから呼び出される
+     * @param year 年
+     * @param month 月
+     * @returns 処理結果
+     */
+    async sendMonthlyReport(
+        year: string,
+        month: string
+    ): Promise<{ success: boolean; message: string; data?: any }> {
+        try {
+            if (!this.discordNotifier) {
+                return {
+                    success: false,
+                    message: 'Discord通知モジュールが設定されていないためスキップしました',
+                };
+            }
+
+            // レポートパス
+            const monthlyReportPath = `details/${year}/${month}/reports`;
+
+            // レポートデータを取得
+            const reportData = await this.firestoreService.getDocument<MonthlyReport>(monthlyReportPath);
+
+            if (!reportData) {
+                return {
+                    success: false,
+                    message: `マンスリーレポートが存在しません: ${monthlyReportPath}`,
+                };
+            }
+
+            // 既にレポートを送信済みの場合はスキップ
+            if (reportData.hasReportSent) {
+                return {
+                    success: true,
+                    message: `マンスリーレポートは既に送信済みです: ${monthlyReportPath}`,
+                    data: reportData,
+                };
+            }
+
+            // 月の開始日と終了日を取得
+            const startDate = reportData.monthStartDate.toDate();
+            const endDate = reportData.monthEndDate.toDate();
+            const formattedPeriod = DateUtil.formatDateRange(startDate, endDate, 'yyyy/MM/dd');
+
+            // 月次しきい値を計算
+            const MONTHLY_THRESHOLD = {
+                LEVEL1: THRESHOLD.LEVEL1 * 4,
+                LEVEL2: THRESHOLD.LEVEL2 * 4,
+                LEVEL3: THRESHOLD.LEVEL3 * 4,
+            };
+
+            // 追加情報を計算
+            let additionalInfo = '';
+            if (reportData.totalCount > 0) {
+                // 平均支出
+                additionalInfo = `平均支出: 
+                    ${Math.round(reportData.totalAmount / reportData.totalCount).toLocaleString()}円/件\n`;
+                additionalInfo += `1日あたり平均: 
+                    ${Math.round(reportData.totalAmount / endDate.getDate()).toLocaleString()}円/日`;
+
+                // しきい値との比較情報を追加
+                if (reportData.totalAmount > MONTHLY_THRESHOLD.LEVEL3) {
+                    additionalInfo += `\n📊 しきい値超過: レベル3 (${MONTHLY_THRESHOLD.LEVEL3.toLocaleString()}円) を 
+                        ${(reportData.totalAmount - MONTHLY_THRESHOLD.LEVEL3).toLocaleString()}円 超過`;
+                } else if (reportData.totalAmount > MONTHLY_THRESHOLD.LEVEL2) {
+                    additionalInfo += `\n📊 しきい値超過: レベル2 (${MONTHLY_THRESHOLD.LEVEL2.toLocaleString()}円) を 
+                        ${(reportData.totalAmount - MONTHLY_THRESHOLD.LEVEL2).toLocaleString()}円 超過`;
+                } else if (reportData.totalAmount > MONTHLY_THRESHOLD.LEVEL1) {
+                    additionalInfo += `\n📊 しきい値超過: レベル1 (${MONTHLY_THRESHOLD.LEVEL1.toLocaleString()}円) を 
+                        ${(reportData.totalAmount - MONTHLY_THRESHOLD.LEVEL1).toLocaleString()}円 超過`;
+                } else {
+                    additionalInfo += `\n📊 しきい値内: 予算内で収まっています (目標: ${MONTHLY_THRESHOLD.LEVEL1.toLocaleString()}円)`;
+                }
+            } else {
+                additionalInfo = '対象期間内の利用はありません';
+            }
+
+            // 通知データを作成（レポートはアラート情報を含めない）
+            const notification: MonthlyReportNotification = {
+                title: `${year}年${month}月 マンスリーレポート`,
+                period: formattedPeriod,
+                totalAmount: reportData.totalAmount,
+                totalCount: reportData.totalCount,
+                alertLevel: 0, // 定期レポートではアラートレベルを使用しない
+                additionalInfo,
+            };
+
+            // Discordに送信
+            console.log('📤 マンスリーレポートを送信します...');
+            const success = await this.discordNotifier.notifyMonthlyReport(notification);
+
+            if (success) {
+                // レポート送信フラグを更新
+                await this.firestoreService.updateDocument(monthlyReportPath, {
+                    hasReportSent: true,
+                    lastUpdated: this.getServerTimestamp(),
+                    lastUpdatedBy: 'monthly-report-schedule',
+                });
+
+                return {
+                    success: true,
+                    message: `マンスリーレポートを送信しました: ${year}年${month}月`,
+                    data: notification,
+                };
+            } else {
+                return {
+                    success: false,
+                    message: 'マンスリーレポートの送信に失敗しました',
+                    data: notification,
+                };
+            }
+        } catch (error) {
+            const appError = error instanceof AppError ? error : new AppError(
+                'マンスリーレポート送信中にエラーが発生しました',
+                ErrorType.GENERAL,
+                { year, month },
+                error instanceof Error ? error : undefined
+            );
+
+            console.error('❌ ' + appError.toLogString());
+            return {
+                success: false,
+                message: appError.message,
+            };
         }
     }
 }

@@ -45,6 +45,7 @@ export class WeeklyReportService extends BaseReportService {
                     hasNotifiedLevel1: false,
                     hasNotifiedLevel2: false,
                     hasNotifiedLevel3: false,
+                    hasReportSent: false,
                 };
 
                 await this.firestoreService.saveDocument(reportsPath, weeklyReport);
@@ -64,9 +65,9 @@ export class WeeklyReportService extends BaseReportService {
                 console.log('✅ ウィークリーレポート更新完了');
             }
 
-            // 通知条件チェック
+            // アラート条件チェック（しきい値超過時のアラート）
             const { updated, alertLevel, updatedReport } =
-                await this.checkAndNotify(weeklyReport, Number(term.replace('term', '')), year, month);
+                await this.checkAndSendAlert(weeklyReport, Number(term.replace('term', '')), year, month);
 
             // 通知フラグ更新
             if (updated) {
@@ -93,13 +94,13 @@ export class WeeklyReportService extends BaseReportService {
     }
 
     /**
-     * ウィークリーレポートの通知条件チェック
+     * ウィークリーレポートのアラート条件チェック（しきい値超過時の通知）
      * @param weeklyReport ウィークリーレポートデータ
      * @param weekNumber 週番号
      * @param year 年
      * @param month 月
      */
-    private async checkAndNotify(
+    private async checkAndSendAlert(
         weeklyReport: WeeklyReport,
         weekNumber: number,
         year: string,
@@ -150,7 +151,7 @@ export class WeeklyReportService extends BaseReportService {
 
                 // 通知データ作成
                 const notification: WeeklyReportNotification = {
-                    title: `${year}年${month}月 第${weekNumber}週 レポート`,
+                    title: `${year}年${month}月 第${weekNumber}週 アラート`,
                     period: formattedPeriod,
                     totalAmount: weeklyReport.totalAmount,
                     totalCount: weeklyReport.totalCount,
@@ -181,6 +182,131 @@ export class WeeklyReportService extends BaseReportService {
 
             console.error('❌ ' + appError.toLogString());
             return { updated: false, alertLevel: 0, updatedReport: weeklyReport };
+        }
+    }
+
+    /**
+     * ウィークリーレポートを取得してDiscordに定期レポートとして送信する
+     * 毎週月曜日0時に自動実行される定期タスクから呼び出される
+     * または、月をまたぐ場合は月末に送信される
+     * @param year 年
+     * @param month 月
+     * @param term 期間（週）識別子 (例: "term1")
+     * @returns 処理結果
+     */
+    async sendWeeklyReport(
+        year: string,
+        month: string,
+        term: string
+    ): Promise<{ success: boolean; message: string; data?: any }> {
+        try {
+            if (!this.discordNotifier) {
+                return {
+                    success: false,
+                    message: 'Discord通知モジュールが設定されていないためスキップしました',
+                };
+            }
+
+            // レポートパス
+            const reportsPath = `details/${year}/${month}/${term}`;
+
+            // レポートデータを取得
+            const reportData = await this.firestoreService.getDocument<WeeklyReport>(reportsPath);
+
+            if (!reportData) {
+                return {
+                    success: false,
+                    message: `ウィークリーレポートが存在しません: ${reportsPath}`,
+                };
+            }
+
+            // 既にレポートを送信済みの場合はスキップ
+            if (reportData.hasReportSent) {
+                return {
+                    success: true,
+                    message: `ウィークリーレポートは既に送信済みです: ${reportsPath}`,
+                    data: reportData,
+                };
+            }
+
+            // 日付整形
+            const startDate = reportData.termStartDate.toDate();
+            const endDate = reportData.termEndDate.toDate();
+            const formattedPeriod = DateUtil.formatDateRange(startDate, endDate, 'yyyy/MM/dd');
+
+            // 週番号を取得
+            const weekNumber = Number(term.replace('term', ''));
+
+            // 追加情報を計算
+            let additionalInfo = '';
+            if (reportData.totalCount > 0) {
+                additionalInfo = `平均支出: 
+                    ${Math.round(reportData.totalAmount / reportData.totalCount).toLocaleString()}円/件`;
+
+                // しきい値との比較情報を追加
+                if (reportData.totalAmount > THRESHOLD.LEVEL3) {
+                    additionalInfo += `\nしきい値超過: レベル3 (${THRESHOLD.LEVEL3.toLocaleString()}円) を 
+                        ${(reportData.totalAmount - THRESHOLD.LEVEL3).toLocaleString()}円 超過`;
+                } else if (reportData.totalAmount > THRESHOLD.LEVEL2) {
+                    additionalInfo += `\nしきい値超過: レベル2 (${THRESHOLD.LEVEL2.toLocaleString()}円) を 
+                        ${(reportData.totalAmount - THRESHOLD.LEVEL2).toLocaleString()}円 超過`;
+                } else if (reportData.totalAmount > THRESHOLD.LEVEL1) {
+                    additionalInfo += `\nしきい値超過: レベル1 (${THRESHOLD.LEVEL1.toLocaleString()}円) を 
+                        ${(reportData.totalAmount - THRESHOLD.LEVEL1).toLocaleString()}円 超過`;
+                } else {
+                    additionalInfo += `\nしきい値内: 予算内で収まっています (目標: ${THRESHOLD.LEVEL1.toLocaleString()}円)`;
+                }
+            } else {
+                additionalInfo = '対象期間内の利用はありません';
+            }
+
+            // 通知データを作成（レポートはアラート情報を含めない）
+            const notification: WeeklyReportNotification = {
+                title: `${year}年${month}月 第${weekNumber}週 レポート`,
+                period: formattedPeriod,
+                totalAmount: reportData.totalAmount,
+                totalCount: reportData.totalCount,
+                alertLevel: 0, // 定期レポートではアラートレベルを使用しない
+                additionalInfo,
+            };
+
+            // Discordに送信
+            console.log('📤 ウィークリーレポートを送信します...');
+            const success = await this.discordNotifier.notifyWeeklyReport(notification);
+
+            if (success) {
+                // レポート送信フラグを更新
+                await this.firestoreService.updateDocument(reportsPath, {
+                    hasReportSent: true,
+                    lastUpdated: this.getServerTimestamp(),
+                    lastUpdatedBy: 'weekly-report-schedule',
+                });
+
+                return {
+                    success: true,
+                    message: `ウィークリーレポートを送信しました: ${year}年${month}月 第${weekNumber}週`,
+                    data: notification,
+                };
+            } else {
+                return {
+                    success: false,
+                    message: 'ウィークリーレポートの送信に失敗しました',
+                    data: notification,
+                };
+            }
+        } catch (error) {
+            const appError = error instanceof AppError ? error : new AppError(
+                'ウィークリーレポート送信中にエラーが発生しました',
+                ErrorType.GENERAL,
+                { year, month, term },
+                error instanceof Error ? error : undefined
+            );
+
+            console.error('❌ ' + appError.toLogString());
+            return {
+                success: false,
+                message: appError.message,
+            };
         }
     }
 }

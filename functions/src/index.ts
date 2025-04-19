@@ -8,6 +8,7 @@ import { ErrorHandler } from '../../shared/errors/ErrorHandler';
 import { WeeklyReportService } from './services/reports/WeeklyReportService';
 import { DailyReportService } from './services/reports/DailyReportService';
 import { MonthlyReportService } from './services/reports/MonthlyReportService';
+import { DateUtil } from '../../shared/utils/DateUtil';
 
 // Firestoreサービスの初期化
 const firestoreService = FirestoreService.getInstance();
@@ -34,7 +35,7 @@ const discordNotifier = new DiscordWebhookNotifier(DISCORD_WEBHOOK_URL);
 
 // 各種レポートサービスの初期化
 const weeklyReportService = new WeeklyReportService(firestoreService, discordNotifier);
-const dailyReportService = new DailyReportService(firestoreService);
+const dailyReportService = new DailyReportService(firestoreService, discordNotifier);
 const monthlyReportService = new MonthlyReportService(firestoreService, discordNotifier);
 
 /**
@@ -92,4 +93,66 @@ export const onFirestoreWrite = functions.firestore
                 monthlyReport,
             });
         }, 'Firestore ドキュメント作成イベント処理');
+    });
+
+/**
+ * 毎日日本時間0時に実行される関数
+ * デイリー・ウィークリー・マンスリーレポートを自動的にDiscordに送信する
+ */
+export const dailyReportSchedule = functions.scheduler
+    .onSchedule({
+        schedule: '0 0 * * *',
+        timeZone: 'Asia/Tokyo',
+        region: 'asia-northeast1',
+    }, async (context) => {
+        console.log('🕛 毎日定期実行: レポート自動送信処理を開始します');
+
+        await ErrorHandler.handleAsync(async () => {
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+
+            const dateInfo = DateUtil.getDateInfo(yesterday);
+
+            console.log(`📅 処理日: ${dateInfo.year}年${dateInfo.month}月${dateInfo.day}日`);
+
+            // 1. 前日のデイリーレポートを送信
+            const dailyReportResult = await dailyReportService.sendDailyReport(
+                dateInfo.year.toString(),
+                dateInfo.month.toString().padStart(2, '0'),
+                dateInfo.term.toString().replace('term', ''),
+                dateInfo.day.toString().padStart(2, '0')
+            );
+
+            // 2. 週初め（月曜）の場合は先週のウィークリーレポートを送信
+            let weeklyReportResult = null;
+            if (yesterday.getDay() === 1 || (dateInfo.isLastDayOfTerm && !dateInfo.isLastDayOfMonth)) {
+                // 月曜日の場合、または月を跨がない期間の最終日の場合
+                const lastWeekInfo = DateUtil.getLastTermInfo(yesterday);
+                weeklyReportResult = await weeklyReportService.sendWeeklyReport(
+                    lastWeekInfo.year.toString(),
+                    lastWeekInfo.month.toString().padStart(2, '0'),
+                    `term${lastWeekInfo.term}`
+                );
+            }
+
+            // 3. 月初め（1日）の場合は先月のマンスリーレポートを送信
+            let monthlyReportResult = null;
+            if (yesterday.getDate() === 1 || dateInfo.isLastDayOfMonth) {
+                // 月の最初の日の場合、または月の最終日の場合
+                const lastMonthInfo = DateUtil.getLastMonthInfo(yesterday);
+                monthlyReportResult = await monthlyReportService.sendMonthlyReport(
+                    lastMonthInfo.year.toString(),
+                    lastMonthInfo.month.toString().padStart(2, '0')
+                );
+            }
+
+            console.log('✅ 定期レポート送信処理が完了しました');
+            console.log('定期レポート送信処理が完了しました', {
+                dailyReportResult,
+                weeklyReportResult,
+                monthlyReportResult,
+            });
+            return;
+        }, '定期レポート自動送信処理');
     });
