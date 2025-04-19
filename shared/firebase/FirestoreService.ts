@@ -1,9 +1,7 @@
 import * as admin from 'firebase-admin';
 import { Firestore } from 'firebase-admin/firestore';
 import * as fs from 'fs';
-import * as path from 'path';
 import { AppError, ErrorType } from '../errors/AppError';
-import { ErrorHandler } from '../errors/ErrorHandler';
 
 /**
  * Firestoreサービスクラス

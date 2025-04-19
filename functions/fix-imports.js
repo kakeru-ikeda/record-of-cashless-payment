@@ -13,12 +13,13 @@ console.log('🔧 インポートパスを修正中...');
 try {
     let content = fs.readFileSync(targetFile, 'utf8');
 
-    // 不正なインポートパスを修正
+    // discord関連のインポートパスを修正
     content = content.replace(
         /require\("\.\.\/\.\.\/shared\/discord\/DiscordNotifier"\)/g,
         'require("./shared/discord/DiscordNotifier")'
     );
 
+    // types関連のインポートパスを修正
     content = content.replace(
         /require\("\.\.\/\.\.\/shared\/types\/WeeklyReportNotification"\)/g,
         'require("./shared/types/WeeklyReportNotification")'
@@ -29,15 +30,38 @@ try {
         'require("./shared/types/CardUsageNotification")'
     );
 
+    // utils関連のインポートパスを修正
     content = content.replace(
         /require\("\.\.\/\.\.\/shared\/utils\/DateUtil"\)/g,
         'require("./shared/utils/DateUtil")'
     );
 
-    // 新しく追加したFirestoreServiceモジュールのパスを修正
+    content = content.replace(
+        /require\("\.\.\/\.\.\/shared\/utils\/ResponseHelper"\)/g,
+        'require("./shared/utils/ResponseHelper")'
+    );
+
+    // firebase関連のインポートパスを修正
     content = content.replace(
         /require\("\.\.\/\.\.\/shared\/firebase\/FirestoreService"\)/g,
         'require("./shared/firebase/FirestoreService")'
+    );
+
+    // errors関連のインポートパスを修正
+    content = content.replace(
+        /require\("\.\.\/\.\.\/shared\/errors\/AppError"\)/g,
+        'require("./shared/errors/AppError")'
+    );
+
+    content = content.replace(
+        /require\("\.\.\/\.\.\/shared\/errors\/ErrorHandler"\)/g,
+        'require("./shared/errors/ErrorHandler")'
+    );
+
+    // config関連のインポートパスを修正
+    content = content.replace(
+        /require\("\.\.\/\.\.\/shared\/config\/Environment"\)/g,
+        'require("./shared/config/Environment")'
     );
 
     // 修正内容を書き込む
