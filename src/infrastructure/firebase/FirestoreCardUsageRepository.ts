@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import { CardUsage } from '../../domain/entities/CardUsage';
 import { ICardUsageRepository } from '../../domain/repositories/ICardUsageRepository';
 import { Environment } from '../config/environment';
+import { DateUtil } from '../../../shared/utils/DateUtil';
 
 /**
  * Firestoreを使用したカード利用情報リポジトリの実装
@@ -47,48 +48,8 @@ export class FirestoreCardUsageRepository implements ICardUsageRepository {
    * @param date 日付オブジェクト
    * @returns パス情報を含むオブジェクト
    */
-  static getFirestorePath(date: Date): {
-    year: string;
-    month: string;
-    term: string;
-    day: string;
-    timestamp: string;
-    path: string;
-    weekReportPath: string;
-  } {
-    const year = date.getFullYear().toString();
-    // 月は0から始まるので、+1して2桁になるよう整形
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-
-    // 日を2桁で整形
-    const day = date.getDate().toString().padStart(2, '0');
-
-    // 週番号の計算
-    // 月の最初の日を取得
-    const firstDayOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
-    // 月初の曜日 (0: 日曜, 1: 月曜, ...)
-    const startOfMonthDay = firstDayOfMonth.getDay();
-    // 現在の日の月内週番号を計算
-    const weekNumber = Math.ceil((date.getDate() + startOfMonthDay) / 7);
-    const term = `term${weekNumber}`;
-
-    // タイムスタンプはミリ秒単位のUNIX時間（プログラム実行時刻）を使用
-    const timestamp = new Date().getTime().toString();
-
-    // 新しいパス形式
-    const path = `details/${year}/${month}/${term}/${day}/${timestamp}`;
-    // 週次レポートのパス
-    const weekReportPath = `details/${year}/${month}/${term}`;
-
-    return {
-      year,
-      month,
-      term,
-      day,
-      timestamp,
-      path,
-      weekReportPath
-    };
+  static getFirestorePath(date: Date) {
+    return DateUtil.getFirestorePath(date);
   }
 
   /**

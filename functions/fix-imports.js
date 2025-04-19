@@ -29,6 +29,11 @@ try {
         'require("./shared/types/CardUsageNotification")'
     );
 
+    content = content.replace(
+        /require\("\.\.\/\.\.\/shared\/utils\/DateUtil"\)/g,
+        'require("./shared/utils/DateUtil")'
+    );
+
     // 修正内容を書き込む
     fs.writeFileSync(targetFile, content);
     console.log('✅ インポートパスの修正が完了しました');

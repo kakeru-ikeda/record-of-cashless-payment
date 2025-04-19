@@ -4,7 +4,7 @@
     "lint": "eslint --ext .js,.ts .",
     "build": "tsc && npm run fix-paths && node fix-imports.js",
     "fix-paths": "mkdir -p lib && cp -f lib/functions/src/index.js* lib/ || true",
-    "prepare-shared": "mkdir -p src/shared/discord src/shared/types && cp -f ../shared/discord/DiscordNotifier.ts src/shared/discord/ && cp -f ../shared/types/*.ts src/shared/types/",
+    "prepare-shared": "mkdir -p src/shared/discord src/shared/types src/shared/utils && cp -f ../shared/discord/DiscordNotifier.ts src/shared/discord/ && cp -f ../shared/types/*.ts src/shared/types/ && cp -f ../shared/utils/*.ts src/shared/utils/",
     "clean-shared": "rm -rf src/shared",
     "clean:lib": "rm -rf lib",
     "build:watch": "tsc --watch",

@@ -2,6 +2,7 @@ import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { DiscordWebhookNotifier } from '../../shared/discord/DiscordNotifier';
 import { WeeklyReportNotification } from '../../shared/types/WeeklyReportNotification';
+import { DateUtil } from '../../shared/utils/DateUtil';
 
 admin.initializeApp();
 
@@ -65,51 +66,8 @@ interface WeeklyReport {
  * 日付情報を取得
  */
 const getDateInfo = () => {
-    const now = new Date(new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }));
-    const year = now.getFullYear().toString();
-    const month = (now.getMonth() + 1).toString().padStart(2, '0');
-    const day = now.getDate().toString().padStart(2, '0');
-    const timestamp = now.getTime();
-
-    // 週番号の計算
-    // 月の最初の日を取得
-    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    // 月初の曜日 (0: 日曜, 1: 月曜, ...)
-    const startOfMonthDay = firstDayOfMonth.getDay();
-    // 現在の日の月内週番号を計算
-    const weekNumber = Math.ceil((now.getDate() + startOfMonthDay) / 7);
-    const term = `term${weekNumber}`;
-
-    // 週の開始日（日曜日）を計算
-    const dayOfWeek = now.getDay(); // 0: 日曜, 1: 月曜, ...
-    let weekStartDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek, 0, 0, 0);
-
-    // 週の終了日（土曜日）を計算
-    let weekEndDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + (6 - dayOfWeek), 23, 59, 59);
-
-    // 週の開始日が今月の1日より前の場合（月をまたいだ場合）
-    if (weekStartDate.getMonth() !== now.getMonth()) {
-        // 週の開始日が前月の場合は、今月の1日から計算し直す
-        weekStartDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
-    }
-
-    // 週の終了日が翌月の場合、終了日を今月の最終日に設定
-    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-    if (weekEndDate > lastDayOfMonth) {
-        weekEndDate = lastDayOfMonth;
-    }
-
-    return {
-        now,
-        year,
-        month,
-        day,
-        weekNumber,
-        term,
-        weekStartDate,
-        weekEndDate,
-        timestamp,
-    };
+    // 共通のDateUtilクラスを使用
+    return DateUtil.getCurrentDateInfo();
 };
 
 /**
