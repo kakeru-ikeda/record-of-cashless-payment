@@ -6,11 +6,12 @@
     "fix-paths": "mkdir -p lib && cp -f lib/functions/src/index.js* lib/ || true",
     "prepare-shared": "mkdir -p src/shared/discord src/shared/types && cp -f ../shared/discord/DiscordNotifier.ts src/shared/discord/ && cp -f ../shared/types/*.ts src/shared/types/",
     "clean-shared": "rm -rf src/shared",
+    "clean:lib": "rm -rf lib",
     "build:watch": "tsc --watch",
     "serve": "npm run build && firebase emulators:start --only functions",
     "shell": "npm run build && firebase functions:shell",
     "start": "npm run shell",
-    "predeploy": "npm run prepare-shared && npm run build && npm run clean-shared",
+    "predeploy": "npm run clean:lib && npm run prepare-shared && npm run build && npm run clean-shared",
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log"
   },
