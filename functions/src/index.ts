@@ -70,13 +70,39 @@ const getDateInfo = () => {
     const month = (now.getMonth() + 1).toString().padStart(2, '0');
     const timestamp = now.getTime();
 
-    // 今週の情報を計算
+    // 今月の1日を取得
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const startOfWeek = startOfMonth.getDay();
-    const currentDay = now.getDate();
-    const weekNumber = Math.ceil((currentDay + startOfWeek) / 7);
-    const weekStartDate = new Date(now.getFullYear(), now.getMonth(), currentDay - (currentDay % 7), 0, 0, 0);
-    const weekEndDate = new Date(now.getFullYear(), now.getMonth(), currentDay + (6 - (currentDay % 7)), 23, 59, 59);
+
+    // 週番号の計算 - 月をまたぐ場合は考慮する
+    let weekNumber;
+    let weekStartDate;
+    let weekEndDate;
+
+    // 週の開始日（日曜日）を計算
+    const dayOfWeek = now.getDay(); // 0: 日曜, 1: 月曜, ...
+    weekStartDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek, 0, 0, 0);
+
+    // 週の終了日（土曜日）を計算
+    weekEndDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + (6 - dayOfWeek), 23, 59, 59);
+
+    // 週の開始日が今月の1日より前の場合（月をまたいだ場合）
+    if (weekStartDate.getMonth() !== now.getMonth()) {
+        // 週の開始日が前月の場合は、今月の1日から計算し直す
+        weekStartDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+    }
+
+    // 月初の曜日 (0: 日曜, 1: 月曜, ...)
+    const startOfMonthDay = startOfMonth.getDay();
+
+    // 現在の日の月内週番号を計算
+    // 例: 4月30日が週の途中で5月1日になった場合、5月1日は5月の第1週となる
+    weekNumber = Math.ceil((now.getDate() + startOfMonthDay) / 7);
+
+    // 週の終了日が翌月の場合、終了日を今月の最終日に設定
+    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+    if (weekEndDate > lastDayOfMonth) {
+        weekEndDate = lastDayOfMonth;
+    }
 
     return { now, year, month, weekNumber, weekStartDate, weekEndDate, timestamp };
 };
