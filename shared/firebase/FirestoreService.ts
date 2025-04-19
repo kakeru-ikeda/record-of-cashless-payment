@@ -1,6 +1,9 @@
 import * as admin from 'firebase-admin';
 import { Firestore } from 'firebase-admin/firestore';
 import * as fs from 'fs';
+import * as path from 'path';
+import { AppError, ErrorType } from '../errors/AppError';
+import { ErrorHandler } from '../errors/ErrorHandler';
 
 /**
  * Firestoreサービスクラス
@@ -53,14 +56,26 @@ export class FirestoreService {
                     console.log('✅ Cloud Functions環境でFirestoreに接続しました');
                 } else if (serviceAccountPath) {
                     // ローカル環境では秘密鍵ファイルで初期化
-                    admin.initializeApp({
-                        credential: admin.credential.cert(
-                            JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'))
-                        )
-                    });
-                    console.log('✅ サービスアカウントキーを使用してFirestoreに接続しました');
+                    try {
+                        admin.initializeApp({
+                            credential: admin.credential.cert(
+                                JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'))
+                            )
+                        });
+                        console.log('✅ サービスアカウントキーを使用してFirestoreに接続しました');
+                    } catch (error) {
+                        throw new AppError(
+                            'サービスアカウントキーでの初期化に失敗しました',
+                            ErrorType.FIREBASE,
+                            { path: serviceAccountPath },
+                            error instanceof Error ? error : undefined
+                        );
+                    }
                 } else {
-                    throw new Error('サービスアカウントキーのパスが指定されていません');
+                    throw new AppError(
+                        'サービスアカウントキーのパスが指定されていません',
+                        ErrorType.CONFIGURATION
+                    );
                 }
             }
 
@@ -68,8 +83,17 @@ export class FirestoreService {
             this.db = admin.firestore();
             return this.db;
         } catch (error) {
-            console.error('❌ Firestoreへの接続に失敗しました:', error);
-            throw error;
+            // AppErrorでない場合は変換
+            const appError = error instanceof AppError ? error :
+                new AppError(
+                    'Firestoreへの接続に失敗しました',
+                    ErrorType.FIREBASE,
+                    { serviceAccountPath },
+                    error instanceof Error ? error : undefined
+                );
+
+            console.error('❌ ' + appError.toLogString());
+            throw appError;
         }
     }
 
@@ -78,7 +102,7 @@ export class FirestoreService {
      */
     public async getDb(): Promise<Firestore> {
         if (!this.db) {
-            throw new Error('Firestoreが初期化されていません。initialize()を先に呼び出してください。');
+            throw new AppError('Firestoreが初期化されていません。initialize()を先に呼び出してください。', ErrorType.FIREBASE);
         }
         return this.db;
     }
@@ -89,13 +113,17 @@ export class FirestoreService {
      * @param data 保存するデータ
      */
     public async saveDocument(path: string, data: any): Promise<void> {
-        const db = await this.getDb();
         try {
+            const db = await this.getDb();
             await db.doc(path).set(data);
             console.log(`✅ ドキュメントを保存しました: ${path}`);
         } catch (error) {
-            console.error(`❌ ドキュメント保存エラー (${path}):`, error);
-            throw error;
+            throw new AppError(
+                `ドキュメント保存エラー (${path})`,
+                ErrorType.FIREBASE,
+                { path, data },
+                error instanceof Error ? error : undefined
+            );
         }
     }
 
@@ -105,13 +133,17 @@ export class FirestoreService {
      * @param data 更新するデータ
      */
     public async updateDocument(path: string, data: any): Promise<void> {
-        const db = await this.getDb();
         try {
+            const db = await this.getDb();
             await db.doc(path).update(data);
             console.log(`✅ ドキュメントを更新しました: ${path}`);
         } catch (error) {
-            console.error(`❌ ドキュメント更新エラー (${path}):`, error);
-            throw error;
+            throw new AppError(
+                `ドキュメント更新エラー (${path})`,
+                ErrorType.FIREBASE,
+                { path, data },
+                error instanceof Error ? error : undefined
+            );
         }
     }
 
@@ -120,8 +152,8 @@ export class FirestoreService {
      * @param path ドキュメントパス
      */
     public async getDocument<T>(path: string): Promise<T | null> {
-        const db = await this.getDb();
         try {
+            const db = await this.getDb();
             const doc = await db.doc(path).get();
             if (doc.exists) {
                 return doc.data() as T;
@@ -130,8 +162,60 @@ export class FirestoreService {
                 return null;
             }
         } catch (error) {
-            console.error(`❌ ドキュメント取得エラー (${path}):`, error);
-            throw error;
+            throw new AppError(
+                `ドキュメント取得エラー (${path})`,
+                ErrorType.FIREBASE,
+                { path },
+                error instanceof Error ? error : undefined
+            );
+        }
+    }
+
+    /**
+     * ドキュメントを削除する
+     * @param path ドキュメントパス
+     */
+    public async deleteDocument(path: string): Promise<void> {
+        try {
+            const db = await this.getDb();
+            await db.doc(path).delete();
+            console.log(`✅ ドキュメントを削除しました: ${path}`);
+        } catch (error) {
+            throw new AppError(
+                `ドキュメント削除エラー (${path})`,
+                ErrorType.FIREBASE,
+                { path },
+                error instanceof Error ? error : undefined
+            );
+        }
+    }
+
+    /**
+     * クエリを実行する
+     * @param collectionPath コレクションパス
+     * @param queryFn クエリ関数
+     */
+    public async query<T>(
+        collectionPath: string,
+        queryFn: (collection: FirebaseFirestore.CollectionReference) => FirebaseFirestore.Query
+    ): Promise<T[]> {
+        try {
+            const db = await this.getDb();
+            const collection = db.collection(collectionPath);
+            const query = queryFn(collection);
+            const snapshot = await query.get();
+
+            return snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            } as unknown as T));
+        } catch (error) {
+            throw new AppError(
+                `クエリ実行エラー (${collectionPath})`,
+                ErrorType.FIREBASE,
+                { collectionPath },
+                error instanceof Error ? error : undefined
+            );
         }
     }
 

@@ -3,9 +3,11 @@ import { Firestore } from 'firebase-admin/firestore';
 import * as fs from 'fs';
 import { CardUsage } from '../../domain/entities/CardUsage';
 import { ICardUsageRepository } from '../../domain/repositories/ICardUsageRepository';
-import { Environment } from '../config/environment';
+import { Environment } from '../../../shared/config/Environment';
 import { DateUtil } from '../../../shared/utils/DateUtil';
 import { FirestoreService } from '../../../shared/firebase/FirestoreService';
+import { AppError, ErrorType } from '../../../shared/errors/AppError';
+import { ErrorHandler } from '../../../shared/errors/ErrorHandler';
 
 /**
  * Firestoreを使用したカード利用情報リポジトリの実装
@@ -23,14 +25,14 @@ export class FirestoreCardUsageRepository implements ICardUsageRepository {
   async initialize(): Promise<Firestore> {
     try {
       // サービスアカウントの秘密鍵のパスを取得
-      const serviceAccountPath = Environment.FIREBASE_ADMIN_KEY_PATH;
+      const serviceAccountPath = Environment.getFirebaseAdminKeyPath();
 
       // ローカル環境として初期化
-      this.firestoreService.setCloudFunctions(false);
+      this.firestoreService.setCloudFunctions(Environment.isCloudFunctions());
       return await this.firestoreService.initialize(serviceAccountPath);
     } catch (error) {
-      console.error('❌ Firestoreへの接続に失敗しました:', error);
-      throw error;
+      // AppErrorに変換してスロー
+      throw ErrorHandler.convertToAppError(error);
     }
   }
 
@@ -49,25 +51,30 @@ export class FirestoreCardUsageRepository implements ICardUsageRepository {
    * @returns 保存されたパス
    */
   async save(cardUsage: CardUsage): Promise<string> {
-    // Firestoreへの接続を初期化
-    await this.initialize();
-
-    // 日付オブジェクトを作成
-    const dateObj = cardUsage.datetime_of_use.toDate();
-
-    // パス情報を取得
-    const pathInfo = FirestoreCardUsageRepository.getFirestorePath(dateObj);
-    console.log(`🗂 保存先: ${pathInfo.path}`);
-
     try {
+      // Firestoreへの接続を初期化
+      await this.initialize();
+
+      // 日付オブジェクトを作成
+      const dateObj = cardUsage.datetime_of_use.toDate();
+
+      // パス情報を取得
+      const pathInfo = FirestoreCardUsageRepository.getFirestorePath(dateObj);
+      console.log(`🗂 保存先: ${pathInfo.path}`);
+
       // 共通サービスを使用してドキュメントを保存
       await this.firestoreService.saveDocument(pathInfo.path, cardUsage);
 
       console.log('✅ カード利用データをFirestoreに保存しました');
       return pathInfo.path;
     } catch (error) {
-      console.error('❌ Firestoreへのデータ保存に失敗しました:', error);
-      throw error;
+      // エラー処理を共通化
+      throw new AppError(
+        'カード利用情報の保存に失敗しました',
+        ErrorType.FIREBASE,
+        { cardUsage },
+        error instanceof Error ? error : undefined
+      );
     }
   }
 
@@ -77,21 +84,32 @@ export class FirestoreCardUsageRepository implements ICardUsageRepository {
    * @returns カード利用情報
    */
   async getByTimestamp(timestamp: string): Promise<CardUsage | null> {
-    // Firestoreへの接続を初期化
-    await this.initialize();
-
-    // タイムスタンプから日付を取得
-    const date = new Date(parseInt(timestamp));
-
-    // パス情報を生成
-    const pathInfo = FirestoreCardUsageRepository.getFirestorePath(date);
-
     try {
+      // Firestoreへの接続を初期化
+      await this.initialize();
+
+      // タイムスタンプから日付を取得
+      const date = new Date(parseInt(timestamp));
+
+      // パス情報を生成
+      const pathInfo = FirestoreCardUsageRepository.getFirestorePath(date);
+
       // 共通サービスを使用してドキュメントを取得
-      return await this.firestoreService.getDocument<CardUsage>(pathInfo.path);
+      const result = await this.firestoreService.getDocument<CardUsage>(pathInfo.path);
+
+      if (!result) {
+        console.log(`カード利用情報が見つかりません: ${timestamp}`);
+      }
+
+      return result;
     } catch (error) {
-      console.error('❌ Firestoreからのデータ取得に失敗しました:', error);
-      throw error;
+      // エラー処理を共通化
+      throw new AppError(
+        'カード利用情報の取得に失敗しました',
+        ErrorType.FIREBASE,
+        { timestamp },
+        error instanceof Error ? error : undefined
+      );
     }
   }
 }

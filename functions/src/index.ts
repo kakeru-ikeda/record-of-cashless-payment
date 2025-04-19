@@ -4,6 +4,10 @@ import { DiscordWebhookNotifier } from '../../shared/discord/DiscordNotifier';
 import { WeeklyReportNotification } from '../../shared/types/WeeklyReportNotification';
 import { DateUtil } from '../../shared/utils/DateUtil';
 import { FirestoreService } from '../../shared/firebase/FirestoreService';
+import { Environment } from '../../shared/config/Environment';
+import { ResponseHelper } from '../../shared/utils/ResponseHelper';
+import { AppError, ErrorType } from '../../shared/errors/AppError';
+import { ErrorHandler } from '../../shared/errors/ErrorHandler';
 
 // Firestoreサービスの初期化
 const firestoreService = FirestoreService.getInstance();
@@ -13,8 +17,8 @@ firestoreService.initialize();
 // Discord Webhook URL取得 - Cloud Functions v2対応
 let DISCORD_WEBHOOK_URL: string;
 try {
-    // Cloud Functions v2では標準の環境変数を使用
-    DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL || '';
+    // 共通の環境設定クラスからWebhook URLを取得
+    DISCORD_WEBHOOK_URL = Environment.getDiscordWebhookUrl();
     if (!DISCORD_WEBHOOK_URL) {
         console.warn('⚠️ Discord Webhook URLが見つかりません');
     } else {
@@ -27,19 +31,6 @@ try {
 
 // Discord通知インスタンス
 const discordNotifier = new DiscordWebhookNotifier(DISCORD_WEBHOOK_URL);
-
-// レスポンス用インターフェース
-interface Response {
-    status: number;
-    success: boolean;
-    message: string;
-    data?: any;
-}
-
-// レスポンスヘルパー
-const responceHelper = (status: number, success: boolean, message: string, data?: any): Response => {
-    return { status, success, message, data };
-};
 
 /**
  * 週次レポートのしきい値
@@ -111,11 +102,10 @@ async function checkAndNotifyWeeklyReport(
         if (alertLevel > 0) {
             console.log(`📊 アラートレベル${alertLevel}の通知を送信`);
 
-            // 日付整形
+            // 日付整形 - 拡張されたDateUtilを使用
             const startDate = weeklyReport.termStartDate.toDate();
             const endDate = weeklyReport.termEndDate.toDate();
-            const formattedStartDate = startDate.toLocaleDateString('ja-JP');
-            const formattedEndDate = endDate.toLocaleDateString('ja-JP');
+            const formattedPeriod = DateUtil.formatDateRange(startDate, endDate, 'yyyy/MM/dd');
 
             // アラートメッセージ設定
             let additionalInfo = '';
@@ -130,19 +120,35 @@ async function checkAndNotifyWeeklyReport(
             // 通知データ作成
             const notification: WeeklyReportNotification = {
                 title: `${year}年${month}月 第${weekNumber}週 レポート`,
-                period: `${formattedStartDate} 〜 ${formattedEndDate}`,
+                period: formattedPeriod,
                 totalAmount: weeklyReport.totalAmount,
                 totalCount: weeklyReport.totalCount,
                 alertLevel,
                 additionalInfo,
             };
 
-            await discordNotifier.notifyWeeklyReport(notification);
+            try {
+                await discordNotifier.notifyWeeklyReport(notification);
+            } catch (error) {
+                throw new AppError(
+                    'Discord通知の送信に失敗しました',
+                    ErrorType.DISCORD,
+                    { notification },
+                    error instanceof Error ? error : undefined
+                );
+            }
         }
 
         return { updated, alertLevel, weeklyReport: updatedReport };
     } catch (error) {
-        console.error('❌ 週次レポート通知エラー:', error);
+        const appError = error instanceof AppError ? error : new AppError(
+            '週次レポート通知処理中にエラーが発生しました',
+            ErrorType.GENERAL,
+            { year, month, weekNumber },
+            error instanceof Error ? error : undefined
+        );
+
+        console.error('❌ ' + appError.toLogString());
         return { updated: false, alertLevel: 0, weeklyReport };
     }
 }
@@ -157,25 +163,24 @@ export const onFirestoreWrite = functions.firestore
     }, async (event) => {
         console.log('🚀 処理開始');
 
-        const { year, month, term } = event.params;
-        const dateInfo = getDateInfo();
+        // エラーハンドリングを使用して安全に処理
+        return await ErrorHandler.handleAsync(async () => {
+            const { year, month, term } = event.params;
+            const dateInfo = getDateInfo();
 
-        const document = event.data;
-        if (!document) {
-            console.error('❌ ドキュメントが存在しません');
-            return responceHelper(404, false, 'ドキュメントが存在しません');
-        }
+            const document = event.data;
+            if (!document) {
+                throw new AppError('ドキュメントが存在しません', ErrorType.NOT_FOUND);
+            }
 
-        const data = document.data();
-        if (!data) {
-            console.error('❌ ドキュメントデータが存在しません');
-            return responceHelper(404, false, 'ドキュメントデータが存在しません');
-        }
+            const data = document.data();
+            if (!data) {
+                throw new AppError('ドキュメントデータが存在しません', ErrorType.NOT_FOUND);
+            }
 
-        // 週次レポートのパス (例: details/2023/09/term1)
-        const reportsPath = `details/${year}/${month}/${term}`;
+            // 週次レポートのパス (例: details/2023/09/term1)
+            const reportsPath = `details/${year}/${month}/${term}`;
 
-        try {
             let weeklyReport: WeeklyReport;
             // 共通のFirestoreServiceを使用してドキュメントを取得
             const reportDoc = await firestoreService.getDocument<WeeklyReport>(reportsPath);
@@ -229,9 +234,6 @@ export const onFirestoreWrite = functions.firestore
                 });
             }
 
-            return responceHelper(200, true, '週次レポート処理成功', updatedReport);
-        } catch (error) {
-            console.error('❌ ドキュメント更新エラー:', error);
-            return responceHelper(500, false, 'ドキュメント更新エラー', error);
-        }
+            return ResponseHelper.success('週次レポート処理成功', updatedReport);
+        }, 'Firestore ドキュメント作成イベント処理');
     });

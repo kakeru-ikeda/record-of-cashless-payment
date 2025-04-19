@@ -119,4 +119,113 @@ export class DateUtil {
         const utc = new Date().getTime() + (new Date().getTimezoneOffset() * 60 * 1000);
         return new Date(utc + jstOffset);
     }
+
+    /**
+     * 日付を指定したフォーマットで文字列に変換する
+     * @param date 対象の日付
+     * @param format フォーマット（例: 'yyyy-MM-dd'）※省略時はISO形式
+     * @param locale ロケール（省略時は'ja-JP'）
+     * @returns フォーマットされた日付文字列
+     */
+    static formatDate(date: Date, format?: string, locale: string = 'ja-JP'): string {
+        if (!format) {
+            // フォーマット指定がない場合はISO形式（日本時間）で返す
+            return date.toISOString().replace('T', ' ').substring(0, 19);
+        }
+
+        const options: Intl.DateTimeFormatOptions = {};
+
+        if (format.includes('yyyy')) {
+            options.year = 'numeric';
+        } else if (format.includes('yy')) {
+            options.year = '2-digit';
+        }
+
+        if (format.includes('MM')) {
+            options.month = '2-digit';
+        } else if (format.includes('M')) {
+            options.month = 'numeric';
+        }
+
+        if (format.includes('dd')) {
+            options.day = '2-digit';
+        } else if (format.includes('d')) {
+            options.day = 'numeric';
+        }
+
+        if (format.includes('HH') || format.includes('hh')) {
+            options.hour = '2-digit';
+            options.hour12 = format.includes('hh');
+        } else if (format.includes('H') || format.includes('h')) {
+            options.hour = 'numeric';
+            options.hour12 = format.includes('h');
+        }
+
+        if (format.includes('mm')) {
+            options.minute = '2-digit';
+        } else if (format.includes('m')) {
+            options.minute = 'numeric';
+        }
+
+        if (format.includes('ss')) {
+            options.second = '2-digit';
+        } else if (format.includes('s')) {
+            options.second = 'numeric';
+        }
+
+        return new Intl.DateTimeFormat(locale, options).format(date);
+    }
+
+    /**
+     * 日本語の曜日表記を取得する
+     * @param date 対象の日付
+     * @returns 曜日の文字列（例: '月'）
+     */
+    static getJapaneseDayOfWeek(date: Date): string {
+        const daysOfWeek = ['日', '月', '火', '水', '木', '金', '土'];
+        return daysOfWeek[date.getDay()];
+    }
+
+    /**
+     * 指定した日数を加算した日付を取得する
+     * @param date 基準となる日付
+     * @param days 加算する日数（負の値も可）
+     * @returns 計算後の日付
+     */
+    static addDays(date: Date, days: number): Date {
+        const result = new Date(date);
+        result.setDate(result.getDate() + days);
+        return result;
+    }
+
+    /**
+     * 日付期間の表示形式を生成する（例: 2025/04/01 〜 2025/04/07）
+     * @param startDate 開始日
+     * @param endDate 終了日
+     * @param format 日付フォーマット（省略時は 'yyyy/MM/dd'）
+     * @returns フォーマットされた期間文字列
+     */
+    static formatDateRange(startDate: Date, endDate: Date, format: string = 'yyyy/MM/dd'): string {
+        const formattedStart = this.formatDate(startDate, format);
+        const formattedEnd = this.formatDate(endDate, format);
+        return `${formattedStart} 〜 ${formattedEnd}`;
+    }
+
+    /**
+     * 指定した日付が属する月の最初の日を取得する
+     * @param date 日付
+     * @returns 月の最初の日
+     */
+    static getFirstDayOfMonth(date: Date): Date {
+        return new Date(date.getFullYear(), date.getMonth(), 1);
+    }
+
+    /**
+     * 指定した日付が属する月の最後の日を取得する
+     * @param date 日付
+     * @returns 月の最後の日
+     */
+    static getLastDayOfMonth(date: Date): Date {
+        return new Date(date.getFullYear(), date.getMonth() + 1, 0);
+    }
 }
