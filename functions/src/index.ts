@@ -68,22 +68,24 @@ const getDateInfo = () => {
     const now = new Date(new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }));
     const year = now.getFullYear().toString();
     const month = (now.getMonth() + 1).toString().padStart(2, '0');
+    const day = now.getDate().toString().padStart(2, '0');
     const timestamp = now.getTime();
 
-    // 今月の1日を取得
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-    // 週番号の計算 - 月をまたぐ場合は考慮する
-    let weekNumber;
-    let weekStartDate;
-    let weekEndDate;
+    // 週番号の計算
+    // 月の最初の日を取得
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    // 月初の曜日 (0: 日曜, 1: 月曜, ...)
+    const startOfMonthDay = firstDayOfMonth.getDay();
+    // 現在の日の月内週番号を計算
+    const weekNumber = Math.ceil((now.getDate() + startOfMonthDay) / 7);
+    const term = `term${weekNumber}`;
 
     // 週の開始日（日曜日）を計算
     const dayOfWeek = now.getDay(); // 0: 日曜, 1: 月曜, ...
-    weekStartDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek, 0, 0, 0);
+    let weekStartDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek, 0, 0, 0);
 
     // 週の終了日（土曜日）を計算
-    weekEndDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + (6 - dayOfWeek), 23, 59, 59);
+    let weekEndDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + (6 - dayOfWeek), 23, 59, 59);
 
     // 週の開始日が今月の1日より前の場合（月をまたいだ場合）
     if (weekStartDate.getMonth() !== now.getMonth()) {
@@ -91,20 +93,23 @@ const getDateInfo = () => {
         weekStartDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
     }
 
-    // 月初の曜日 (0: 日曜, 1: 月曜, ...)
-    const startOfMonthDay = startOfMonth.getDay();
-
-    // 現在の日の月内週番号を計算
-    // 例: 4月30日が週の途中で5月1日になった場合、5月1日は5月の第1週となる
-    weekNumber = Math.ceil((now.getDate() + startOfMonthDay) / 7);
-
     // 週の終了日が翌月の場合、終了日を今月の最終日に設定
     const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
     if (weekEndDate > lastDayOfMonth) {
         weekEndDate = lastDayOfMonth;
     }
 
-    return { now, year, month, weekNumber, weekStartDate, weekEndDate, timestamp };
+    return {
+        now,
+        year,
+        month,
+        day,
+        weekNumber,
+        term,
+        weekStartDate,
+        weekEndDate,
+        timestamp,
+    };
 };
 
 /**
@@ -185,13 +190,13 @@ async function checkAndNotifyWeeklyReport(
  */
 export const onFirestoreWrite = functions.firestore
     .onDocumentCreated({
-        document: 'details/{year}/{month}/{timestamp}',
+        document: 'details/{year}/{month}/{term}/{day}/{timestamp}',
         region: 'asia-northeast1',
     }, async (event) => {
         console.log('🚀 処理開始');
 
-        const { year, month } = event.params;
-        const { weekNumber, weekStartDate, weekEndDate } = getDateInfo();
+        const { year, month, term } = event.params;
+        const dateInfo = getDateInfo();
 
         const document = event.data;
         if (!document) {
@@ -205,12 +210,12 @@ export const onFirestoreWrite = functions.firestore
             return responceHelper(404, false, 'ドキュメントデータが存在しません');
         }
 
-        // 週間レポートのパス (例: details/2023/09/reports/weekly/term1)
-        const reportsPath = `details/${year}/${month}/reports/weekly`;
+        // 週次レポートのパス (例: details/2023/09/term1)
+        const reportsPath = `details/${year}/${month}/${term}`;
 
         try {
             let weeklyReport: WeeklyReport;
-            const reportDoc = await admin.firestore().collection(reportsPath).doc(`term${weekNumber}`).get();
+            const reportDoc = await admin.firestore().doc(reportsPath).get();
             if (!reportDoc.exists) {
                 // 新規レポート作成
                 weeklyReport = {
@@ -219,13 +224,13 @@ export const onFirestoreWrite = functions.firestore
                     lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
                     lastUpdatedBy: 'system',
                     documentIdList: [document.id],
-                    termStartDate: admin.firestore.Timestamp.fromDate(weekStartDate),
-                    termEndDate: admin.firestore.Timestamp.fromDate(weekEndDate),
+                    termStartDate: admin.firestore.Timestamp.fromDate(dateInfo.weekStartDate),
+                    termEndDate: admin.firestore.Timestamp.fromDate(dateInfo.weekEndDate),
                     hasNotifiedLevel1: false,
                     hasNotifiedLevel2: false,
                     hasNotifiedLevel3: false,
                 };
-                await admin.firestore().collection(reportsPath).doc(`term${weekNumber}`).set(weeklyReport);
+                await admin.firestore().doc(reportsPath).set(weeklyReport);
                 console.log('✅ 週次レポート作成完了');
             } else {
                 // 既存レポート更新
@@ -237,36 +242,27 @@ export const onFirestoreWrite = functions.firestore
                     lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
                     lastUpdatedBy: 'system',
                     documentIdList: [...existingReport.documentIdList, document.id],
-                    termStartDate: existingReport.termStartDate,
-                    termEndDate: existingReport.termEndDate,
-                    hasNotifiedLevel1: existingReport.hasNotifiedLevel1 || false,
-                    hasNotifiedLevel2: existingReport.hasNotifiedLevel2 || false,
-                    hasNotifiedLevel3: existingReport.hasNotifiedLevel3 || false,
                 };
 
-                await admin.firestore()
-                    .collection(reportsPath)
-                    .doc(`term${weekNumber}`)
-                    .update({ ...weeklyReport } as any);
+                await admin.firestore().doc(reportsPath).update({
+                    ...weeklyReport,
+                } as any);
 
                 console.log('✅ 週次レポート更新完了');
             }
 
             // 通知条件チェック
             const { updated, alertLevel, weeklyReport: updatedReport } =
-                await checkAndNotifyWeeklyReport(weeklyReport, weekNumber, year, month);
+                await checkAndNotifyWeeklyReport(weeklyReport, Number(term.replace('term', '')), year, month);
 
             // 通知フラグ更新
             if (updated) {
                 console.log(`📢 アラートレベル${alertLevel}の通知フラグを更新`);
-                await admin.firestore()
-                    .collection(reportsPath)
-                    .doc(`term${weekNumber}`)
-                    .update({
-                        hasNotifiedLevel1: updatedReport.hasNotifiedLevel1,
-                        hasNotifiedLevel2: updatedReport.hasNotifiedLevel2,
-                        hasNotifiedLevel3: updatedReport.hasNotifiedLevel3,
-                    });
+                await admin.firestore().doc(reportsPath).update({
+                    hasNotifiedLevel1: updatedReport.hasNotifiedLevel1,
+                    hasNotifiedLevel2: updatedReport.hasNotifiedLevel2,
+                    hasNotifiedLevel3: updatedReport.hasNotifiedLevel3,
+                });
             }
 
             return responceHelper(200, true, '週次レポート処理成功', updatedReport);

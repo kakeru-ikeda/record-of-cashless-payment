@@ -109,6 +109,12 @@ describe('FirestoreCardUsageRepository', () => {
     test('正常系: 日付から正しいパスを生成する', () => {
       // テストデータ
       const testDate = new Date('2023-10-15T12:34:56Z');
+      // 日付に基づくタイムスタンプをモック
+      const mockCurrentTime = testDate.getTime();
+      jest.spyOn(Date.prototype, 'getTime').mockReturnValue(mockCurrentTime);
+
+      // 10月15日は日曜日 (2023年)、月初 (2023-10-01) は日曜日
+      // よって、第3週 (term3) になる
 
       // 実行
       const result = FirestoreCardUsageRepository.getFirestorePath(testDate);
@@ -116,13 +122,22 @@ describe('FirestoreCardUsageRepository', () => {
       // 検証
       expect(result.year).toBe('2023');
       expect(result.month).toBe('10');
-      expect(result.timestamp).toBe(testDate.getTime().toString());
-      expect(result.path).toBe(`details/2023/10/${testDate.getTime()}`);
+      expect(result.term).toBe('term3');
+      expect(result.day).toBe('15');
+      expect(result.timestamp).toBe(mockCurrentTime.toString());
+      expect(result.path).toBe(`details/2023/10/term3/15/${mockCurrentTime}`);
+      expect(result.weekReportPath).toBe(`details/2023/10/term3`);
     });
 
-    test('境界値: 月が1桁の場合に0パディングされる', () => {
+    test('境界値: 月と日が1桁の場合に0パディングされる', () => {
       // テストデータ
       const testDate = new Date('2023-01-05T12:34:56Z');
+      // 日付に基づくタイムスタンプをモック
+      const mockCurrentTime = testDate.getTime();
+      jest.spyOn(Date.prototype, 'getTime').mockReturnValue(mockCurrentTime);
+
+      // 1月5日は木曜日 (2023年)、月初 (2023-01-01) は日曜日
+      // よって、第1週 (term1) になる
 
       // 実行
       const result = FirestoreCardUsageRepository.getFirestorePath(testDate);
@@ -130,7 +145,28 @@ describe('FirestoreCardUsageRepository', () => {
       // 検証
       expect(result.year).toBe('2023');
       expect(result.month).toBe('01');
-      expect(result.path).toBe(`details/2023/01/${testDate.getTime()}`);
+      expect(result.term).toBe('term1');
+      expect(result.day).toBe('05');
+      expect(result.timestamp).toBe(mockCurrentTime.toString());
+      expect(result.path).toBe(`details/2023/01/term1/05/${mockCurrentTime}`);
+      expect(result.weekReportPath).toBe(`details/2023/01/term1`);
+    });
+
+    test('境界値: 月をまたいだ週の場合も正しく計算される', () => {
+      // テストデータ - 5月をまたいだ週の6月1日
+      const testDate = new Date('2023-06-01T12:34:56Z');
+      const mockCurrentTime = testDate.getTime();
+      jest.spyOn(Date.prototype, 'getTime').mockReturnValue(mockCurrentTime);
+
+      // 6月1日は木曜日 (2023年)、月初 (2023-06-01) は木曜日
+      // よって、第1週 (term1) になる
+
+      // 実行
+      const result = FirestoreCardUsageRepository.getFirestorePath(testDate);
+
+      // 検証
+      expect(result.term).toBe('term1');
+      expect(result.path).toBe(`details/2023/06/term1/01/${mockCurrentTime}`);
     });
   });
 
@@ -157,11 +193,18 @@ describe('FirestoreCardUsageRepository', () => {
         created_at: mockTimestamp(new Date())
       });
 
+      // 日付に基づくタイムスタンプをモック
+      const mockCurrentTime = new Date().getTime();
+      jest.spyOn(Date.prototype, 'getTime').mockReturnValue(mockCurrentTime);
+
+      // 5月20日は土曜日 (2023年)、月初 (2023-05-01) は月曜日
+      // よって、第3週 (term3) になる
+
       // 実行
       const resultPath = await repository.save(cardUsage);
 
       // 検証
-      const expectedPath = `details/2023/05/${testDate.getTime()}`;
+      const expectedPath = `details/2023/05/term3/20/${mockCurrentTime}`;
       expect(resultPath).toBe(expectedPath);
 
       // ドキュメントが正しく保存されているか確認
