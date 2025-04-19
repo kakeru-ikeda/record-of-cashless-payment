@@ -3,8 +3,12 @@ import * as admin from 'firebase-admin';
 import { DiscordWebhookNotifier } from '../../shared/discord/DiscordNotifier';
 import { WeeklyReportNotification } from '../../shared/types/WeeklyReportNotification';
 import { DateUtil } from '../../shared/utils/DateUtil';
+import { FirestoreService } from '../../shared/firebase/FirestoreService';
 
-admin.initializeApp();
+// Firestoreサービスの初期化
+const firestoreService = FirestoreService.getInstance();
+firestoreService.setCloudFunctions(true);
+firestoreService.initialize();
 
 // Discord Webhook URL取得 - Cloud Functions v2対応
 let DISCORD_WEBHOOK_URL: string;
@@ -173,36 +177,38 @@ export const onFirestoreWrite = functions.firestore
 
         try {
             let weeklyReport: WeeklyReport;
-            const reportDoc = await admin.firestore().doc(reportsPath).get();
-            if (!reportDoc.exists) {
+            // 共通のFirestoreServiceを使用してドキュメントを取得
+            const reportDoc = await firestoreService.getDocument<WeeklyReport>(reportsPath);
+
+            if (!reportDoc) {
                 // 新規レポート作成
                 weeklyReport = {
                     totalAmount: data.amount,
                     totalCount: 1,
-                    lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+                    lastUpdated: firestoreService.getServerTimestamp(),
                     lastUpdatedBy: 'system',
                     documentIdList: [document.id],
-                    termStartDate: admin.firestore.Timestamp.fromDate(dateInfo.weekStartDate),
-                    termEndDate: admin.firestore.Timestamp.fromDate(dateInfo.weekEndDate),
+                    termStartDate: firestoreService.getTimestampFromDate(dateInfo.weekStartDate),
+                    termEndDate: firestoreService.getTimestampFromDate(dateInfo.weekEndDate),
                     hasNotifiedLevel1: false,
                     hasNotifiedLevel2: false,
                     hasNotifiedLevel3: false,
                 };
-                await admin.firestore().doc(reportsPath).set(weeklyReport);
+                await firestoreService.saveDocument(reportsPath, weeklyReport);
                 console.log('✅ 週次レポート作成完了');
             } else {
                 // 既存レポート更新
-                const existingReport = reportDoc.data() as WeeklyReport;
+                const existingReport = reportDoc;
                 weeklyReport = {
                     ...existingReport,
                     totalAmount: existingReport.totalAmount + data.amount,
                     totalCount: existingReport.totalCount + 1,
-                    lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+                    lastUpdated: firestoreService.getServerTimestamp(),
                     lastUpdatedBy: 'system',
                     documentIdList: [...existingReport.documentIdList, document.id],
                 };
 
-                await admin.firestore().doc(reportsPath).update({
+                await firestoreService.updateDocument(reportsPath, {
                     ...weeklyReport,
                 } as any);
 
@@ -216,7 +222,7 @@ export const onFirestoreWrite = functions.firestore
             // 通知フラグ更新
             if (updated) {
                 console.log(`📢 アラートレベル${alertLevel}の通知フラグを更新`);
-                await admin.firestore().doc(reportsPath).update({
+                await firestoreService.updateDocument(reportsPath, {
                     hasNotifiedLevel1: updatedReport.hasNotifiedLevel1,
                     hasNotifiedLevel2: updatedReport.hasNotifiedLevel2,
                     hasNotifiedLevel3: updatedReport.hasNotifiedLevel3,

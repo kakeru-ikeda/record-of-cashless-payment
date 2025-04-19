@@ -34,6 +34,12 @@ try {
         'require("./shared/utils/DateUtil")'
     );
 
+    // 新しく追加したFirestoreServiceモジュールのパスを修正
+    content = content.replace(
+        /require\("\.\.\/\.\.\/shared\/firebase\/FirestoreService"\)/g,
+        'require("./shared/firebase/FirestoreService")'
+    );
+
     // 修正内容を書き込む
     fs.writeFileSync(targetFile, content);
     console.log('✅ インポートパスの修正が完了しました');

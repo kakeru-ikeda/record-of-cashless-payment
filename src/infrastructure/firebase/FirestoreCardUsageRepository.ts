@@ -5,38 +5,29 @@ import { CardUsage } from '../../domain/entities/CardUsage';
 import { ICardUsageRepository } from '../../domain/repositories/ICardUsageRepository';
 import { Environment } from '../config/environment';
 import { DateUtil } from '../../../shared/utils/DateUtil';
+import { FirestoreService } from '../../../shared/firebase/FirestoreService';
 
 /**
  * Firestoreを使用したカード利用情報リポジトリの実装
  */
 export class FirestoreCardUsageRepository implements ICardUsageRepository {
-  private db: Firestore | null = null;
+  private firestoreService: FirestoreService;
+
+  constructor() {
+    this.firestoreService = FirestoreService.getInstance();
+  }
 
   /**
    * Firestoreへの接続を初期化する
    */
   async initialize(): Promise<Firestore> {
-    if (this.db) {
-      return this.db;
-    }
-
     try {
       // サービスアカウントの秘密鍵のパスを取得
       const serviceAccountPath = Environment.FIREBASE_ADMIN_KEY_PATH;
 
-      // Firebaseの初期化（まだ初期化されていない場合）
-      if (!admin.apps || admin.apps.length === 0) {
-        admin.initializeApp({
-          credential: admin.credential.cert(
-            JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'))
-          )
-        });
-        console.log('✅ Firestoreに正常に接続しました');
-      }
-
-      // Firestoreインスタンスを返す
-      this.db = admin.firestore();
-      return this.db;
+      // ローカル環境として初期化
+      this.firestoreService.setCloudFunctions(false);
+      return await this.firestoreService.initialize(serviceAccountPath);
     } catch (error) {
       console.error('❌ Firestoreへの接続に失敗しました:', error);
       throw error;
@@ -58,7 +49,8 @@ export class FirestoreCardUsageRepository implements ICardUsageRepository {
    * @returns 保存されたパス
    */
   async save(cardUsage: CardUsage): Promise<string> {
-    const db = await this.initialize();
+    // Firestoreへの接続を初期化
+    await this.initialize();
 
     // 日付オブジェクトを作成
     const dateObj = cardUsage.datetime_of_use.toDate();
@@ -68,9 +60,8 @@ export class FirestoreCardUsageRepository implements ICardUsageRepository {
     console.log(`🗂 保存先: ${pathInfo.path}`);
 
     try {
-      // 階層的なパスを使用してドキュメントを保存
-      const docRef = db.doc(pathInfo.path);
-      await docRef.set(cardUsage);
+      // 共通サービスを使用してドキュメントを保存
+      await this.firestoreService.saveDocument(pathInfo.path, cardUsage);
 
       console.log('✅ カード利用データをFirestoreに保存しました');
       return pathInfo.path;
@@ -86,7 +77,8 @@ export class FirestoreCardUsageRepository implements ICardUsageRepository {
    * @returns カード利用情報
    */
   async getByTimestamp(timestamp: string): Promise<CardUsage | null> {
-    const db = await this.initialize();
+    // Firestoreへの接続を初期化
+    await this.initialize();
 
     // タイムスタンプから日付を取得
     const date = new Date(parseInt(timestamp));
@@ -95,16 +87,8 @@ export class FirestoreCardUsageRepository implements ICardUsageRepository {
     const pathInfo = FirestoreCardUsageRepository.getFirestorePath(date);
 
     try {
-      // 新しいパス構造に基づいてドキュメントを取得
-      const docRef = db.doc(pathInfo.path);
-      const doc = await docRef.get();
-
-      if (doc.exists) {
-        return doc.data() as CardUsage;
-      } else {
-        console.log(`ドキュメントが見つかりません: ${pathInfo.path}`);
-        return null;
-      }
+      // 共通サービスを使用してドキュメントを取得
+      return await this.firestoreService.getDocument<CardUsage>(pathInfo.path);
     } catch (error) {
       console.error('❌ Firestoreからのデータ取得に失敗しました:', error);
       throw error;
