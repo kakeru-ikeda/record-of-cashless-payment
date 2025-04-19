@@ -16,7 +16,12 @@ export class Environment {
     static readonly IMAP_PASSWORD = process.env.IMAP_PASSWORD || '';
 
     // Discord関連の設定
+    // 利用明細通知用のWebhook URL（メール受信時の通知）
     static readonly DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL || '';
+    // アラート通知用のWebhook URL（しきい値超過時の通知）
+    static readonly DISCORD_ALERT_WEBHOOK_URL = process.env.DISCORD_ALERT_WEBHOOK_URL || '';
+    // レポート通知用のWebhook URL（日次/週次/月次の定期レポート）
+    static readonly DISCORD_REPORT_WEBHOOK_URL = process.env.DISCORD_REPORT_WEBHOOK_URL || '';
 
     // Firebase関連の設定
     static readonly FIREBASE_ADMIN_KEY_PATH = process.env.GOOGLE_APPLICATION_CREDENTIALS
@@ -51,16 +56,31 @@ export class Environment {
         }
 
         // Discord WebhookのURLチェック
-        if (this.DISCORD_WEBHOOK_URL) {
-            if (!this.DISCORD_WEBHOOK_URL.startsWith('https://discord.com/api/webhooks/')) {
-                console.warn('⚠️ Discord WebhookのURLが正しくない可能性があります');
-            }
-        } else {
-            console.info('ℹ️ Discord WebhookのURLが設定されていません。通知は無効です。');
-        }
+        this.validateDiscordWebhook(this.DISCORD_WEBHOOK_URL, '利用明細通知用');
+        this.validateDiscordWebhook(this.DISCORD_ALERT_WEBHOOK_URL, 'アラート通知用');
+        this.validateDiscordWebhook(this.DISCORD_REPORT_WEBHOOK_URL, 'レポート通知用');
 
         console.log('✅ 環境変数の検証が完了しました');
         return true;
+    }
+
+    /**
+     * Discord WebhookのURLを検証する
+     * @param webhookUrl 検証するWebhook URL
+     * @param description Webhook URLの説明（ログ用）
+     * @returns 有効な場合はtrue
+     */
+    private static validateDiscordWebhook(webhookUrl: string, description: string): boolean {
+        if (webhookUrl) {
+            if (!webhookUrl.startsWith('https://discord.com/api/webhooks/')) {
+                console.warn(`⚠️ ${description} Discord WebhookのURLが正しくない可能性があります`);
+                return false;
+            }
+            return true;
+        } else {
+            console.info(`ℹ️ ${description} Discord WebhookのURLが設定されていません。この通知は無効です。`);
+            return false;
+        }
     }
 
     /**
@@ -80,11 +100,30 @@ export class Environment {
     }
 
     /**
-     * Discord WebhookのURLを取得する
-     * Cloud Functionsの場合は環境変数から取得する
-     * @returns Discord WebhookのURL
+     * 利用明細通知用のDiscord WebhookのURLを取得する
+     * @returns 利用明細通知用Discord WebhookのURL
      */
     static getDiscordWebhookUrl(): string {
         return this.DISCORD_WEBHOOK_URL;
+    }
+
+    /**
+     * アラート通知用のDiscord WebhookのURLを取得する
+     * しきい値超過時の通知に使用される
+     * @returns アラート通知用Discord WebhookのURL
+     */
+    static getDiscordAlertWebhookUrl(): string {
+        // アラート用のURLが設定されていない場合は標準のWebhook URLにフォールバック
+        return this.DISCORD_ALERT_WEBHOOK_URL || this.DISCORD_WEBHOOK_URL;
+    }
+
+    /**
+     * レポート通知用のDiscord WebhookのURLを取得する
+     * 日次/週次/月次の定期レポート送信に使用される
+     * @returns レポート通知用Discord WebhookのURL
+     */
+    static getDiscordReportWebhookUrl(): string {
+        // レポート用のURLが設定されていない場合は標準のWebhook URLにフォールバック
+        return this.DISCORD_REPORT_WEBHOOK_URL || this.DISCORD_WEBHOOK_URL;
     }
 }

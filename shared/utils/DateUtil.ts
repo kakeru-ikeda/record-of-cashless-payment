@@ -103,13 +103,16 @@ export class DateUtil {
         const dateInfo = this.getDateInfo(date);
         const now = new Date();
 
-        // パス形式を生成
-        const path = `details/${dateInfo.year}/${dateInfo.month}/${dateInfo.term}/${dateInfo.day}/${now.getTime()}`;
+        // 月を2桁でフォーマット（例: 4 → 04）
+        const monthFormatted = dateInfo.month.toString().padStart(2, '0');
+        
+        // パス形式を生成（月を2桁、termに接頭辞を追加）
+        const path = `details/${dateInfo.year}/${monthFormatted}/term${dateInfo.term}/${dateInfo.day}/${now.getTime()}`;
 
-        // 各種レポートのパス
-        const weeklyReportPath = `details/${dateInfo.year}/${dateInfo.month}/${dateInfo.term}`;
-        const dailyReportPath = `details/${dateInfo.year}/${dateInfo.month}/${dateInfo.term}/${dateInfo.day}/reports`;
-        const monthlyReportPath = `details/${dateInfo.year}/${dateInfo.month}/reports`;
+        // 各種レポートのパス（同様に修正）
+        const weeklyReportPath = `details/${dateInfo.year}/${monthFormatted}/term${dateInfo.term}`;
+        const dailyReportPath = `details/${dateInfo.year}/${monthFormatted}/term${dateInfo.term}/${dateInfo.day}/reports`;
+        const monthlyReportPath = `details/${dateInfo.year}/${monthFormatted}/reports`;
 
         return {
             ...dateInfo,
@@ -286,8 +289,9 @@ export class DateUtil {
         const nextDay = new Date(date);
         nextDay.setDate(date.getDate() + 1);
 
-        const currentInfo = this.getDateInfo(date);
-        const nextInfo = this.getDateInfo(nextDay);
+        // 無限再帰を防ぐため、getDateInfoではなく_getBaseDateInfoを使用
+        const currentInfo = this._getBaseDateInfo(date);
+        const nextInfo = this._getBaseDateInfo(nextDay);
 
         // 次の日のtermが異なる場合、または月が変わる場合は週の最終日
         return currentInfo.term !== nextInfo.term || currentInfo.month !== nextInfo.month;

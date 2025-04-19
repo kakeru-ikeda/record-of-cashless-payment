@@ -7,6 +7,15 @@ import {
 } from '../types/reports/ReportNotifications';
 
 /**
+ * 通知の種類を表す列挙型
+ */
+export enum NotificationType {
+    USAGE = 'usage',       // カード利用通知
+    ALERT = 'alert',       // アラート通知
+    REPORT = 'report'      // 定期レポート通知
+}
+
+/**
  * Discordの通知インターフェース
  */
 export interface DiscordNotifier {
@@ -43,14 +52,85 @@ export interface DiscordNotifier {
  * Discordを使用した通知のプレゼンター実装
  */
 export class DiscordWebhookNotifier implements DiscordNotifier {
-    private readonly webhookUrl: string;
+    // 標準の通知用Webhook URL（メール受信時の利用明細）
+    private readonly usageWebhookUrl: string;
+    // アラート用のWebhook URL
+    private readonly alertWebhookUrl: string;
+    // レポート用のWebhook URL
+    private readonly reportWebhookUrl: string;
 
     /**
      * コンストラクタ
-     * @param webhookUrl Discord WebhookのURL（必須）
+     * @param usageWebhookUrl 利用明細通知用のDiscord WebhookのURL
+     * @param alertWebhookUrl アラート通知用のDiscord WebhookのURL（省略時はusageWebhookUrlを使用）
+     * @param reportWebhookUrl レポート通知用のDiscord WebhookのURL（省略時はusageWebhookUrlを使用）
      */
-    constructor(webhookUrl: string) {
-        this.webhookUrl = webhookUrl;
+    constructor(
+        usageWebhookUrl: string,
+        alertWebhookUrl?: string,
+        reportWebhookUrl?: string
+    ) {
+        this.usageWebhookUrl = usageWebhookUrl;
+        this.alertWebhookUrl = alertWebhookUrl || usageWebhookUrl;
+        this.reportWebhookUrl = reportWebhookUrl || usageWebhookUrl;
+    }
+
+    /**
+     * 通知タイプに応じたWebhook URLを取得する
+     * @param type 通知タイプ
+     * @returns 対応するWebhook URL
+     */
+    private getWebhookUrl(type: NotificationType): string {
+        switch (type) {
+            case NotificationType.ALERT:
+                return this.alertWebhookUrl;
+            case NotificationType.REPORT:
+                return this.reportWebhookUrl;
+            case NotificationType.USAGE:
+            default:
+                return this.usageWebhookUrl;
+        }
+    }
+
+    /**
+     * Discord Webhookを使用して通知を送信する共通メソッド
+     * @param webhookUrl 送信先のWebhook URL
+     * @param embeds 送信するEmbed配列
+     * @param notificationType 通知タイプの説明（ログ用）
+     * @returns 成功時はtrue、失敗時はfalse
+     */
+    private async sendDiscordNotification(
+        webhookUrl: string,
+        embeds: any[],
+        notificationType: string
+    ): Promise<boolean> {
+        try {
+            if (!webhookUrl) {
+                console.log(`ℹ️ ${notificationType}用のDiscord WebhookのURLが設定されていないため、通知はスキップされました`);
+                return false;
+            }
+
+            // WebhookのURLが有効かチェック
+            if (!webhookUrl.startsWith('https://discord.com/api/webhooks/')) {
+                console.error(`❌ ${notificationType}用のDiscord WebhookのURLが無効です`);
+                return false;
+            }
+
+            console.log(`📤 ${notificationType}の通知を送信しています...`);
+
+            const response = await axios.post(webhookUrl, { embeds });
+
+            if (response.status === 204 || response.status === 200) {
+                console.log(`✅ ${notificationType}の通知を送信しました`);
+                return true;
+            } else {
+                console.error(`❌ ${notificationType}の通知の送信に失敗しました。ステータスコード:`, response.status);
+                return false;
+            }
+        } catch (error) {
+            console.error(`❌ ${notificationType}の通知の送信中にエラーが発生しました:`, error);
+            return false;
+        }
     }
 
     /**
@@ -60,16 +140,7 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
      */
     async notify(data: CardUsageNotification): Promise<boolean> {
         try {
-            if (!this.webhookUrl) {
-                console.log('ℹ️ Discord WebhookのURLが設定されていないため、通知はスキップされました');
-                return false;
-            }
-
-            // WebhookのURLが有効かチェック
-            if (!this.webhookUrl.startsWith('https://discord.com/api/webhooks/')) {
-                console.error('❌ Discord WebhookのURLが無効です');
-                return false;
-            }
+            const webhookUrl = this.getWebhookUrl(NotificationType.USAGE);
 
             const formattedDate = new Date(data.datetime_of_use).toLocaleString('ja-JP', {
                 year: 'numeric',
@@ -105,17 +176,7 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
                 }
             ];
 
-            console.log('📤 Discord通知を送信しています...');
-
-            const response = await axios.post(this.webhookUrl, { embeds });
-
-            if (response.status === 204 || response.status === 200) {
-                console.log('✅ Discord通知を送信しました');
-                return true;
-            } else {
-                console.error('❌ Discord通知の送信に失敗しました。ステータスコード:', response.status);
-                return false;
-            }
+            return this.sendDiscordNotification(webhookUrl, embeds, 'カード利用');
         } catch (error) {
             console.error('❌ Discord通知の送信中にエラーが発生しました:', error);
             return false;
@@ -129,16 +190,9 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
      */
     async notifyWeeklyReport(data: WeeklyReportNotification): Promise<boolean> {
         try {
-            if (!this.webhookUrl) {
-                console.log('ℹ️ Discord WebhookのURLが設定されていないため、通知はスキップされました');
-                return false;
-            }
-
-            // WebhookのURLが有効かチェック
-            if (!this.webhookUrl.startsWith('https://discord.com/api/webhooks/')) {
-                console.error('❌ Discord WebhookのURLが無効です');
-                return false;
-            }
+            // アラートレベルが0以上ならアラート通知、それ以外は定期レポート
+            const notificationType = data.alertLevel > 0 ? NotificationType.ALERT : NotificationType.REPORT;
+            const webhookUrl = this.getWebhookUrl(notificationType);
 
             const formattedAmount = data.totalAmount.toLocaleString() + '円';
 
@@ -194,17 +248,10 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
                 });
             }
 
-            console.log('📤 ウィークリーレポートの通知を送信しています...');
+            // 通知タイプの説明を設定（ログ表示用）
+            const description = data.alertLevel > 0 ? 'ウィークリーアラート' : 'ウィークリーレポート';
 
-            const response = await axios.post(this.webhookUrl, { embeds });
-
-            if (response.status === 204 || response.status === 200) {
-                console.log('✅ ウィークリーレポートの通知を送信しました');
-                return true;
-            } else {
-                console.error('❌ ウィークリーレポートの通知の送信に失敗しました。ステータスコード:', response.status);
-                return false;
-            }
+            return this.sendDiscordNotification(webhookUrl, embeds, description);
         } catch (error) {
             console.error('❌ ウィークリーレポートの通知の送信中にエラーが発生しました:', error);
             return false;
@@ -218,16 +265,7 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
      */
     async notifyDailyReport(data: DailyReportNotification): Promise<boolean> {
         try {
-            if (!this.webhookUrl) {
-                console.log('ℹ️ Discord WebhookのURLが設定されていないため、通知はスキップされました');
-                return false;
-            }
-
-            // WebhookのURLが有効かチェック
-            if (!this.webhookUrl.startsWith('https://discord.com/api/webhooks/')) {
-                console.error('❌ Discord WebhookのURLが無効です');
-                return false;
-            }
+            const webhookUrl = this.getWebhookUrl(NotificationType.REPORT);
 
             const formattedAmount = data.totalAmount.toLocaleString() + '円';
 
@@ -260,17 +298,7 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
                 });
             }
 
-            console.log('📤 デイリーレポートの通知を送信しています...');
-
-            const response = await axios.post(this.webhookUrl, { embeds });
-
-            if (response.status === 204 || response.status === 200) {
-                console.log('✅ デイリーレポートの通知を送信しました');
-                return true;
-            } else {
-                console.error('❌ デイリーレポートの通知の送信に失敗しました。ステータスコード:', response.status);
-                return false;
-            }
+            return this.sendDiscordNotification(webhookUrl, embeds, 'デイリーレポート');
         } catch (error) {
             console.error('❌ デイリーレポートの通知の送信中にエラーが発生しました:', error);
             return false;
@@ -284,16 +312,9 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
      */
     async notifyMonthlyReport(data: MonthlyReportNotification): Promise<boolean> {
         try {
-            if (!this.webhookUrl) {
-                console.log('ℹ️ Discord WebhookのURLが設定されていないため、通知はスキップされました');
-                return false;
-            }
-
-            // WebhookのURLが有効かチェック
-            if (!this.webhookUrl.startsWith('https://discord.com/api/webhooks/')) {
-                console.error('❌ Discord WebhookのURLが無効です');
-                return false;
-            }
+            // アラートレベルが0以上ならアラート通知、それ以外は定期レポート
+            const notificationType = data.alertLevel > 0 ? NotificationType.ALERT : NotificationType.REPORT;
+            const webhookUrl = this.getWebhookUrl(notificationType);
 
             const formattedAmount = data.totalAmount.toLocaleString() + '円';
 
@@ -349,17 +370,10 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
                 });
             }
 
-            console.log('📤 マンスリーレポートの通知を送信しています...');
+            // 通知タイプの説明を設定（ログ表示用）
+            const description = data.alertLevel > 0 ? 'マンスリーアラート' : 'マンスリーレポート';
 
-            const response = await axios.post(this.webhookUrl, { embeds });
-
-            if (response.status === 204 || response.status === 200) {
-                console.log('✅ マンスリーレポートの通知を送信しました');
-                return true;
-            } else {
-                console.error('❌ マンスリーレポートの通知の送信に失敗しました。ステータスコード:', response.status);
-                return false;
-            }
+            return this.sendDiscordNotification(webhookUrl, embeds, description);
         } catch (error) {
             console.error('❌ マンスリーレポートの通知の送信中にエラーが発生しました:', error);
             return false;
