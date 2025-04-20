@@ -61,10 +61,17 @@ GOOGLE_APPLICATION_CREDENTIALS=./firebase-admin-key.json
 .env ファイルを /functions ディレクトリ配下に作成：
 
 ```
-DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/あなたのウェブフックURL
-DISCORD_ALERT_WEBHOOK_URL=https://discord.com/api/webhooks/アラート用ウェブフックURL
-DISCORD_REPORT_WEBHOOK_URL=https://discord.com/api/webhooks/レポート用ウェブフックURL
+# アラート通知用Webhook URLs
+DISCORD_ALERT_WEEKLY_WEBHOOK_URL=https://discord.com/api/webhooks/ウィークリーアラート用ウェブフックURL
+DISCORD_ALERT_MONTHLY_WEBHOOK_URL=https://discord.com/api/webhooks/マンスリーアラート用ウェブフックURL
+
+# レポート通知用Webhook URLs
+DISCORD_REPORT_DAILY_WEBHOOK_URL=https://discord.com/api/webhooks/デイリーレポート用ウェブフックURL
+DISCORD_REPORT_WEEKLY_WEBHOOK_URL=https://discord.com/api/webhooks/ウィークリーレポート用ウェブフックURL
+DISCORD_REPORT_MONTHLY_WEBHOOK_URL=https://discord.com/api/webhooks/マンスリーレポート用ウェブフックURL
 ```
+
+> **注意**: 利用明細通知用のWebhook URLはCloud Functionsでは使用しません。メインプログラムの.envファイルに設定してください。
 
 > **注意**: Gmail を使用する場合は、アプリパスワードの発行が必要です。
 

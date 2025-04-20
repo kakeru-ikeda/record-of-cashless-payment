@@ -15,46 +15,60 @@ const firestoreService = FirestoreService.getInstance();
 firestoreService.setCloudFunctions(true);
 firestoreService.initialize();
 
-// Discord Webhook URL取得 - Cloud Functions v2対応
-let DISCORD_WEBHOOK_URL: string;
-let DISCORD_ALERT_WEBHOOK_URL: string;
-let DISCORD_REPORT_WEBHOOK_URL: string;
+// Discord Webhook URL取得 - 細分化されたWebhook URL対応
+let DISCORD_WEBHOOK_URL = ''; // 利用明細通知用（Cloud Functionsでは使用しない）
+let DISCORD_ALERT_WEEKLY_WEBHOOK_URL = '';
+let DISCORD_ALERT_MONTHLY_WEBHOOK_URL = '';
+let DISCORD_REPORT_DAILY_WEBHOOK_URL = '';
+let DISCORD_REPORT_WEEKLY_WEBHOOK_URL = '';
+let DISCORD_REPORT_MONTHLY_WEBHOOK_URL = '';
 
 try {
-    // 共通の環境設定クラスからWebhook URLを取得
-    DISCORD_WEBHOOK_URL = Environment.getDiscordWebhookUrl(); // 利用明細通知用
-    DISCORD_ALERT_WEBHOOK_URL = Environment.getDiscordAlertWebhookUrl(); // アラート通知用
-    DISCORD_REPORT_WEBHOOK_URL = Environment.getDiscordReportWebhookUrl(); // レポート通知用
+    // 各種Webhook URLの取得
+    // 注: 利用明細通知はCloud Functionsでは使用しないが、互換性のために取得
+    DISCORD_WEBHOOK_URL = Environment.getDiscordWebhookUrl();
 
-    if (!DISCORD_WEBHOOK_URL) {
-        console.warn('⚠️ 利用明細通知用のDiscord Webhook URLが見つかりません');
-    } else {
-        console.log('✅ 環境変数から利用明細通知用のDISCORD_WEBHOOK_URLを取得しました');
+    // アラート通知用Webhook URL
+    DISCORD_ALERT_WEEKLY_WEBHOOK_URL = Environment.getDiscordAlertWeeklyWebhookUrl();
+    DISCORD_ALERT_MONTHLY_WEBHOOK_URL = Environment.getDiscordAlertMonthlyWebhookUrl();
+
+    // レポート通知用Webhook URL
+    DISCORD_REPORT_DAILY_WEBHOOK_URL = Environment.getDiscordReportDailyWebhookUrl();
+    DISCORD_REPORT_WEEKLY_WEBHOOK_URL = Environment.getDiscordReportWeeklyWebhookUrl();
+    DISCORD_REPORT_MONTHLY_WEBHOOK_URL = Environment.getDiscordReportMonthlyWebhookUrl();
+
+    // Webhook URLのログ出力
+    if (DISCORD_ALERT_WEEKLY_WEBHOOK_URL) {
+        console.log('✅ 環境変数から週次アラート通知用のDISCORD_ALERT_WEEKLY_WEBHOOK_URLを取得しました');
     }
 
-    if (DISCORD_ALERT_WEBHOOK_URL === DISCORD_WEBHOOK_URL) {
-        console.log('ℹ️ アラート通知用のWebhook URLは利用明細通知用と同じURLを使用します');
-    } else if (DISCORD_ALERT_WEBHOOK_URL) {
-        console.log('✅ 環境変数からアラート通知用のDISCORD_ALERT_WEBHOOK_URLを取得しました');
+    if (DISCORD_ALERT_MONTHLY_WEBHOOK_URL) {
+        console.log('✅ 環境変数から月次アラート通知用のDISCORD_ALERT_MONTHLY_WEBHOOK_URLを取得しました');
     }
 
-    if (DISCORD_REPORT_WEBHOOK_URL === DISCORD_WEBHOOK_URL) {
-        console.log('ℹ️ レポート通知用のWebhook URLは利用明細通知用と同じURLを使用します');
-    } else if (DISCORD_REPORT_WEBHOOK_URL) {
-        console.log('✅ 環境変数からレポート通知用のDISCORD_REPORT_WEBHOOK_URLを取得しました');
+    if (DISCORD_REPORT_DAILY_WEBHOOK_URL) {
+        console.log('✅ 環境変数から日次レポート通知用のDISCORD_REPORT_DAILY_WEBHOOK_URLを取得しました');
+    }
+
+    if (DISCORD_REPORT_WEEKLY_WEBHOOK_URL) {
+        console.log('✅ 環境変数から週次レポート通知用のDISCORD_REPORT_WEEKLY_WEBHOOK_URLを取得しました');
+    }
+
+    if (DISCORD_REPORT_MONTHLY_WEBHOOK_URL) {
+        console.log('✅ 環境変数から月次レポート通知用のDISCORD_REPORT_MONTHLY_WEBHOOK_URLを取得しました');
     }
 } catch (error) {
     console.error('❌ 環境変数読み込みエラー:', error);
-    DISCORD_WEBHOOK_URL = '';
-    DISCORD_ALERT_WEBHOOK_URL = '';
-    DISCORD_REPORT_WEBHOOK_URL = '';
 }
 
-// Discord通知インスタンス - カテゴリー別のWebhook URLを設定
+// Discord通知インスタンス - 細分化されたWebhook URLを設定
 const discordNotifier = new DiscordWebhookNotifier(
-    DISCORD_WEBHOOK_URL, // 利用明細通知用
-    DISCORD_ALERT_WEBHOOK_URL, // アラート通知用
-    DISCORD_REPORT_WEBHOOK_URL // レポート通知用
+    DISCORD_WEBHOOK_URL, // 利用明細通知用（使用しない）
+    DISCORD_ALERT_WEEKLY_WEBHOOK_URL, // 週次アラート通知用
+    DISCORD_ALERT_MONTHLY_WEBHOOK_URL, // 月次アラート通知用
+    DISCORD_REPORT_DAILY_WEBHOOK_URL, // 日次レポート通知用
+    DISCORD_REPORT_WEEKLY_WEBHOOK_URL, // 週次レポート通知用
+    DISCORD_REPORT_MONTHLY_WEBHOOK_URL // 月次レポート通知用
 );
 
 // 各種レポートサービスの初期化

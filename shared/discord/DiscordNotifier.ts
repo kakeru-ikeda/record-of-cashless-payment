@@ -10,9 +10,12 @@ import {
  * 通知の種類を表す列挙型
  */
 export enum NotificationType {
-    USAGE = 'usage',       // カード利用通知
-    ALERT = 'alert',       // アラート通知
-    REPORT = 'report'      // 定期レポート通知
+    USAGE = 'usage',                  // カード利用通知
+    ALERT_WEEKLY = 'alert_weekly',    // 週次アラート通知
+    ALERT_MONTHLY = 'alert_monthly',  // 月次アラート通知
+    REPORT_DAILY = 'report_daily',    // 日次レポート通知
+    REPORT_WEEKLY = 'report_weekly',  // 週次レポート通知
+    REPORT_MONTHLY = 'report_monthly' // 月次レポート通知
 }
 
 /**
@@ -52,27 +55,37 @@ export interface DiscordNotifier {
  * Discordを使用した通知のプレゼンター実装
  */
 export class DiscordWebhookNotifier implements DiscordNotifier {
-    // 標準の通知用Webhook URL（メール受信時の利用明細）
-    private readonly usageWebhookUrl: string;
-    // アラート用のWebhook URL
-    private readonly alertWebhookUrl: string;
-    // レポート用のWebhook URL
-    private readonly reportWebhookUrl: string;
+    // 各種通知用Webhook URL
+    private readonly usageWebhookUrl: string;            // 利用明細通知用
+    private readonly alertWeeklyWebhookUrl: string;      // 週次アラート通知用
+    private readonly alertMonthlyWebhookUrl: string;     // 月次アラート通知用
+    private readonly reportDailyWebhookUrl: string;      // 日次レポート通知用
+    private readonly reportWeeklyWebhookUrl: string;     // 週次レポート通知用
+    private readonly reportMonthlyWebhookUrl: string;    // 月次レポート通知用
 
     /**
      * コンストラクタ
      * @param usageWebhookUrl 利用明細通知用のDiscord WebhookのURL
-     * @param alertWebhookUrl アラート通知用のDiscord WebhookのURL（省略時はusageWebhookUrlを使用）
-     * @param reportWebhookUrl レポート通知用のDiscord WebhookのURL（省略時はusageWebhookUrlを使用）
+     * @param alertWeeklyWebhookUrl 週次アラート通知用のDiscord WebhookのURL
+     * @param alertMonthlyWebhookUrl 月次アラート通知用のDiscord WebhookのURL
+     * @param reportDailyWebhookUrl 日次レポート通知用のDiscord WebhookのURL
+     * @param reportWeeklyWebhookUrl 週次レポート通知用のDiscord WebhookのURL
+     * @param reportMonthlyWebhookUrl 月次レポート通知用のDiscord WebhookのURL
      */
     constructor(
         usageWebhookUrl: string,
-        alertWebhookUrl?: string,
-        reportWebhookUrl?: string
+        alertWeeklyWebhookUrl?: string,
+        alertMonthlyWebhookUrl?: string,
+        reportDailyWebhookUrl?: string,
+        reportWeeklyWebhookUrl?: string,
+        reportMonthlyWebhookUrl?: string
     ) {
         this.usageWebhookUrl = usageWebhookUrl;
-        this.alertWebhookUrl = alertWebhookUrl || usageWebhookUrl;
-        this.reportWebhookUrl = reportWebhookUrl || usageWebhookUrl;
+        this.alertWeeklyWebhookUrl = alertWeeklyWebhookUrl || usageWebhookUrl;
+        this.alertMonthlyWebhookUrl = alertMonthlyWebhookUrl || usageWebhookUrl;
+        this.reportDailyWebhookUrl = reportDailyWebhookUrl || usageWebhookUrl;
+        this.reportWeeklyWebhookUrl = reportWeeklyWebhookUrl || usageWebhookUrl;
+        this.reportMonthlyWebhookUrl = reportMonthlyWebhookUrl || usageWebhookUrl;
     }
 
     /**
@@ -82,10 +95,16 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
      */
     private getWebhookUrl(type: NotificationType): string {
         switch (type) {
-            case NotificationType.ALERT:
-                return this.alertWebhookUrl;
-            case NotificationType.REPORT:
-                return this.reportWebhookUrl;
+            case NotificationType.ALERT_WEEKLY:
+                return this.alertWeeklyWebhookUrl;
+            case NotificationType.ALERT_MONTHLY:
+                return this.alertMonthlyWebhookUrl;
+            case NotificationType.REPORT_DAILY:
+                return this.reportDailyWebhookUrl;
+            case NotificationType.REPORT_WEEKLY:
+                return this.reportWeeklyWebhookUrl;
+            case NotificationType.REPORT_MONTHLY:
+                return this.reportMonthlyWebhookUrl;
             case NotificationType.USAGE:
             default:
                 return this.usageWebhookUrl;
@@ -190,8 +209,8 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
      */
     async notifyWeeklyReport(data: WeeklyReportNotification): Promise<boolean> {
         try {
-            // アラートレベルが0以上ならアラート通知、それ以外は定期レポート
-            const notificationType = data.alertLevel > 0 ? NotificationType.ALERT : NotificationType.REPORT;
+            // アラートレベルが0より大きいならアラート通知、それ以外は定期レポート
+            const notificationType = data.alertLevel > 0 ? NotificationType.ALERT_WEEKLY : NotificationType.REPORT_WEEKLY;
             const webhookUrl = this.getWebhookUrl(notificationType);
 
             const formattedAmount = data.totalAmount.toLocaleString() + '円';
@@ -265,7 +284,7 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
      */
     async notifyDailyReport(data: DailyReportNotification): Promise<boolean> {
         try {
-            const webhookUrl = this.getWebhookUrl(NotificationType.REPORT);
+            const webhookUrl = this.getWebhookUrl(NotificationType.REPORT_DAILY);
 
             const formattedAmount = data.totalAmount.toLocaleString() + '円';
 
@@ -312,8 +331,8 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
      */
     async notifyMonthlyReport(data: MonthlyReportNotification): Promise<boolean> {
         try {
-            // アラートレベルが0以上ならアラート通知、それ以外は定期レポート
-            const notificationType = data.alertLevel > 0 ? NotificationType.ALERT : NotificationType.REPORT;
+            // アラートレベルが0より大きいならアラート通知、それ以外は定期レポート
+            const notificationType = data.alertLevel > 0 ? NotificationType.ALERT_MONTHLY : NotificationType.REPORT_MONTHLY;
             const webhookUrl = this.getWebhookUrl(notificationType);
 
             const formattedAmount = data.totalAmount.toLocaleString() + '円';

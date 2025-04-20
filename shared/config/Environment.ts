@@ -18,10 +18,16 @@ export class Environment {
     // Discord関連の設定
     // 利用明細通知用のWebhook URL（メール受信時の通知）
     static readonly DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL || '';
-    // アラート通知用のWebhook URL（しきい値超過時の通知）
-    static readonly DISCORD_ALERT_WEBHOOK_URL = process.env.DISCORD_ALERT_WEBHOOK_URL || '';
-    // レポート通知用のWebhook URL（日次/週次/月次の定期レポート）
-    static readonly DISCORD_REPORT_WEBHOOK_URL = process.env.DISCORD_REPORT_WEBHOOK_URL || '';
+    // アラート通知用のWebhook URL（週次）
+    static readonly DISCORD_ALERT_WEEKLY_WEBHOOK_URL = process.env.DISCORD_ALERT_WEEKLY_WEBHOOK_URL || '';
+    // アラート通知用のWebhook URL（月次）
+    static readonly DISCORD_ALERT_MONTHLY_WEBHOOK_URL = process.env.DISCORD_ALERT_MONTHLY_WEBHOOK_URL || '';
+    // レポート通知用のWebhook URL（日次）
+    static readonly DISCORD_REPORT_DAILY_WEBHOOK_URL = process.env.DISCORD_REPORT_DAILY_WEBHOOK_URL || '';
+    // レポート通知用のWebhook URL（週次）
+    static readonly DISCORD_REPORT_WEEKLY_WEBHOOK_URL = process.env.DISCORD_REPORT_WEEKLY_WEBHOOK_URL || '';
+    // レポート通知用のWebhook URL（月次）
+    static readonly DISCORD_REPORT_MONTHLY_WEBHOOK_URL = process.env.DISCORD_REPORT_MONTHLY_WEBHOOK_URL || '';
 
     // Firebase関連の設定
     static readonly FIREBASE_ADMIN_KEY_PATH = process.env.GOOGLE_APPLICATION_CREDENTIALS
@@ -57,8 +63,11 @@ export class Environment {
 
         // Discord WebhookのURLチェック
         this.validateDiscordWebhook(this.DISCORD_WEBHOOK_URL, '利用明細通知用');
-        this.validateDiscordWebhook(this.DISCORD_ALERT_WEBHOOK_URL, 'アラート通知用');
-        this.validateDiscordWebhook(this.DISCORD_REPORT_WEBHOOK_URL, 'レポート通知用');
+        this.validateDiscordWebhook(this.DISCORD_ALERT_WEEKLY_WEBHOOK_URL, '週次アラート通知用');
+        this.validateDiscordWebhook(this.DISCORD_ALERT_MONTHLY_WEBHOOK_URL, '月次アラート通知用');
+        this.validateDiscordWebhook(this.DISCORD_REPORT_DAILY_WEBHOOK_URL, '日次レポート通知用');
+        this.validateDiscordWebhook(this.DISCORD_REPORT_WEEKLY_WEBHOOK_URL, '週次レポート通知用');
+        this.validateDiscordWebhook(this.DISCORD_REPORT_MONTHLY_WEBHOOK_URL, '月次レポート通知用');
 
         console.log('✅ 環境変数の検証が完了しました');
         return true;
@@ -108,22 +117,52 @@ export class Environment {
     }
 
     /**
-     * アラート通知用のDiscord WebhookのURLを取得する
-     * しきい値超過時の通知に使用される
-     * @returns アラート通知用Discord WebhookのURL
+     * アラート通知用の週次Discord WebhookのURLを取得する
+     * 週次のしきい値超過時の通知に使用される
+     * @returns アラート通知用週次Discord WebhookのURL
      */
-    static getDiscordAlertWebhookUrl(): string {
-        // アラート用のURLが設定されていない場合は標準のWebhook URLにフォールバック
-        return this.DISCORD_ALERT_WEBHOOK_URL || this.DISCORD_WEBHOOK_URL;
+    static getDiscordAlertWeeklyWebhookUrl(): string {
+        // 週次アラート用URLがなければ標準URLにフォールバック
+        return this.DISCORD_ALERT_WEEKLY_WEBHOOK_URL || this.DISCORD_WEBHOOK_URL;
     }
 
     /**
-     * レポート通知用のDiscord WebhookのURLを取得する
-     * 日次/週次/月次の定期レポート送信に使用される
-     * @returns レポート通知用Discord WebhookのURL
+     * アラート通知用の月次Discord WebhookのURLを取得する
+     * 月次のしきい値超過時の通知に使用される
+     * @returns アラート通知用月次Discord WebhookのURL
      */
-    static getDiscordReportWebhookUrl(): string {
-        // レポート用のURLが設定されていない場合は標準のWebhook URLにフォールバック
-        return this.DISCORD_REPORT_WEBHOOK_URL || this.DISCORD_WEBHOOK_URL;
+    static getDiscordAlertMonthlyWebhookUrl(): string {
+        // 月次アラート用URLがなければ標準URLにフォールバック
+        return this.DISCORD_ALERT_MONTHLY_WEBHOOK_URL || this.DISCORD_WEBHOOK_URL;
+    }
+
+    /**
+     * レポート通知用の日次Discord WebhookのURLを取得する
+     * 日次の定期レポート送信に使用される
+     * @returns レポート通知用日次Discord WebhookのURL
+     */
+    static getDiscordReportDailyWebhookUrl(): string {
+        // 日次レポート用URLがなければ標準URLにフォールバック
+        return this.DISCORD_REPORT_DAILY_WEBHOOK_URL || this.DISCORD_WEBHOOK_URL;
+    }
+
+    /**
+     * レポート通知用の週次Discord WebhookのURLを取得する
+     * 週次の定期レポート送信に使用される
+     * @returns レポート通知用週次Discord WebhookのURL
+     */
+    static getDiscordReportWeeklyWebhookUrl(): string {
+        // 週次レポート用URLがなければ標準URLにフォールバック
+        return this.DISCORD_REPORT_WEEKLY_WEBHOOK_URL || this.DISCORD_WEBHOOK_URL;
+    }
+
+    /**
+     * レポート通知用の月次Discord WebhookのURLを取得する
+     * 月次の定期レポート送信に使用される
+     * @returns レポート通知用月次Discord WebhookのURL
+     */
+    static getDiscordReportMonthlyWebhookUrl(): string {
+        // 月次レポート用URLがなければ標準URLにフォールバック
+        return this.DISCORD_REPORT_MONTHLY_WEBHOOK_URL || this.DISCORD_WEBHOOK_URL;
     }
 }
