@@ -11,7 +11,7 @@
     "docker:build:cloud": "docker build --platform linux/amd64 -t gcr.io/yourproject/template-app .",
     "docker:push": "docker push gcr.io/yourproject/template-app",
     "gcloud:config": "gcloud config set project yourproject && gcloud auth configure-docker && gcloud auth configure-docker asia-northeast1-docker.pkg.dev",
-    "gcloud:deploy": "gcloud run deploy template-app --image gcr.io/yourproject/template-app --platform managed --region asia-northeast1 --allow-unauthenticated --update-secrets AGORA_APP_ID=AGORA_APP_ID:latest,AGORA_APP_CERTIFICATE=AGORA_APP_CERTIFICATE:latest",
+    "gcloud:deploy": "gcloud run deploy template-app --image gcr.io/yourproject/template-app --platform managed --region asia-northeast1 --allow-unauthenticated",
     "auth": "npm run gcloud:config && npm run gcloud:activate",
     "deploy": "npm run build && npm run docker:build:cloud && npm run docker:push && npm run gcloud:deploy"
   },

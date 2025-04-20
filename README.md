@@ -55,9 +55,15 @@ IMAP_SERVER=imap.gmail.com
 IMAP_USER=あなたのメールアドレス@gmail.com
 IMAP_PASSWORD=あなたのアプリパスワード
 DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/あなたのウェブフックURL
+GOOGLE_APPLICATION_CREDENTIALS=./firebase-admin-key.json
+```
+
+.env ファイルを /functions ディレクトリ配下に作成：
+
+```
+DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/あなたのウェブフックURL
 DISCORD_ALERT_WEBHOOK_URL=https://discord.com/api/webhooks/アラート用ウェブフックURL
 DISCORD_REPORT_WEBHOOK_URL=https://discord.com/api/webhooks/レポート用ウェブフックURL
-GOOGLE_APPLICATION_CREDENTIALS=./firebase-admin-key.json
 ```
 
 > **注意**: Gmail を使用する場合は、アプリパスワードの発行が必要です。
@@ -98,34 +104,6 @@ npm run deploy
 
 ```bash
 npm test
-```
-
-## デプロイ
-
-### Docker を使用したデプロイ（メインプログラム）
-
-```bash
-# イメージをビルド
-docker build -t mufg-mailbot .
-
-# コンテナを実行
-docker run -d --name mufg-mailbot \
-  -v /path/to/firebase-admin-key.json:/usr/src/app/firebase-admin-key.json \
-  --env-file .env \
-  mufg-mailbot
-```
-
-### Google Cloud Run へのデプロイ（メインプログラム）
-
-```bash
-# イメージをビルド
-npm run docker:build:cloud
-
-# イメージをプッシュ
-npm run docker:push
-
-# Cloud Run にデプロイ
-npm run gcloud:deploy
 ```
 
 ## 機能詳細
