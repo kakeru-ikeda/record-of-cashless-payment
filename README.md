@@ -1,4 +1,4 @@
-# RoCP (Record of cashless payment)
+# RoCP (Record of Cashless Payment)
 
 このアプリケーションは、三菱UFJ銀行をはじめとしたクレジット・デビットカード利用通知メールを監視し、利用明細情報を抽出して Firebase Firestore に保存し、Discord に通知するシステムです。
 
