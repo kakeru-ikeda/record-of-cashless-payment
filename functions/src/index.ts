@@ -146,7 +146,9 @@ export const dailyReportSchedule = functions.scheduler
         console.log('🕛 毎日定期実行: レポート自動送信処理を開始します');
 
         await ErrorHandler.handleAsync(async () => {
-            const today = new Date();
+            // 日本時間の「今日」を取得
+            const today = DateUtil.getJSTDate();
+            // 「昨日」を計算
             const yesterday = new Date(today);
             yesterday.setDate(yesterday.getDate() - 1);
 
