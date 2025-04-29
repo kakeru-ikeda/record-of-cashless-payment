@@ -28,6 +28,9 @@ export class DailyReportService extends BaseReportService {
             const pathInfo = DateUtil.getFirestorePath(dateObj);
             const dailyReportPath = pathInfo.dailyReportPath;
 
+            // ドキュメントのフルパスを生成
+            const documentFullPath = document.ref.path;
+
             // 既存のデイリーレポートを取得
             const existingReport = await this.firestoreService.getDocument<DailyReport>(dailyReportPath);
 
@@ -40,7 +43,7 @@ export class DailyReportService extends BaseReportService {
                     totalCount: 1,
                     lastUpdated: this.getServerTimestamp(),
                     lastUpdatedBy: 'system',
-                    documentIdList: [document.id],
+                    documentIdList: [documentFullPath], // フルパスを使用
                     date: this.getTimestampFromDate(dateObj),
                     hasNotified: false,
                 };
@@ -55,10 +58,10 @@ export class DailyReportService extends BaseReportService {
                     totalCount: existingReport.totalCount + 1,
                     lastUpdated: this.getServerTimestamp(),
                     lastUpdatedBy: 'system',
-                    documentIdList: [...existingReport.documentIdList, document.id],
+                    documentIdList: [...existingReport.documentIdList, documentFullPath], // フルパスを追加
                 };
 
-                await this.firestoreService.updateDocument(dailyReportPath, dailyReport as any);
+                await this.firestoreService.updateDocument(dailyReportPath, dailyReport);
                 console.log(`✅ デイリーレポート更新完了: ${dailyReportPath}`);
             }
 

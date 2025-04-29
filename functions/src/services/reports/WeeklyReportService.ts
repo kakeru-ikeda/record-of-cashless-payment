@@ -29,6 +29,9 @@ export class WeeklyReportService extends BaseReportService {
             const pathInfo = DateUtil.getFirestorePath(dateObj);
             const weeklyReportPath = pathInfo.weekReportPath;
 
+            // ドキュメントのフルパスを生成
+            const documentFullPath = document.ref.path;
+
             // 既存のウィークリーレポートを取得
             const reportDoc = await this.firestoreService.getDocument<WeeklyReport>(weeklyReportPath);
 
@@ -41,7 +44,7 @@ export class WeeklyReportService extends BaseReportService {
                     totalCount: 1,
                     lastUpdated: this.getServerTimestamp(),
                     lastUpdatedBy: 'system',
-                    documentIdList: [document.id],
+                    documentIdList: [documentFullPath], // フルパスを使用
                     termStartDate: this.getTimestampFromDate(dateInfo.weekStartDate),
                     termEndDate: this.getTimestampFromDate(dateInfo.weekEndDate),
                     hasNotifiedLevel1: false,
@@ -60,10 +63,10 @@ export class WeeklyReportService extends BaseReportService {
                     totalCount: reportDoc.totalCount + 1,
                     lastUpdated: this.getServerTimestamp(),
                     lastUpdatedBy: 'system',
-                    documentIdList: [...reportDoc.documentIdList, document.id],
+                    documentIdList: [...reportDoc.documentIdList, documentFullPath], // フルパスを追加
                 };
 
-                await this.firestoreService.updateDocument(weeklyReportPath, weeklyReport as any);
+                await this.firestoreService.updateDocument(weeklyReportPath, weeklyReport);
                 console.log(`✅ ウィークリーレポート更新完了: ${weeklyReportPath}`);
             }
 

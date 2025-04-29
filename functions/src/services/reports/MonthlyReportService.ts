@@ -32,9 +32,11 @@ export class MonthlyReportService extends BaseReportService {
             const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
             const endDate = new Date(parseInt(year), parseInt(month), 0); // 前月の最終日
 
+            // ドキュメントのフルパスを生成
+            const documentFullPath = document.ref.path; // e.g. "/details/2025/04/term4/21/1745223428661"
+
             // 既存のマンスリーレポートを取得
             const existingReport = await this.firestoreService.getDocument<MonthlyReport>(monthlyReportPath);
-
             let monthlyReport: MonthlyReport;
 
             if (!existingReport) {
@@ -44,7 +46,7 @@ export class MonthlyReportService extends BaseReportService {
                     totalCount: 1,
                     lastUpdated: this.getServerTimestamp(),
                     lastUpdatedBy: 'system',
-                    documentIdList: [document.id],
+                    documentIdList: [documentFullPath], // フルパスを使用
                     monthStartDate: this.getTimestampFromDate(startDate),
                     monthEndDate: this.getTimestampFromDate(endDate),
                     hasNotifiedLevel1: false,
@@ -63,10 +65,10 @@ export class MonthlyReportService extends BaseReportService {
                     totalCount: existingReport.totalCount + 1,
                     lastUpdated: this.getServerTimestamp(),
                     lastUpdatedBy: 'system',
-                    documentIdList: [...existingReport.documentIdList, document.id],
+                    documentIdList: [...existingReport.documentIdList, documentFullPath], // フルパスを追加
                 };
 
-                await this.firestoreService.updateDocument(monthlyReportPath, monthlyReport as any);
+                await this.firestoreService.updateDocument(monthlyReportPath, monthlyReport);
                 console.log(`✅ マンスリーレポート更新完了: ${monthlyReportPath}`);
             }
 
