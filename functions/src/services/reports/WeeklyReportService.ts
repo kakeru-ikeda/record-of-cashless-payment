@@ -24,11 +24,13 @@ export class WeeklyReportService extends BaseReportService {
             const { year, month, term } = params;
             const dateInfo = DateUtil.getCurrentDateInfo();
 
-            // ウィークリーレポートのパス (例: details/2023/09/term1)
-            const reportsPath = `details/${year}/${month}/${term}`;
+            // DateUtilを使用してパスを取得
+            const dateObj = new Date(parseInt(year), parseInt(month) - 1, 1); // 月の初日を使用
+            const pathInfo = DateUtil.getFirestorePath(dateObj);
+            const weeklyReportPath = pathInfo.weekReportPath;
 
             // 既存のウィークリーレポートを取得
-            const reportDoc = await this.firestoreService.getDocument<WeeklyReport>(reportsPath);
+            const reportDoc = await this.firestoreService.getDocument<WeeklyReport>(weeklyReportPath);
 
             let weeklyReport: WeeklyReport;
 
@@ -48,8 +50,8 @@ export class WeeklyReportService extends BaseReportService {
                     hasReportSent: false,
                 };
 
-                await this.firestoreService.saveDocument(reportsPath, weeklyReport);
-                console.log('✅ ウィークリーレポート作成完了');
+                await this.firestoreService.saveDocument(weeklyReportPath, weeklyReport);
+                console.log(`✅ ウィークリーレポート作成完了: ${weeklyReportPath}`);
             } else {
                 // 既存レポート更新
                 weeklyReport = {
@@ -61,8 +63,8 @@ export class WeeklyReportService extends BaseReportService {
                     documentIdList: [...reportDoc.documentIdList, document.id],
                 };
 
-                await this.firestoreService.updateDocument(reportsPath, weeklyReport as any);
-                console.log('✅ ウィークリーレポート更新完了');
+                await this.firestoreService.updateDocument(weeklyReportPath, weeklyReport as any);
+                console.log(`✅ ウィークリーレポート更新完了: ${weeklyReportPath}`);
             }
 
             // アラート条件チェック（しきい値超過時のアラート）
@@ -72,7 +74,7 @@ export class WeeklyReportService extends BaseReportService {
             // 通知フラグ更新
             if (updated) {
                 console.log(`📢 アラートレベル${alertLevel}の通知フラグを更新`);
-                await this.firestoreService.updateDocument(reportsPath, {
+                await this.firestoreService.updateDocument(weeklyReportPath, {
                     hasNotifiedLevel1: updatedReport.hasNotifiedLevel1,
                     hasNotifiedLevel2: updatedReport.hasNotifiedLevel2,
                     hasNotifiedLevel3: updatedReport.hasNotifiedLevel3,
@@ -207,16 +209,18 @@ export class WeeklyReportService extends BaseReportService {
                 };
             }
 
-            // レポートパス
-            const reportsPath = `details/${year}/${month}/${term}`;
+            // DateUtilを使用してパスを取得
+            const dateObj = new Date(parseInt(year), parseInt(month) - 1, 1); // 月の初日を使用
+            const pathInfo = DateUtil.getFirestorePath(dateObj);
+            const weeklyReportPath = pathInfo.weekReportPath;
 
             // レポートデータを取得
-            const reportData = await this.firestoreService.getDocument<WeeklyReport>(reportsPath);
+            const reportData = await this.firestoreService.getDocument<WeeklyReport>(weeklyReportPath);
 
             if (!reportData) {
                 return {
                     success: false,
-                    message: `ウィークリーレポートが存在しません: ${reportsPath}`,
+                    message: `ウィークリーレポートが存在しません: ${weeklyReportPath}`,
                 };
             }
 
@@ -224,7 +228,7 @@ export class WeeklyReportService extends BaseReportService {
             if (reportData.hasReportSent) {
                 return {
                     success: true,
-                    message: `ウィークリーレポートは既に送信済みです: ${reportsPath}`,
+                    message: `ウィークリーレポートは既に送信済みです: ${weeklyReportPath}`,
                     data: reportData,
                 };
             }
@@ -275,8 +279,7 @@ export class WeeklyReportService extends BaseReportService {
             const success = await this.discordNotifier.notifyWeeklyReport(notification);
 
             if (success) {
-                // レポート送信フラグを更新
-                await this.firestoreService.updateDocument(reportsPath, {
+                await this.firestoreService.updateDocument(weeklyReportPath, {
                     hasReportSent: true,
                     lastUpdated: this.getServerTimestamp(),
                     lastUpdatedBy: 'weekly-report-schedule',

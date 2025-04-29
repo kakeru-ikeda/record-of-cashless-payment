@@ -21,11 +21,12 @@ export class DailyReportService extends BaseReportService {
         params: Record<string, string>
     ): Promise<DailyReport> {
         try {
-            const { year, month, term, day } = params;
+            const { year, month, day } = params;
 
-            // デイリーレポートのパス
-            const dailyReportPath = `details/${year}/${month}/${term}/${day}/reports`;
+            // DateUtilを使用してパスを取得
             const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            const pathInfo = DateUtil.getFirestorePath(dateObj);
+            const dailyReportPath = pathInfo.dailyReportPath;
 
             // 既存のデイリーレポートを取得
             const existingReport = await this.firestoreService.getDocument<DailyReport>(dailyReportPath);
@@ -98,8 +99,10 @@ export class DailyReportService extends BaseReportService {
                 };
             }
 
-            // レポートパス
-            const dailyReportPath = `details/${year}/${month}/term${term}/${day}/reports`;
+            // DateUtilを使用してパスを取得
+            const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            const pathInfo = DateUtil.getFirestorePath(dateObj);
+            const dailyReportPath = pathInfo.dailyReportPath;
 
             // レポートデータを取得
             const reportData = await this.firestoreService.getDocument<DailyReport>(dailyReportPath);
@@ -111,8 +114,6 @@ export class DailyReportService extends BaseReportService {
                 };
             }
 
-            // 日付オブジェクトを作成
-            const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
             const formattedDate = DateUtil.formatDate(dateObj, 'yyyy/MM/dd');
             const dayOfWeek = DateUtil.getJapaneseDayOfWeek(dateObj);
 
@@ -132,7 +133,6 @@ export class DailyReportService extends BaseReportService {
             const success = await this.discordNotifier.notifyDailyReport(notification);
 
             if (success) {
-                // 通知フラグを更新
                 if (!reportData.hasNotified) {
                     await this.firestoreService.updateDocument(dailyReportPath, {
                         hasNotified: true,

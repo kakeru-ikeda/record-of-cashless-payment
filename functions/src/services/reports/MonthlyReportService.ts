@@ -23,8 +23,10 @@ export class MonthlyReportService extends BaseReportService {
         try {
             const { year, month } = params;
 
-            // マンスリーレポートのパス
-            const monthlyReportPath = `details/${year}/${month}/reports`;
+            // DateUtilを使用してパスを取得
+            const dateObj = new Date(parseInt(year), parseInt(month) - 1, 1);
+            const pathInfo = DateUtil.getFirestorePath(dateObj);
+            const monthlyReportPath = pathInfo.monthlyReportPath;
 
             // 月の開始日と終了日を計算
             const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
@@ -212,8 +214,10 @@ export class MonthlyReportService extends BaseReportService {
                 };
             }
 
-            // レポートパス
-            const monthlyReportPath = `details/${year}/${month}/reports`;
+            // DateUtilを使用してパスを取得
+            const dateObj = new Date(parseInt(year), parseInt(month) - 1, 1);
+            const pathInfo = DateUtil.getFirestorePath(dateObj);
+            const monthlyReportPath = pathInfo.monthlyReportPath;
 
             // レポートデータを取得
             const reportData = await this.firestoreService.getDocument<MonthlyReport>(monthlyReportPath);
@@ -287,7 +291,6 @@ export class MonthlyReportService extends BaseReportService {
             const success = await this.discordNotifier.notifyMonthlyReport(notification);
 
             if (success) {
-                // レポート送信フラグを更新
                 await this.firestoreService.updateDocument(monthlyReportPath, {
                     hasReportSent: true,
                     lastUpdated: this.getServerTimestamp(),

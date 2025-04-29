@@ -103,16 +103,17 @@ export class DateUtil {
         const dateInfo = this.getDateInfo(date);
         const now = new Date();
 
-        // 月を2桁でフォーマット（例: 4 → 04）
+        // 月と日を2桁でフォーマット
         const monthFormatted = dateInfo.month.toString().padStart(2, '0');
+        const dayFormatted = dateInfo.day.toString().padStart(2, '0');
         
-        // パス形式を生成（月を2桁、termに接頭辞を追加）
+        // カード利用データのパス
         const path = `details/${dateInfo.year}/${monthFormatted}/term${dateInfo.term}/${dateInfo.day}/${now.getTime()}`;
 
-        // 各種レポートのパス（同様に修正）
-        const weeklyReportPath = `details/${dateInfo.year}/${monthFormatted}/term${dateInfo.term}`;
-        const dailyReportPath = `details/${dateInfo.year}/${monthFormatted}/term${dateInfo.term}/${dateInfo.day}/reports`;
-        const monthlyReportPath = `details/${dateInfo.year}/${monthFormatted}/reports`;
+        // 新しいレポートパス形式
+        const weeklyReportPath = `reports/weekly/${dateInfo.year}-${monthFormatted}/term${dateInfo.term}`;
+        const dailyReportPath = `reports/daily/${dateInfo.year}-${monthFormatted}/${dayFormatted}`;
+        const monthlyReportPath = `reports/monthly/${dateInfo.year}/${monthFormatted}`;
 
         return {
             ...dateInfo,
