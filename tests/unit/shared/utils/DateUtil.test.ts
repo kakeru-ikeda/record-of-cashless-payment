@@ -156,5 +156,49 @@ describe('DateUtil', () => {
 
             expect(isLastDay).toBe(false);
         });
+
+        test('5月31日は月の最終日かつ週の最終日として認識される', () => {
+            // 2025年5月31日（月の最終日）
+            const testDate = new Date(2025, 4, 31);
+            const isLastDay = DateUtil.isLastDayOfTerm(testDate);
+            const isLastDayOfMonth = DateUtil.isLastDayOfMonth(testDate);
+
+            expect(isLastDay).toBe(true);
+            expect(isLastDayOfMonth).toBe(true);
+        });
+    });
+
+    describe('月跨ぎのレポート処理', () => {
+        test('4月30日の処理では4月のマンスリーレポート参照', () => {
+            const testDate = new Date(2025, 3, 30);
+            const dateInfo = DateUtil.getDateInfo(testDate);
+
+            expect(dateInfo.isLastDayOfMonth).toBe(true);
+            expect(dateInfo.month).toBe(4); // 当月（4月）のデータ
+        });
+
+        test('5月1日の処理では4月のマンスリーレポート参照', () => {
+            const testDate = new Date(2025, 4, 1);
+            const lastMonthInfo = DateUtil.getLastMonthInfo(testDate);
+
+            expect(lastMonthInfo.month).toBe(4); // 前月（4月）のデータ
+            expect(lastMonthInfo.year).toBe(2025);
+        });
+
+        test('5月31日の処理では5月のマンスリーレポート参照', () => {
+            const testDate = new Date(2025, 4, 31);
+            const dateInfo = DateUtil.getDateInfo(testDate);
+
+            expect(dateInfo.isLastDayOfMonth).toBe(true);
+            expect(dateInfo.month).toBe(5); // 当月（5月）のデータ
+        });
+
+        test('6月1日の処理では5月のマンスリーレポート参照', () => {
+            const testDate = new Date(2025, 5, 1);
+            const lastMonthInfo = DateUtil.getLastMonthInfo(testDate);
+
+            expect(lastMonthInfo.month).toBe(5); // 前月（5月）のデータ
+            expect(lastMonthInfo.year).toBe(2025);
+        });
     });
 });

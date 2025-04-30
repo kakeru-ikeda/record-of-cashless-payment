@@ -164,10 +164,11 @@ export const dailyReportSchedule = functions.scheduler
                 dateInfo.day.toString().padStart(2, '0')
             );
 
-            // 2. 週初め（月曜）の場合は先週のウィークリーレポートを送信
+            // 2. 週初め（月曜）または月の最終日の場合は先週のウィークリーレポートを送信
             let weeklyReportResult = null;
-            if (yesterday.getDay() === 1 || (dateInfo.isLastDayOfTerm && !dateInfo.isLastDayOfMonth)) {
-                // 月曜日の場合、または月を跨がない期間の最終日の場合
+            if (yesterday.getDay() === 1 || dateInfo.isLastDayOfTerm || dateInfo.isLastDayOfMonth) {
+                // 月曜日の場合、または週の最終日の場合、または月の最終日の場合
+                console.log('📅 週次レポート条件に一致: 週次レポートを送信します');
                 const lastWeekInfo = DateUtil.getLastTermInfo(yesterday);
                 weeklyReportResult = await weeklyReportService.sendWeeklyReport(
                     lastWeekInfo.year.toString(),
@@ -176,10 +177,19 @@ export const dailyReportSchedule = functions.scheduler
                 );
             }
 
-            // 3. 月初め（1日）の場合は先月のマンスリーレポートを送信
+            // 3. 月末の場合は当月のマンスリーレポートを送信
             let monthlyReportResult = null;
-            if (yesterday.getDate() === 1 || dateInfo.isLastDayOfMonth) {
-                // 月の最初の日の場合、または月の最終日の場合
+            if (dateInfo.isLastDayOfMonth) {
+                // 月の最終日の場合
+                console.log('📅 月次レポート条件に一致: 月次レポートを送信します');
+                // 前月ではなく当月の情報を使用
+                monthlyReportResult = await monthlyReportService.sendMonthlyReport(
+                    dateInfo.year.toString(),
+                    dateInfo.month.toString().padStart(2, '0')
+                );
+            } else if (yesterday.getDate() === 1) {
+                // 月の最初の日の場合は前月の情報を使用
+                console.log('📅 月初めのため前月の月次レポートを送信します');
                 const lastMonthInfo = DateUtil.getLastMonthInfo(yesterday);
                 monthlyReportResult = await monthlyReportService.sendMonthlyReport(
                     lastMonthInfo.year.toString(),
