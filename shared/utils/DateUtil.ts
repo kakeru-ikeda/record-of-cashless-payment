@@ -35,8 +35,11 @@ export class DateUtil {
         const firstDayOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
         // 月初の曜日 (0: 日曜, 1: 月曜, ...)
         const startOfMonthDay = firstDayOfMonth.getDay();
-        // 現在の日の月内週番号を計算
-        const weekNumber = Math.ceil((date.getDate() + startOfMonthDay) / 7);
+
+        // 現在の日の月内週番号を計算 - より堅牢な方法で
+        // 日付が月の何日目か + 月初の曜日で、何週目に属するかを計算
+        const dayPosition = date.getDate() + startOfMonthDay - 1;
+        const weekNumber = Math.ceil(dayPosition / 7);
         const term = weekNumber;
 
         // 週の開始日（日曜日）を計算 - 日本時間の午前0時（UTC+9）を設定
@@ -70,15 +73,15 @@ export class DateUtil {
         }
 
         // 週の終了日が翌月の場合、終了日を今月の最終日に設定（日本時間の23:59:59）
-        const lastDayOfMonth = new Date(Date.UTC(
+        const lastDayOfMonthDate = new Date(Date.UTC(
             date.getFullYear(),
             date.getMonth() + 1,
             0,
             14, 59, 59
         ));
 
-        if (weekEndDate > lastDayOfMonth) {
-            weekEndDate = lastDayOfMonth;
+        if (weekEndDate > lastDayOfMonthDate) {
+            weekEndDate = lastDayOfMonthDate;
         }
 
         return {
@@ -106,7 +109,7 @@ export class DateUtil {
         // 月と日を2桁でフォーマット
         const monthFormatted = dateInfo.month.toString().padStart(2, '0');
         const dayFormatted = dateInfo.day.toString().padStart(2, '0');
-        
+
         // カード利用データのパス
         const path = `details/${dateInfo.year}/${monthFormatted}/term${dateInfo.term}/${dateInfo.day}/${now.getTime()}`;
 
