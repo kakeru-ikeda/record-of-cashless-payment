@@ -34,5 +34,6 @@ module.exports = {
     'object-curly-spacing': 'off',
     'valid-jsdoc': 'off',
     'operator-linebreak': 'off',
+    '@typescript-eslint/no-namespace': 'off',
   },
 };

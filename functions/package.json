@@ -2,6 +2,7 @@
   "name": "functions",
   "scripts": {
     "lint": "eslint --ext .js,.ts .",
+    "lint:fix": "eslint --ext .js,.ts . --fix",
     "build": "tsc && npm run fix-paths && node fix-imports.js",
     "fix-paths": "mkdir -p lib && cp -f lib/functions/src/index.js* lib/ || true",
     "prepare-shared": "npm run create-shared-dirs && npm run copy-shared-files",
