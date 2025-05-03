@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { cardUsageRouter } from './routes/cardUsageRoutes';
+import reportsRouter from './routes/reports';
 import { authMiddleware } from './middlewares/authMiddleware';
 
 const app = express();
@@ -21,6 +22,7 @@ app.get('/api/health', (req, res) => {
 // 認証が必要なAPIルート
 // API バージョン1のルートに認証ミドルウェアを適用
 app.use('/api/v1/card-usages', authMiddleware, cardUsageRouter);
+app.use('/api/v1/reports', authMiddleware, reportsRouter);
 
 // 404エラーハンドリング
 app.use((req, res) => {
