@@ -3,6 +3,7 @@ import { Request, Response } from 'express';
 import { FirestoreService } from '../../../../shared/firebase/FirestoreService';
 import { CardUsage } from '../../../../src/domain/entities/CardUsage';
 import { DateUtil } from '../../../../shared/utils/DateUtil';
+import { ResponseHelper } from '../../../../shared/utils/ResponseHelper';
 import { Timestamp } from 'firebase-admin/firestore';
 
 /**
@@ -30,11 +31,8 @@ export class CardUsageController {
             const month = req.query.month as string;
 
             if (!year || !month) {
-                res.status(400).json({
-                    success: false,
-                    message: '年と月のパラメータが必要です',
-                    data: null,
-                });
+                const response = ResponseHelper.validationError('年と月のパラメータが必要です');
+                res.status(response.status).json(response);
                 return;
             }
 
@@ -82,18 +80,13 @@ export class CardUsageController {
                 console.error('データ取得中にエラーが発生しました:', error);
             }
 
-            res.status(200).json({
-                success: true,
-                message: 'カード利用情報の取得に成功しました',
-                data: usages,
-            });
+            const response = ResponseHelper.success('カード利用情報の取得に成功しました', usages);
+            res.status(response.status).json(response);
         } catch (error) {
             console.error('カード利用情報の取得中にエラーが発生しました:', error);
-            res.status(500).json({
-                success: false,
-                message: 'カード利用情報の取得中にエラーが発生しました',
-                error: error instanceof Error ? error.message : '不明なエラー',
-            });
+            const errorMessage = error instanceof Error ? error.message : '不明なエラー';
+            const response = ResponseHelper.error(500, 'カード利用情報の取得中にエラーが発生しました', { error: errorMessage });
+            res.status(response.status).json(response);
         }
     }
 
@@ -105,15 +98,10 @@ export class CardUsageController {
             const { id } = req.params;
 
             if (!id) {
-                res.status(400).json({
-                    success: false,
-                    message: 'IDが必要です',
-                    data: null,
-                });
+                const response = ResponseHelper.validationError('IDが必要です');
+                res.status(response.status).json(response);
                 return;
             }
-
-            // IDからタイムスタンプを生成
 
             // データを検索するために年月のリストを取得
             const db = await this.firestoreService.getDb();
@@ -152,15 +140,13 @@ export class CardUsageController {
 
                             if (docSnapshot.exists) {
                                 const data = docSnapshot.data() as CardUsage;
-                                res.status(200).json({
-                                    success: true,
-                                    message: 'カード利用情報の取得に成功しました',
-                                    data: {
-                                        ...data,
-                                        id,
-                                        path: `details/${year}/${month}/${term}/${day}/${id}`,
-                                    },
-                                });
+                                const responseData = {
+                                    ...data,
+                                    id,
+                                    path: `details/${year}/${month}/${term}/${day}/${id}`
+                                };
+                                const response = ResponseHelper.success('カード利用情報の取得に成功しました', responseData);
+                                res.status(response.status).json(response);
                                 return;
                             }
                         }
@@ -168,22 +154,17 @@ export class CardUsageController {
                 }
 
                 // 見つからなかった場合
-                res.status(404).json({
-                    success: false,
-                    message: '指定されたIDのカード利用情報が見つかりません',
-                    data: null,
-                });
+                const response = ResponseHelper.notFound('指定されたIDのカード利用情報が見つかりません');
+                res.status(response.status).json(response);
             } catch (error) {
                 console.error('データ検索中にエラーが発生しました:', error);
                 throw error;
             }
         } catch (error) {
             console.error('カード利用情報の取得中にエラーが発生しました:', error);
-            res.status(500).json({
-                success: false,
-                message: 'カード利用情報の取得中にエラーが発生しました',
-                error: error instanceof Error ? error.message : '不明なエラー',
-            });
+            const errorMessage = error instanceof Error ? error.message : '不明なエラー';
+            const response = ResponseHelper.error(500, 'カード利用情報の取得中にエラーが発生しました', { error: errorMessage });
+            res.status(response.status).json(response);
         }
     }
 
@@ -195,11 +176,8 @@ export class CardUsageController {
             const cardUsageData = req.body;
 
             if (!cardUsageData || !cardUsageData.datetime_of_use || !cardUsageData.amount || !cardUsageData.card_name) {
-                res.status(400).json({
-                    success: false,
-                    message: '必須フィールドが不足しています',
-                    data: null,
-                });
+                const response = ResponseHelper.validationError('必須フィールドが不足しています');
+                res.status(response.status).json(response);
                 return;
             }
 
@@ -222,11 +200,9 @@ export class CardUsageController {
                     throw new Error('日付形式が無効です');
                 }
             } catch (error) {
-                res.status(400).json({
-                    success: false,
-                    message: '日付形式が無効です',
-                    error: error instanceof Error ? error.message : '不明なエラー',
-                });
+                const errorMessage = error instanceof Error ? error.message : '不明なエラー';
+                const response = ResponseHelper.validationError('日付形式が無効です', { error: errorMessage });
+                res.status(response.status).json(response);
                 return;
             }
 
@@ -253,22 +229,19 @@ export class CardUsageController {
             // 作成日時のタイムスタンプをIDとして使用（getByIdメソッドとの一貫性を確保）
             const id = created_at.toDate().getTime().toString();
 
-            res.status(201).json({
-                success: true,
-                message: 'カード利用情報の作成に成功しました',
-                data: {
-                    ...cardUsage,
-                    id: id,
-                    path: pathInfo.path,
-                },
-            });
+            const responseData = {
+                ...cardUsage,
+                id: id,
+                path: pathInfo.path
+            };
+
+            const response = ResponseHelper.createResponse(201, true, 'カード利用情報の作成に成功しました', responseData);
+            res.status(response.status).json(response);
         } catch (error) {
             console.error('カード利用情報の作成中にエラーが発生しました:', error);
-            res.status(500).json({
-                success: false,
-                message: 'カード利用情報の作成中にエラーが発生しました',
-                error: error instanceof Error ? error.message : '不明なエラー',
-            });
+            const errorMessage = error instanceof Error ? error.message : '不明なエラー';
+            const response = ResponseHelper.error(500, 'カード利用情報の作成中にエラーが発生しました', { error: errorMessage });
+            res.status(response.status).json(response);
         }
     }
 
@@ -281,15 +254,10 @@ export class CardUsageController {
             const updateData = req.body;
 
             if (!id) {
-                res.status(400).json({
-                    success: false,
-                    message: 'IDが必要です',
-                    data: null,
-                });
+                const response = ResponseHelper.validationError('IDが必要です');
+                res.status(response.status).json(response);
                 return;
             }
-
-            // IDからタイムスタンプを生成
 
             // データを検索するためにDBインスタンスを取得
             const db = await this.firestoreService.getDb();
@@ -343,11 +311,8 @@ export class CardUsageController {
 
             // データが見つからない場合
             if (!existingData || !docPath) {
-                res.status(404).json({
-                    success: false,
-                    message: '指定されたIDのカード利用情報が見つかりません',
-                    data: null,
-                });
+                const response = ResponseHelper.notFound('指定されたIDのカード利用情報が見つかりません');
+                res.status(response.status).json(response);
                 return;
             }
 
@@ -380,22 +345,19 @@ export class CardUsageController {
             // 更新後のデータを取得
             const updatedCardUsage = await this.firestoreService.getDocument<CardUsage>(docPath);
 
-            res.status(200).json({
-                success: true,
-                message: 'カード利用情報の更新に成功しました',
-                data: {
-                    ...(updatedCardUsage || {}),
-                    id,
-                    path: docPath,
-                },
-            });
+            const responseData = {
+                ...(updatedCardUsage || {}),
+                id,
+                path: docPath
+            };
+
+            const response = ResponseHelper.success('カード利用情報の更新に成功しました', responseData);
+            res.status(response.status).json(response);
         } catch (error) {
             console.error('カード利用情報の更新中にエラーが発生しました:', error);
-            res.status(500).json({
-                success: false,
-                message: 'カード利用情報の更新中にエラーが発生しました',
-                error: error instanceof Error ? error.message : '不明なエラー',
-            });
+            const errorMessage = error instanceof Error ? error.message : '不明なエラー';
+            const response = ResponseHelper.error(500, 'カード利用情報の更新中にエラーが発生しました', { error: errorMessage });
+            res.status(response.status).json(response);
         }
     }
 
@@ -407,15 +369,10 @@ export class CardUsageController {
             const { id } = req.params;
 
             if (!id) {
-                res.status(400).json({
-                    success: false,
-                    message: 'IDが必要です',
-                    data: null,
-                });
+                const response = ResponseHelper.validationError('IDが必要です');
+                res.status(response.status).json(response);
                 return;
             }
-
-            // IDからタイムスタンプを生成
 
             // データを検索するためにDBインスタンスを取得
             const db = await this.firestoreService.getDb();
@@ -467,29 +424,22 @@ export class CardUsageController {
 
             // データが見つからない場合
             if (!docPath) {
-                res.status(404).json({
-                    success: false,
-                    message: '指定されたIDのカード利用情報が見つかりません',
-                    data: null,
-                });
+                const response = ResponseHelper.notFound('指定されたIDのカード利用情報が見つかりません');
+                res.status(response.status).json(response);
                 return;
             }
 
             // 論理削除（is_activeをfalseに設定）
             await this.firestoreService.updateDocument(docPath, { is_active: false });
 
-            res.status(200).json({
-                success: true,
-                message: 'カード利用情報の削除に成功しました',
-                data: { id, path: docPath },
-            });
+            const responseData = { id, path: docPath };
+            const response = ResponseHelper.success('カード利用情報の削除に成功しました', responseData);
+            res.status(response.status).json(response);
         } catch (error) {
             console.error('カード利用情報の削除中にエラーが発生しました:', error);
-            res.status(500).json({
-                success: false,
-                message: 'カード利用情報の削除中にエラーが発生しました',
-                error: error instanceof Error ? error.message : '不明なエラー',
-            });
+            const errorMessage = error instanceof Error ? error.message : '不明なエラー';
+            const response = ResponseHelper.error(500, 'カード利用情報の削除中にエラーが発生しました', { error: errorMessage });
+            res.status(response.status).json(response);
         }
     }
 }
