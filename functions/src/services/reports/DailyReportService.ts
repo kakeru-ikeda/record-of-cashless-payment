@@ -1,3 +1,4 @@
+import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions';
 import { BaseReportService } from './BaseReportService';
 import { DailyReport } from '../../../../shared/types/reports/ReportTypes';
@@ -69,6 +70,188 @@ export class DailyReportService extends BaseReportService {
         } catch (error) {
             const appError = error instanceof AppError ? error : new AppError(
                 'デイリーレポート処理中にエラーが発生しました',
+                ErrorType.GENERAL,
+                params,
+                error instanceof Error ? error : undefined
+            );
+
+            console.error('❌ ' + appError.toLogString());
+            throw appError;
+        }
+    }
+
+    /**
+     * 金額変更に伴うデイリーレポートの更新
+     * @param docRef 変更されたドキュメントの参照
+     * @param params パスパラメータ（year, month, term, day）
+     * @param amountDiff 金額の差分
+     */
+    public async updateReportForAmountChange(
+        docRef: admin.firestore.DocumentReference,
+        params: Record<string, string>,
+        amountDiff: number
+    ): Promise<void> {
+        try {
+            const { year, month, day } = params;
+
+            // DateUtilを使用してパスを取得
+            const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            const pathInfo = DateUtil.getFirestorePath(dateObj);
+            const dailyReportPath = pathInfo.dailyReportPath;
+
+            // ドキュメントのフルパスを生成
+
+            // 既存のデイリーレポートを取得
+            const existingReport = await this.firestoreService.getDocument<DailyReport>(dailyReportPath);
+
+            if (!existingReport) {
+                console.log(`⚠️ 更新対象のデイリーレポートが存在しません: ${dailyReportPath}`);
+                return;
+            }
+
+            // 金額を更新
+            const updatedReport = {
+                ...existingReport,
+                totalAmount: existingReport.totalAmount + amountDiff,
+                lastUpdated: this.getServerTimestamp(),
+                lastUpdatedBy: 'api-update',
+            };
+
+            await this.firestoreService.updateDocument(dailyReportPath, updatedReport);
+            console.log(`✅ デイリーレポート金額更新完了: ${dailyReportPath}, 差分: ${amountDiff}`);
+        } catch (error) {
+            const appError = error instanceof AppError ? error : new AppError(
+                'デイリーレポート更新中にエラーが発生しました',
+                ErrorType.GENERAL,
+                params,
+                error instanceof Error ? error : undefined
+            );
+
+            console.error('❌ ' + appError.toLogString());
+            throw appError;
+        }
+    }
+
+    /**
+     * ドキュメント削除（論理削除）に伴うデイリーレポートの更新
+     * @param docRef 削除されたドキュメントの参照
+     * @param params パスパラメータ（year, month, term, day）
+     * @param amountDiff 金額の差分（マイナス値）
+     * @param countDiff カウントの差分（通常は -1）
+     */
+    public async updateReportForDeletion(
+        docRef: admin.firestore.DocumentReference,
+        params: Record<string, string>,
+        amountDiff: number,
+        countDiff: number
+    ): Promise<void> {
+        try {
+            const { year, month, day } = params;
+
+            // DateUtilを使用してパスを取得
+            const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            const pathInfo = DateUtil.getFirestorePath(dateObj);
+            const dailyReportPath = pathInfo.dailyReportPath;
+
+            // ドキュメントのフルパスを生成
+
+            // 既存のデイリーレポートを取得
+            const existingReport = await this.firestoreService.getDocument<DailyReport>(dailyReportPath);
+
+            if (!existingReport) {
+                console.log(`⚠️ 更新対象のデイリーレポートが存在しません: ${dailyReportPath}`);
+                return;
+            }
+
+            // 金額とカウントを更新
+            const updatedReport = {
+                ...existingReport,
+                totalAmount: existingReport.totalAmount + amountDiff,
+                totalCount: existingReport.totalCount + countDiff,
+                lastUpdated: this.getServerTimestamp(),
+                lastUpdatedBy: 'api-delete',
+                // documentIdListからは削除しない（履歴を残しておく）
+            };
+
+            await this.firestoreService.updateDocument(dailyReportPath, updatedReport);
+            console.log(`✅ デイリーレポート削除更新完了: ${dailyReportPath}, 金額差分: ${amountDiff}, カウント差分: ${countDiff}`);
+        } catch (error) {
+            const appError = error instanceof AppError ? error : new AppError(
+                'デイリーレポート更新中にエラーが発生しました（削除処理）',
+                ErrorType.GENERAL,
+                params,
+                error instanceof Error ? error : undefined
+            );
+
+            console.error('❌ ' + appError.toLogString());
+            throw appError;
+        }
+    }
+
+    /**
+     * 非表示から表示への変更に伴うデイリーレポートの更新（再加算）
+     * @param docRef 変更されたドキュメントの参照
+     * @param params パスパラメータ（year, month, term, day）
+     * @param amountToAdd 加算する金額
+     * @param countToAdd 加算するカウント数（通常は 1）
+     */
+    public async updateReportForAddition(
+        docRef: admin.firestore.DocumentReference,
+        params: Record<string, string>,
+        amountToAdd: number,
+        countToAdd: number
+    ): Promise<void> {
+        try {
+            const { year, month, day } = params;
+
+            // DateUtilを使用してパスを取得
+            const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            const pathInfo = DateUtil.getFirestorePath(dateObj);
+            const dailyReportPath = pathInfo.dailyReportPath;
+
+            // ドキュメントのフルパスを生成
+            const documentFullPath = docRef.path;
+
+            // 既存のデイリーレポートを取得
+            const existingReport = await this.firestoreService.getDocument<DailyReport>(dailyReportPath);
+
+            if (!existingReport) {
+                console.log(`⚠️ 更新対象のデイリーレポートが存在しません: ${dailyReportPath}`);
+                // 既存のレポートがない場合は新規作成
+                const dailyReport: DailyReport = {
+                    totalAmount: amountToAdd,
+                    totalCount: countToAdd,
+                    lastUpdated: this.getServerTimestamp(),
+                    lastUpdatedBy: 'api-reactivate',
+                    documentIdList: [documentFullPath], // 復活したドキュメントのパスをリストに追加
+                    date: this.getTimestampFromDate(dateObj),
+                    hasNotified: false,
+                };
+
+                await this.firestoreService.saveDocument(dailyReportPath, dailyReport);
+                console.log(`✅ デイリーレポート新規作成完了（再アクティブ化）: ${dailyReportPath}`);
+                return;
+            }
+
+            // 既存レポート更新：金額とカウントを加算
+            const updatedReport = {
+                ...existingReport,
+                totalAmount: existingReport.totalAmount + amountToAdd,
+                totalCount: existingReport.totalCount + countToAdd,
+                lastUpdated: this.getServerTimestamp(),
+                lastUpdatedBy: 'api-reactivate',
+            };
+
+            // documentIdListに既に含まれていなければ追加（重複を避ける）
+            if (!existingReport.documentIdList.includes(documentFullPath)) {
+                updatedReport.documentIdList = [...existingReport.documentIdList, documentFullPath];
+            }
+
+            await this.firestoreService.updateDocument(dailyReportPath, updatedReport);
+            console.log(`✅ デイリーレポート再アクティブ化更新完了: ${dailyReportPath}, 金額追加: ${amountToAdd}, カウント追加: ${countToAdd}`);
+        } catch (error) {
+            const appError = error instanceof AppError ? error : new AppError(
+                'デイリーレポート更新中にエラーが発生しました（再アクティブ化処理）',
                 ErrorType.GENERAL,
                 params,
                 error instanceof Error ? error : undefined

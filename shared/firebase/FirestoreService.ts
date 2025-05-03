@@ -170,6 +170,25 @@ export class FirestoreService {
     }
 
     /**
+     * ドキュメント参照を取得する
+     * @param path ドキュメントパス
+     * @returns ドキュメント参照
+     */
+    public async getDocumentRef(path: string): Promise<admin.firestore.DocumentReference> {
+        try {
+            const db = await this.getDb();
+            return db.doc(path);
+        } catch (error) {
+            throw new AppError(
+                `ドキュメント参照取得エラー (${path})`,
+                ErrorType.FIREBASE,
+                { path },
+                error instanceof Error ? error : undefined
+            );
+        }
+    }
+
+    /**
      * ドキュメントを削除する
      * @param path ドキュメントパス
      */

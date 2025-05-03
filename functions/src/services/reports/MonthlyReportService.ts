@@ -1,3 +1,4 @@
+import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions';
 import { BaseReportService } from './BaseReportService';
 import { MonthlyReport, THRESHOLD } from '../../../../shared/types/reports/ReportTypes';
@@ -90,6 +91,206 @@ export class MonthlyReportService extends BaseReportService {
         } catch (error) {
             const appError = error instanceof AppError ? error : new AppError(
                 'マンスリーレポート処理中にエラーが発生しました',
+                ErrorType.GENERAL,
+                params,
+                error instanceof Error ? error : undefined
+            );
+
+            console.error('❌ ' + appError.toLogString());
+            throw appError;
+        }
+    }
+
+    /**
+     * 金額変更に伴うマンスリーレポートの更新
+     * @param docRef 変更されたドキュメントの参照
+     * @param params パスパラメータ（year, month, term, day）
+     * @param amountDiff 金額の差分
+     */
+    public async updateReportForAmountChange(
+        docRef: admin.firestore.DocumentReference,
+        params: Record<string, string>,
+        amountDiff: number
+    ): Promise<void> {
+        try {
+            const { year, month } = params;
+
+            const paddedMonth = month.padStart(2, '0');
+            const monthlyReportPath = `reports/monthly/${year}/${paddedMonth}`;
+
+            // ドキュメントのフルパスを生成
+
+            // 既存のマンスリーレポートを取得
+            const existingReport = await this.firestoreService.getDocument<MonthlyReport>(monthlyReportPath);
+
+            if (!existingReport) {
+                console.log(`⚠️ 更新対象のマンスリーレポートが存在しません: ${monthlyReportPath}`);
+                return;
+            }
+
+            // 金額を更新
+            const updatedReport = {
+                ...existingReport,
+                totalAmount: existingReport.totalAmount + amountDiff,
+                lastUpdated: this.getServerTimestamp(),
+                lastUpdatedBy: 'api-update',
+            };
+
+            await this.firestoreService.updateDocument(monthlyReportPath, updatedReport);
+            console.log(`✅ マンスリーレポート金額更新完了: ${monthlyReportPath}, 差分: ${amountDiff}`);
+
+            // 金額が変わったので、アラート条件もチェック
+            await this.checkAndSendAlert(updatedReport, year, month);
+        } catch (error) {
+            const appError = error instanceof AppError ? error : new AppError(
+                'マンスリーレポート更新中にエラーが発生しました',
+                ErrorType.GENERAL,
+                params,
+                error instanceof Error ? error : undefined
+            );
+
+            console.error('❌ ' + appError.toLogString());
+            throw appError;
+        }
+    }
+
+    /**
+     * ドキュメント削除（論理削除）に伴うマンスリーレポートの更新
+     * @param docRef 削除されたドキュメントの参照
+     * @param params パスパラメータ（year, month, term, day）
+     * @param amountDiff 金額の差分（マイナス値）
+     * @param countDiff カウントの差分（通常は -1）
+     */
+    public async updateReportForDeletion(
+        docRef: admin.firestore.DocumentReference,
+        params: Record<string, string>,
+        amountDiff: number,
+        countDiff: number
+    ): Promise<void> {
+        try {
+            const { year, month } = params;
+
+            // DateUtilを使用してパスを取得
+            const paddedMonth = month.padStart(2, '0');
+            const monthlyReportPath = `reports/monthly/${year}/${paddedMonth}`;
+
+            // ドキュメントのフルパスを生成
+
+            // 既存のマンスリーレポートを取得
+            const existingReport = await this.firestoreService.getDocument<MonthlyReport>(monthlyReportPath);
+
+            if (!existingReport) {
+                console.log(`⚠️ 更新対象のマンスリーレポートが存在しません: ${monthlyReportPath}`);
+                return;
+            }
+
+            // 金額とカウントを更新
+            const updatedReport = {
+                ...existingReport,
+                totalAmount: existingReport.totalAmount + amountDiff,
+                totalCount: existingReport.totalCount + countDiff,
+                lastUpdated: this.getServerTimestamp(),
+                lastUpdatedBy: 'api-delete',
+                // documentIdListからは削除しない（履歴を残しておく）
+            };
+
+            await this.firestoreService.updateDocument(monthlyReportPath, updatedReport);
+            console.log(`✅ マンスリーレポート削除更新完了: ${monthlyReportPath}, 金額差分: ${amountDiff}, カウント差分: ${countDiff}`);
+
+            // 金額が変わったので、アラート条件もチェック
+            await this.checkAndSendAlert(updatedReport, year, month);
+        } catch (error) {
+            const appError = error instanceof AppError ? error : new AppError(
+                'マンスリーレポート更新中にエラーが発生しました（削除処理）',
+                ErrorType.GENERAL,
+                params,
+                error instanceof Error ? error : undefined
+            );
+
+            console.error('❌ ' + appError.toLogString());
+            throw appError;
+        }
+    }
+
+    /**
+     * 非表示から表示への変更に伴うマンスリーレポートの更新（再加算）
+     * @param docRef 変更されたドキュメントの参照
+     * @param params パスパラメータ（year, month, term, day）
+     * @param amountToAdd 加算する金額
+     * @param countToAdd 加算するカウント数（通常は 1）
+     */
+    public async updateReportForAddition(
+        docRef: admin.firestore.DocumentReference,
+        params: Record<string, string>,
+        amountToAdd: number,
+        countToAdd: number
+    ): Promise<void> {
+        try {
+            const { year, month } = params;
+
+            // DateUtilを使用してパスを取得
+            const paddedMonth = month.padStart(2, '0');
+            const monthlyReportPath = `reports/monthly/${year}/${paddedMonth}`;
+
+            // ドキュメントのフルパスを生成
+            const documentFullPath = docRef.path;
+
+            // 既存のマンスリーレポートを取得
+            const existingReport = await this.firestoreService.getDocument<MonthlyReport>(monthlyReportPath);
+
+            if (!existingReport) {
+                console.log(`⚠️ 更新対象のマンスリーレポートが存在しません: ${monthlyReportPath}`);
+
+                // 月の開始日と終了日を計算
+                const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+                const endDate = new Date(parseInt(year), parseInt(month), 0); // 前月の最終日
+
+                // 既存のレポートがない場合は新規作成
+                const monthlyReport: MonthlyReport = {
+                    totalAmount: amountToAdd,
+                    totalCount: countToAdd,
+                    lastUpdated: this.getServerTimestamp(),
+                    lastUpdatedBy: 'api-reactivate',
+                    documentIdList: [documentFullPath], // 復活したドキュメントのパスをリストに追加
+                    monthStartDate: this.getTimestampFromDate(startDate),
+                    monthEndDate: this.getTimestampFromDate(endDate),
+                    hasNotifiedLevel1: false,
+                    hasNotifiedLevel2: false,
+                    hasNotifiedLevel3: false,
+                    hasReportSent: false,
+                };
+
+                await this.firestoreService.saveDocument(monthlyReportPath, monthlyReport);
+                console.log(`✅ マンスリーレポート新規作成完了（再アクティブ化）: ${monthlyReportPath}`);
+
+                // 金額が追加されたので、アラート条件もチェック
+                await this.checkAndSendAlert(monthlyReport, year, month);
+
+                return;
+            }
+
+            // 既存レポート更新：金額とカウントを加算
+            const updatedReport = {
+                ...existingReport,
+                totalAmount: existingReport.totalAmount + amountToAdd,
+                totalCount: existingReport.totalCount + countToAdd,
+                lastUpdated: this.getServerTimestamp(),
+                lastUpdatedBy: 'api-reactivate',
+            };
+
+            // documentIdListに既に含まれていなければ追加（重複を避ける）
+            if (!existingReport.documentIdList.includes(documentFullPath)) {
+                updatedReport.documentIdList = [...existingReport.documentIdList, documentFullPath];
+            }
+
+            await this.firestoreService.updateDocument(monthlyReportPath, updatedReport);
+            console.log(`✅ マンスリーレポート再アクティブ化更新完了: ${monthlyReportPath}, 金額追加: ${amountToAdd}, カウント追加: ${countToAdd}`);
+
+            // 金額が追加されたので、アラート条件もチェック
+            await this.checkAndSendAlert(updatedReport, year, month);
+        } catch (error) {
+            const appError = error instanceof AppError ? error : new AppError(
+                'マンスリーレポート更新中にエラーが発生しました（再アクティブ化処理）',
                 ErrorType.GENERAL,
                 params,
                 error instanceof Error ? error : undefined

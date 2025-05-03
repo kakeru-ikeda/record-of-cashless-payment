@@ -73,4 +73,44 @@ export abstract class BaseReportService {
             originalError
         );
     }
+
+    /**
+     * 金額変更に伴うレポートの更新
+     * @param docRef 変更されたドキュメントの参照
+     * @param params パスパラメータ（year, month, term, day）
+     * @param amountDiff 金額の差分
+     */
+    public abstract updateReportForAmountChange(
+        docRef: admin.firestore.DocumentReference,
+        params: Record<string, string>,
+        amountDiff: number
+    ): Promise<void>;
+
+    /**
+     * ドキュメント削除（論理削除）に伴うレポートの更新
+     * @param docRef 削除されたドキュメントの参照
+     * @param params パスパラメータ（year, month, term, day）
+     * @param amountDiff 金額の差分（マイナス値）
+     * @param countDiff カウントの差分（通常は -1）
+     */
+    public abstract updateReportForDeletion(
+        docRef: admin.firestore.DocumentReference,
+        params: Record<string, string>,
+        amountDiff: number,
+        countDiff: number
+    ): Promise<void>;
+
+    /**
+     * 非表示から表示への変更に伴うレポートの更新（再加算）
+     * @param docRef 変更されたドキュメントの参照
+     * @param params パスパラメータ（year, month, term, day）
+     * @param amountToAdd 加算する金額
+     * @param countToAdd 加算するカウント数（通常は 1）
+     */
+    public abstract updateReportForAddition(
+        docRef: admin.firestore.DocumentReference,
+        params: Record<string, string>,
+        amountToAdd: number,
+        countToAdd: number
+    ): Promise<void>;
 }

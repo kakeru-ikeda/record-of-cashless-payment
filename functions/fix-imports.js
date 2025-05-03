@@ -6,10 +6,11 @@ const path = require('path');
 
 // 修正対象のファイル
 const targetFile = path.join(__dirname, 'lib', 'index.js');
+const cardUsageControllerFile = path.join(__dirname, 'lib', 'functions', 'src', 'api', 'controllers', 'CardUsageController.js');
 
 console.log('🔧 インポートパスを修正中...');
 
-// ファイルの内容を読み込む
+// index.jsファイルを修正
 try {
     let content = fs.readFileSync(targetFile, 'utf8');
 
@@ -114,8 +115,60 @@ try {
 
     // 修正内容を書き込む
     fs.writeFileSync(targetFile, content);
-    console.log('✅ インポートパスの修正が完了しました');
+    console.log('✅ index.jsのインポートパスの修正が完了しました');
 } catch (error) {
-    console.error('❌ インポートパスの修正に失敗しました:', error);
+    console.error('❌ index.jsのインポートパスの修正に失敗しました:', error);
     process.exit(1);
+}
+
+// CardUsageController.jsファイルを修正
+try {
+    if (fs.existsSync(cardUsageControllerFile)) {
+        let content = fs.readFileSync(cardUsageControllerFile, 'utf8');
+
+        // CardUsageController内のDiscordNotifierのインポートパスを修正
+        content = content.replace(
+            /require\("shared\/discord\/DiscordNotifier"\)/g,
+            'require("../../../shared/discord/DiscordNotifier")'
+        );
+
+        // 他の相対パスも必要に応じて修正
+        content = content.replace(
+            /require\("shared\/firebase\/FirestoreService"\)/g,
+            'require("../../../shared/firebase/FirestoreService")'
+        );
+
+        content = content.replace(
+            /require\("shared\/utils\/DateUtil"\)/g,
+            'require("../../../shared/utils/DateUtil")'
+        );
+
+        content = content.replace(
+            /require\("shared\/utils\/ResponseHelper"\)/g,
+            'require("../../../shared/utils/ResponseHelper")'
+        );
+
+        content = content.replace(
+            /require\("shared\/errors\/AppError"\)/g,
+            'require("../../../shared/errors/AppError")'
+        );
+
+        content = content.replace(
+            /require\("shared\/types\/reports\/ReportTypes"\)/g,
+            'require("../../../shared/types/reports/ReportTypes")'
+        );
+
+        content = content.replace(
+            /require\("shared\/types\/reports\/ReportNotifications"\)/g,
+            'require("../../../shared/types/reports/ReportNotifications")'
+        );
+
+        // 修正内容を書き込む
+        fs.writeFileSync(cardUsageControllerFile, content);
+        console.log('✅ CardUsageController.jsのインポートパスの修正が完了しました');
+    } else {
+        console.warn('⚠️ CardUsageController.jsファイルが見つかりません');
+    }
+} catch (error) {
+    console.error('❌ CardUsageController.jsのインポートパスの修正に失敗しました:', error);
 }
