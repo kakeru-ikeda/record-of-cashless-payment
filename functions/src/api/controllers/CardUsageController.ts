@@ -8,6 +8,7 @@ import { Timestamp } from 'firebase-admin/firestore';
 import { DailyReportService } from '../../services/reports/DailyReportService';
 import { WeeklyReportService } from '../../services/reports/WeeklyReportService';
 import { MonthlyReportService } from '../../services/reports/MonthlyReportService';
+import { DiscordWebhookNotifier } from '../../../../shared/discord/DiscordNotifier';
 
 /**
  * カード利用データを操作するためのコントローラークラス
@@ -17,6 +18,7 @@ export class CardUsageController {
     private dailyReportService: DailyReportService;
     private weeklyReportService: WeeklyReportService;
     private monthlyReportService: MonthlyReportService;
+    private discordNotifier: DiscordWebhookNotifier;
 
     /**
      * コンストラクタ
@@ -27,10 +29,35 @@ export class CardUsageController {
         this.firestoreService.setCloudFunctions(true);
         this.firestoreService.initialize();
 
+        let DISCORD_ALERT_WEEKLY_WEBHOOK_URL = '';
+        let DISCORD_ALERT_MONTHLY_WEBHOOK_URL = '';
+
+        try {
+            // 環境変数からWebhook URLを取得
+            DISCORD_ALERT_WEEKLY_WEBHOOK_URL = process.env.DISCORD_ALERT_WEEKLY_WEBHOOK_URL || '';
+            DISCORD_ALERT_MONTHLY_WEBHOOK_URL = process.env.DISCORD_ALERT_MONTHLY_WEBHOOK_URL || '';
+
+            if (DISCORD_ALERT_WEEKLY_WEBHOOK_URL) {
+                console.log('✅ 環境変数から週次アラート通知用のDISCORD_ALERT_WEEKLY_WEBHOOK_URLを取得しました');
+            }
+
+            if (DISCORD_ALERT_MONTHLY_WEBHOOK_URL) {
+                console.log('✅ 環境変数から月次アラート通知用のDISCORD_ALERT_MONTHLY_WEBHOOK_URLを取得しました');
+            }
+        } catch (error) {
+            console.error('環境変数の取得中にエラーが発生しました:', error);
+        }
+
+        this.discordNotifier = new DiscordWebhookNotifier(
+            '', // 利用明細通知用（Cloud Functionsでは使用しない）
+            DISCORD_ALERT_WEEKLY_WEBHOOK_URL, // 週次アラート通知用
+            DISCORD_ALERT_MONTHLY_WEBHOOK_URL, // 月次アラート通知用
+        );
+
         // レポートサービスの初期化
-        this.dailyReportService = new DailyReportService(this.firestoreService);
-        this.weeklyReportService = new WeeklyReportService(this.firestoreService);
-        this.monthlyReportService = new MonthlyReportService(this.firestoreService);
+        this.dailyReportService = new DailyReportService(this.firestoreService, this.discordNotifier);
+        this.weeklyReportService = new WeeklyReportService(this.firestoreService, this.discordNotifier);
+        this.monthlyReportService = new MonthlyReportService(this.firestoreService, this.discordNotifier);
     }
 
     /**
