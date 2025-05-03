@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { cardUsageRouter } from './routes/cardUsageRoutes';
-import reportsRouter from './routes/reports';
+import reportsRouter from './routes/reportsRoutes';
 import { authMiddleware } from './middlewares/authMiddleware';
 
 const app = express();

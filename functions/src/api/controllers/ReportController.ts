@@ -1,5 +1,7 @@
+/* eslint-disable camelcase */
 import { Request, Response } from 'express';
 import { FirestoreService } from '../../../../shared/firebase/FirestoreService';
+import { DateUtil } from '../../../../shared/utils/DateUtil';
 import { ResponseHelper } from '../../../../shared/utils/ResponseHelper';
 
 /**
@@ -10,222 +12,164 @@ export class ReportController {
 
     /**
      * コンストラクタ
-     * 必要なサービスのインスタンスを取得・初期化
+     * FirestoreServiceのインスタンスを取得
      */
     constructor() {
         this.firestoreService = FirestoreService.getInstance();
-        this.firestoreService.setCloudFunctions(true);
-        this.firestoreService.initialize();
     }
 
     /**
-     * デイリーレポートを取得する
+     * 日次レポート取得（特定の日）
      */
-    async getDailyReports(req: Request, res: Response): Promise<void> {
-        try {
-            const { year, month, term, day } = req.query as Record<string, string>;
+    async getDailyReport(req: Request, res: Response): Promise<void> {
+        const { year, month, day } = req.params;
 
-            // バリデーション
-            if (!year || !month) {
-                const response = ResponseHelper.validationError('年と月のパラメータが必要です');
-                res.status(response.status).json(response);
+        try {
+            // DateUtilを使用してパスを取得
+            const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            const pathInfo = DateUtil.getFirestorePath(dateObj);
+            const dailyReportPath = pathInfo.dailyReportPath;
+
+            // レポートデータを取得
+            const reportData = await this.firestoreService.getDocument(dailyReportPath);
+
+            if (!reportData) {
+                res.status(404).json(
+                    ResponseHelper.notFound(`${year}年${month}月${day}日のレポートが見つかりません`)
+                );
                 return;
             }
 
-            const paddedMonth = month.padStart(2, '0');
-            const reports = [];
-            const db = await this.firestoreService.getDb();
-
-            try {
-                // 特定の日のレポートを取得
-                if (term && day) {
-                    const paddedDay = day.padStart(2, '0');
-                    const dailyReportPath = `reports/${year}/${paddedMonth}/${term}/${paddedDay}`;
-                    const docSnapshot = await db.doc(dailyReportPath).get();
-
-                    if (docSnapshot.exists) {
-                        reports.push({
-                            id: docSnapshot.id,
-                            path: dailyReportPath,
-                            ...docSnapshot.data(),
-                        });
-                    }
-                } else if (term) {
-                    // 特定の週のすべての日のレポートを取得
-                    const termRef = db.collection(`reports/${year}/${paddedMonth}`).doc(term);
-                    const daysSnapshot = await termRef.collection('/').listDocuments();
-
-                    for (const dayDoc of daysSnapshot) {
-                        const docSnapshot = await dayDoc.get();
-                        if (docSnapshot.exists) {
-                            reports.push({
-                                id: docSnapshot.id,
-                                path: docSnapshot.ref.path,
-                                ...docSnapshot.data(),
-                            });
-                        }
-                    }
-                } else {
-                    // 特定の月のすべての日のレポートを取得
-                    const monthRef = db.collection(`reports/${year}/${paddedMonth}`);
-                    const termsSnapshot = await monthRef.listDocuments();
-
-                    for (const termDoc of termsSnapshot) {
-                        const term = termDoc.id;
-                        const daysSnapshot = await termDoc.collection('/').listDocuments();
-
-                        for (const dayDoc of daysSnapshot) {
-                            const docSnapshot = await dayDoc.get();
-                            if (docSnapshot.exists) {
-                                reports.push({
-                                    id: dayDoc.id,
-                                    path: dayDoc.path,
-                                    term,
-                                    ...docSnapshot.data(),
-                                });
-                            }
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error('デイリーレポート取得中にエラーが発生しました:', error);
-            }
-
-            const response = ResponseHelper.success('デイリーレポートの取得に成功しました', reports);
-            res.status(response.status).json(response);
+            res.json(ResponseHelper.success('日次レポートを取得しました', reportData));
         } catch (error) {
-            console.error('デイリーレポート取得中にエラーが発生しました:', error);
-            const errorMessage = error instanceof Error ? error.message : '不明なエラー';
-            const response = ResponseHelper.error(500, 'デイリーレポート取得中にエラーが発生しました', { error: errorMessage });
-            res.status(response.status).json(response);
+            console.error('日次レポート取得エラー:', error);
+            res.status(500).json(
+                ResponseHelper.error(500, '日次レポートの取得に失敗しました', { error: (error as Error).message })
+            );
         }
     }
 
     /**
-     * ウィークリーレポートを取得する
+     * 日次レポート取得（月内の全日）
      */
-    async getWeeklyReports(req: Request, res: Response): Promise<void> {
+    async getMonthlyDailyReports(req: Request, res: Response): Promise<void> {
+        const { year, month } = req.params;
+
         try {
-            const { year, month, term } = req.query as Record<string, string>;
+            const endDate = new Date(parseInt(year), parseInt(month), 0); // 月の最終日
+            const reports: { [key: string]: any } = {};
 
-            // バリデーション
-            if (!year || !month) {
-                const response = ResponseHelper.validationError('年と月のパラメータが必要です');
-                res.status(response.status).json(response);
-                return;
-            }
+            // 月内の各日のレポートを取得
+            for (let day = 1; day <= endDate.getDate(); day++) {
+                const dateObj = new Date(parseInt(year), parseInt(month) - 1, day);
+                const pathInfo = DateUtil.getFirestorePath(dateObj);
+                const dailyReportPath = pathInfo.dailyReportPath;
 
-            const paddedMonth = month.padStart(2, '0');
-            const reports = [];
-            const db = await this.firestoreService.getDb();
-
-            try {
-                let weekReportPath;
-
-                // 特定の週のレポートを取得
-                if (term) {
-                    weekReportPath = `reports/${year}/${paddedMonth}/weekly/${term}`;
-                    const docSnapshot = await db.doc(weekReportPath).get();
-
-                    if (docSnapshot.exists) {
-                        reports.push({
-                            id: docSnapshot.id,
-                            path: weekReportPath,
-                            ...docSnapshot.data(),
-                        });
-                    }
-                } else {
-                    // 特定の月のすべての週レポートを取得
-                    const weeklyReportsPath = `reports/${year}/${paddedMonth}/weekly`;
-                    const weeklyCollectionRef = db.collection(weeklyReportsPath);
-                    const weeklyDocsSnapshot = await weeklyCollectionRef.get();
-
-                    weeklyDocsSnapshot.forEach((doc) => {
-                        reports.push({
-                            id: doc.id,
-                            path: doc.ref.path,
-                            ...doc.data(),
-                        });
-                    });
+                // レポートデータを取得
+                const reportData = await this.firestoreService.getDocument(dailyReportPath);
+                if (reportData) {
+                    // 日付をキーとしてレポートを追加
+                    reports[day.toString().padStart(2, '0')] = reportData;
                 }
-            } catch (error) {
-                console.error('ウィークリーレポート取得中にエラーが発生しました:', error);
             }
 
-            const response = ResponseHelper.success('ウィークリーレポートの取得に成功しました', reports);
-            res.status(response.status).json(response);
+            res.json(ResponseHelper.success(`${year}年${month}月の日次レポートを取得しました`, reports));
         } catch (error) {
-            console.error('ウィークリーレポート取得中にエラーが発生しました:', error);
-            const errorMessage = error instanceof Error ? error.message : '不明なエラー';
-            const response = ResponseHelper.error(500, 'ウィークリーレポート取得中にエラーが発生しました', { error: errorMessage });
-            res.status(response.status).json(response);
+            console.error('月間日次レポート取得エラー:', error);
+            res.status(500).json(
+                ResponseHelper.error(500, '月間日次レポートの取得に失敗しました', { error: (error as Error).message })
+            );
         }
     }
 
     /**
-     * マンスリーレポートを取得する
+     * 週次レポート取得（特定の週）
      */
-    async getMonthlyReports(req: Request, res: Response): Promise<void> {
-        try {
-            const { year, month } = req.query as Record<string, string>;
+    async getWeeklyReport(req: Request, res: Response): Promise<void> {
+        const { year, month, term } = req.params;
 
-            // バリデーション
-            if (!year) {
-                const response = ResponseHelper.validationError('年のパラメータが必要です');
-                res.status(response.status).json(response);
+        try {
+            const weeklyReportPath = `reports/weekly/${year}-${month}/${term}`;
+
+            // レポートデータを取得
+            const reportData = await this.firestoreService.getDocument(weeklyReportPath);
+
+            if (!reportData) {
+                res.status(404).json(
+                    ResponseHelper.notFound(`${year}年${month}月 第${term.replace('term', '')}週のレポートが見つかりません`)
+                );
                 return;
             }
 
-            const reports = [];
-            const db = await this.firestoreService.getDb();
+            res.json(ResponseHelper.success('週次レポートを取得しました', reportData));
+        } catch (error) {
+            console.error('週次レポート取得エラー:', error);
+            res.status(500).json(
+                ResponseHelper.error(500, '週次レポートの取得に失敗しました', { error: (error as Error).message })
+            );
+        }
+    }
 
-            try {
-                let monthlyReportPath;
+    /**
+     * 週次レポート取得（月内の全週）
+     */
+    async getMonthlyWeeklyReports(req: Request, res: Response): Promise<void> {
+        const { year, month } = req.params;
 
-                // 特定の月のレポートを取得
-                if (month) {
-                    const paddedMonth = month.padStart(2, '0');
-                    monthlyReportPath = `reports/${year}/${paddedMonth}/monthly`;
-                    const docSnapshot = await db.doc(monthlyReportPath).get();
+        try {
+            const reports: { [key: string]: any } = {};
 
-                    if (docSnapshot.exists) {
-                        reports.push({
-                            id: docSnapshot.id,
-                            path: monthlyReportPath,
-                            ...docSnapshot.data(),
-                        });
-                    }
-                } else {
-                    // 特定の年のすべての月のレポートを取得
-                    const yearRef = db.collection(`reports/${year}`);
-                    const monthsSnapshot = await yearRef.listDocuments();
+            // 月内の週のレポートを取得（最大5週）
+            for (let weekNum = 1; weekNum <= 5; weekNum++) {
+                // 週番号に対応するディレクトリパスを生成
+                const term = `term${weekNum}`;
+                const weeklyReportPath = `reports/weekly/${year}-${month}/${term}`;
 
-                    for (const monthDoc of monthsSnapshot) {
-                        const monthId = monthDoc.id;
-                        const monthlyDocRef = db.doc(`reports/${year}/${monthId}/monthly`);
-                        const docSnapshot = await monthlyDocRef.get();
-
-                        if (docSnapshot.exists) {
-                            reports.push({
-                                id: 'monthly', // 月次レポートのIDは常に "monthly"
-                                month: monthId,
-                                path: docSnapshot.ref.path,
-                                ...docSnapshot.data(),
-                            });
-                        }
-                    }
+                // レポートデータを取得
+                const reportData = await this.firestoreService.getDocument(weeklyReportPath);
+                if (reportData) {
+                    // 週番号をキーとしてレポートを追加
+                    reports[term] = reportData;
                 }
-            } catch (error) {
-                console.error('マンスリーレポート取得中にエラーが発生しました:', error);
             }
 
-            const response = ResponseHelper.success('マンスリーレポートの取得に成功しました', reports);
-            res.status(response.status).json(response);
+            res.json(ResponseHelper.success(`${year}年${month}月の週次レポートを取得しました`, reports));
         } catch (error) {
-            console.error('マンスリーレポート取得中にエラーが発生しました:', error);
-            const errorMessage = error instanceof Error ? error.message : '不明なエラー';
-            const response = ResponseHelper.error(500, 'マンスリーレポート取得中にエラーが発生しました', { error: errorMessage });
-            res.status(response.status).json(response);
+            console.error('月間週次レポート取得エラー:', error);
+            res.status(500).json(
+                ResponseHelper.error(500, '月間週次レポートの取得に失敗しました', { error: (error as Error).message })
+            );
+        }
+    }
+
+    /**
+     * 月次レポート取得
+     */
+    async getMonthlyReport(req: Request, res: Response): Promise<void> {
+        const { year, month } = req.params;
+
+        try {
+            // DateUtilを使用してパスを取得
+            const dateObj = new Date(parseInt(year), parseInt(month) - 1, 1);
+            const pathInfo = DateUtil.getFirestorePath(dateObj);
+            const monthlyReportPath = pathInfo.monthlyReportPath;
+
+            // レポートデータを取得
+            const reportData = await this.firestoreService.getDocument(monthlyReportPath);
+
+            if (!reportData) {
+                res.status(404).json(
+                    ResponseHelper.notFound(`${year}年${month}月のレポートが見つかりません`)
+                );
+                return;
+            }
+
+            res.json(ResponseHelper.success('月次レポートを取得しました', reportData));
+        } catch (error) {
+            console.error('月次レポート取得エラー:', error);
+            res.status(500).json(
+                ResponseHelper.error(500, '月次レポートの取得に失敗しました', { error: (error as Error).message })
+            );
         }
     }
 }

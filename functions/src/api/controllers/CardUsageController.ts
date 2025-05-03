@@ -5,12 +5,20 @@ import { CardUsage } from '../../../../src/domain/entities/CardUsage';
 import { DateUtil } from '../../../../shared/utils/DateUtil';
 import { ResponseHelper } from '../../../../shared/utils/ResponseHelper';
 import { Timestamp } from 'firebase-admin/firestore';
+import { DailyReportService } from '../../services/reports/DailyReportService';
+import { WeeklyReportService } from '../../services/reports/WeeklyReportService';
+import { MonthlyReportService } from '../../services/reports/MonthlyReportService';
+import { DiscordWebhookNotifier } from '../../../../shared/discord/DiscordNotifier';
 
 /**
  * カード利用データを操作するためのコントローラークラス
  */
 export class CardUsageController {
     private firestoreService: FirestoreService;
+    private dailyReportService: DailyReportService;
+    private weeklyReportService: WeeklyReportService;
+    private monthlyReportService: MonthlyReportService;
+    private discordNotifier: DiscordWebhookNotifier;
 
     /**
      * コンストラクタ
@@ -20,6 +28,117 @@ export class CardUsageController {
         this.firestoreService = FirestoreService.getInstance();
         this.firestoreService.setCloudFunctions(true);
         this.firestoreService.initialize();
+
+        let DISCORD_ALERT_WEEKLY_WEBHOOK_URL = '';
+        let DISCORD_ALERT_MONTHLY_WEBHOOK_URL = '';
+
+        try {
+            // 環境変数からWebhook URLを取得
+            DISCORD_ALERT_WEEKLY_WEBHOOK_URL = process.env.DISCORD_ALERT_WEEKLY_WEBHOOK_URL || '';
+            DISCORD_ALERT_MONTHLY_WEBHOOK_URL = process.env.DISCORD_ALERT_MONTHLY_WEBHOOK_URL || '';
+
+            if (DISCORD_ALERT_WEEKLY_WEBHOOK_URL) {
+                console.log('✅ 環境変数から週次アラート通知用のDISCORD_ALERT_WEEKLY_WEBHOOK_URLを取得しました');
+            }
+
+            if (DISCORD_ALERT_MONTHLY_WEBHOOK_URL) {
+                console.log('✅ 環境変数から月次アラート通知用のDISCORD_ALERT_MONTHLY_WEBHOOK_URLを取得しました');
+            }
+        } catch (error) {
+            console.error('環境変数の取得中にエラーが発生しました:', error);
+        }
+
+        this.discordNotifier = new DiscordWebhookNotifier(
+            '', // 利用明細通知用（Cloud Functionsでは使用しない）
+            DISCORD_ALERT_WEEKLY_WEBHOOK_URL, // 週次アラート通知用
+            DISCORD_ALERT_MONTHLY_WEBHOOK_URL, // 月次アラート通知用
+        );
+
+        // レポートサービスの初期化
+        this.dailyReportService = new DailyReportService(this.firestoreService, this.discordNotifier);
+        this.weeklyReportService = new WeeklyReportService(this.firestoreService, this.discordNotifier);
+        this.monthlyReportService = new MonthlyReportService(this.firestoreService, this.discordNotifier);
+    }
+
+    /**
+     * パスからレポート更新のために必要なパラメータを抽出するヘルパーメソッド
+     * @param path ドキュメントパス（例: details/2025/05/term1/03/1714713600000）
+     */
+    private extractPathParams(path: string): { year: string; month: string; term: string; day: string } | null {
+        try {
+            // パスの形式: details/{year}/{month}/{term}/{day}/{id}
+            const parts = path.split('/');
+            if (parts.length < 6) return null;
+
+            const year = parts[1];
+            const month = parts[2];
+            const term = parts[3];
+            const day = parts[4];
+
+            return { year, month, term, day };
+        } catch (error) {
+            console.error('パスの解析に失敗しました:', error);
+            return null;
+        }
+    }
+
+    /**
+     * カード利用情報の更新時にレポートを更新するメソッド
+     * @param path ドキュメントパス
+     * @param oldData 古いデータ
+     * @param newData 新しいデータ
+     */
+    private async updateReportsForCardUpdate(
+        path: string,
+        oldData: CardUsage,
+        newData: Partial<CardUsage>
+    ): Promise<void> {
+        const params = this.extractPathParams(path);
+        if (!params) return;
+
+        // 金額が更新された場合にのみレポートを更新する
+        if (newData.amount !== undefined && newData.amount !== oldData.amount) {
+            try {
+                // 古い金額を差し引き、新しい金額を加算するための差分を計算
+                const amountDiff = newData.amount - oldData.amount;
+
+                // 各レポートサービスの更新メソッドを呼び出す
+                const docRef = await this.firestoreService.getDocumentRef(path);
+                await this.dailyReportService.updateReportForAmountChange(docRef, params, amountDiff);
+                await this.weeklyReportService.updateReportForAmountChange(docRef, params, amountDiff);
+                await this.monthlyReportService.updateReportForAmountChange(docRef, params, amountDiff);
+
+                console.log(`✅ 金額の変更 (${oldData.amount} -> ${newData.amount}) により、レポートが更新されました`);
+            } catch (error) {
+                console.error('レポート更新中にエラーが発生しました:', error);
+            }
+        }
+    }
+
+    /**
+     * カード利用情報の削除時にレポートを更新するメソッド
+     * @param path ドキュメントパス
+     * @param data 削除されるデータ
+     */
+    private async updateReportsForCardDeletion(path: string, data: CardUsage): Promise<void> {
+        const params = this.extractPathParams(path);
+        if (!params) return;
+
+        try {
+            // 削除されるデータの金額を差し引く（マイナスの金額を渡す）
+            const amountDiff = -data.amount;
+            const countDiff = -1; // カウントも1減らす
+
+            // 各レポートサービスの更新メソッドを呼び出す
+            const docRef = await this.firestoreService.getDocumentRef(path);
+            await this.dailyReportService.updateReportForDeletion(docRef, params, amountDiff, countDiff);
+            await this.weeklyReportService.updateReportForDeletion(docRef, params, amountDiff, countDiff);
+            await this.monthlyReportService.updateReportForDeletion(docRef, params, amountDiff, countDiff);
+
+            console.log(`✅ 論理削除により、レポートが更新されました（金額: ${data.amount}）`);
+        } catch (error) {
+            console.error('レポート更新中にエラーが発生しました:', error);
+        }
     }
 
     /**
@@ -342,6 +461,45 @@ export class CardUsageController {
             // 更新
             await this.firestoreService.updateDocument(docPath, updatedData);
 
+            // ----------------------------------------
+            // レポートの更新処理
+            // ----------------------------------------
+
+            // 1. 金額変更の場合はレポート金額を更新
+            if (updateData.amount !== undefined && updateData.amount !== existingData.amount) {
+                // is_activeがtrueの場合のみレポート金額を更新（非アクティブデータは集計対象外）
+                if (existingData.is_active !== false &&
+                    (updateData.is_active === undefined || updateData.is_active === true)) {
+                    await this.updateReportsForCardUpdate(docPath, existingData, updatedData);
+                }
+            }
+
+            // 2. is_activeの状態変化に応じたレポート更新
+            if (updateData.is_active !== undefined && updateData.is_active !== existingData.is_active) {
+                const params = this.extractPathParams(docPath);
+                if (params) {
+                    const docRef = await this.firestoreService.getDocumentRef(docPath);
+
+                    // is_activeがfalse→true（非表示→表示）に変更された場合：レポートに加算
+                    if (updateData.is_active === true && existingData.is_active === false) {
+                        console.log(`🔄 表示状態変更: カード利用情報が再アクティブ化されました (${docPath})`);
+
+                        // 金額とカウントを加算（プラスの値を渡す）
+                        const amountDiff = existingData.amount;
+                        const countDiff = 1;
+
+                        // 各レポートサービスの更新メソッド呼び出し
+                        await this.dailyReportService.updateReportForAddition(docRef, params, amountDiff, countDiff);
+                        await this.weeklyReportService.updateReportForAddition(docRef, params, amountDiff, countDiff);
+                        await this.monthlyReportService.updateReportForAddition(docRef, params, amountDiff, countDiff);
+                    } else if (updateData.is_active === false && existingData.is_active !== false) {
+                        // is_activeがtrue→false（表示→非表示）に変更された場合：レポートから減算
+                        console.log(`🗑️ 論理削除処理: カード利用情報が非アクティブに設定されました (${docPath})`);
+                        await this.updateReportsForCardDeletion(docPath, existingData);
+                    }
+                }
+            }
+
             // 更新後のデータを取得
             const updatedCardUsage = await this.firestoreService.getDocument<CardUsage>(docPath);
 
@@ -377,6 +535,7 @@ export class CardUsageController {
             // データを検索するためにDBインスタンスを取得
             const db = await this.firestoreService.getDb();
             let docPath = '';
+            let existingData: CardUsage | null = null;
 
             try {
                 // 直近3ヶ月分のデータを検索対象にする
@@ -409,6 +568,7 @@ export class CardUsageController {
                             const docSnapshot = await docRef.get();
 
                             if (docSnapshot.exists) {
+                                existingData = docSnapshot.data() as CardUsage;
                                 docPath = `details/${year}/${month}/${term}/${day}/${id}`;
                                 break;
                             }
@@ -423,7 +583,7 @@ export class CardUsageController {
             }
 
             // データが見つからない場合
-            if (!docPath) {
+            if (!existingData || !docPath) {
                 const response = ResponseHelper.notFound('指定されたIDのカード利用情報が見つかりません');
                 res.status(response.status).json(response);
                 return;
@@ -431,6 +591,9 @@ export class CardUsageController {
 
             // 論理削除（is_activeをfalseに設定）
             await this.firestoreService.updateDocument(docPath, { is_active: false });
+
+            // レポートを更新
+            await this.updateReportsForCardDeletion(docPath, existingData);
 
             const responseData = { id, path: docPath };
             const response = ResponseHelper.success('カード利用情報の削除に成功しました', responseData);
