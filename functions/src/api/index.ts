@@ -14,7 +14,7 @@ app.get('/api/health', (req, res) => {
     res.status(200).json({
         status: 'ok',
         message: 'API is running',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
     });
 });
 
@@ -26,7 +26,7 @@ app.use('/api/v1/card-usages', authMiddleware, cardUsageRouter);
 app.use((req, res) => {
     res.status(404).json({
         status: 'error',
-        message: `Not Found - ${req.originalUrl}`
+        message: `Not Found - ${req.originalUrl}`,
     });
 });
 

@@ -143,7 +143,7 @@ export class CardUsageController {
                                 const responseData = {
                                     ...data,
                                     id,
-                                    path: `details/${year}/${month}/${term}/${day}/${id}`
+                                    path: `details/${year}/${month}/${term}/${day}/${id}`,
                                 };
                                 const response = ResponseHelper.success('カード利用情報の取得に成功しました', responseData);
                                 res.status(response.status).json(response);
@@ -232,7 +232,7 @@ export class CardUsageController {
             const responseData = {
                 ...cardUsage,
                 id: id,
-                path: pathInfo.path
+                path: pathInfo.path,
             };
 
             const response = ResponseHelper.createResponse(201, true, 'カード利用情報の作成に成功しました', responseData);
@@ -348,7 +348,7 @@ export class CardUsageController {
             const responseData = {
                 ...(updatedCardUsage || {}),
                 id,
-                path: docPath
+                path: docPath,
             };
 
             const response = ResponseHelper.success('カード利用情報の更新に成功しました', responseData);
