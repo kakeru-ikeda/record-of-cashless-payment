@@ -91,6 +91,27 @@ try {
         'require("./functions/src/services/reports/MonthlyReportService")'
     );
 
+    // API関連のインポートパスを修正
+    content = content.replace(
+        /require\("\.\/api"\)/g,
+        'require("./functions/src/api")'
+    );
+
+    content = content.replace(
+        /require\("\.\/api\/controllers\/cardUsageController"\)/g,
+        'require("./functions/src/api/controllers/cardUsageController")'
+    );
+
+    content = content.replace(
+        /require\("\.\/api\/routes\/cardUsageRoutes"\)/g,
+        'require("./functions/src/api/routes/cardUsageRoutes")'
+    );
+
+    content = content.replace(
+        /require\("\.\/api\/middlewares\/"\)/g,
+        'require("./functions/src/api/middlewares/")'
+    );
+
     // 修正内容を書き込む
     fs.writeFileSync(targetFile, content);
     console.log('✅ インポートパスの修正が完了しました');

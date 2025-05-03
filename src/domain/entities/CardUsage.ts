@@ -1,5 +1,4 @@
 import { Timestamp } from 'firebase-admin/firestore';
-import { CardUsageNotification } from '../../../shared/types/CardUsageNotification';
 
 /**
  * カード利用情報を表すエンティティ
