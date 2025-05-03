@@ -80,10 +80,7 @@ router.get('/weekly/:year/:month/:term', async (req, res) => {
   const { year, month, term } = req.params;
 
   try {
-    // DateUtilを使用してパスを取得
-    const dateObj = new Date(parseInt(year), parseInt(month) - 1, 1);
-    const pathInfo = DateUtil.getFirestorePath(dateObj);
-    const weeklyReportPath = pathInfo.weekReportPath;
+    const weeklyReportPath = `reports/weekly/${year}-${month}/${term}`;
 
     // レポートデータを取得
     const reportData = await firestoreService.getDocument(weeklyReportPath);
@@ -117,12 +114,7 @@ router.get('/weekly/:year/:month', async (req, res) => {
     for (let weekNum = 1; weekNum <= 5; weekNum++) {
       // 週番号に対応するディレクトリパスを生成
       const term = `term${weekNum}`;
-
-      // DateUtilを使用してパスを取得
-      const dateObj = new Date(parseInt(year), parseInt(month) - 1, 1);
-      const pathInfo = DateUtil.getFirestorePath(dateObj);
-      const baseReportPath = pathInfo.path;
-      const weeklyReportPath = `${baseReportPath}/weekly/${year}/${month}/${term}`;
+      const weeklyReportPath = `reports/weekly/${year}-${month}/${term}`;
 
       // レポートデータを取得
       const reportData = await firestoreService.getDocument(weeklyReportPath);

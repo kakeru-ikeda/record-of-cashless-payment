@@ -124,7 +124,7 @@ export class ReportController {
 
                 // 特定の週のレポートを取得
                 if (term) {
-                    weekReportPath = `reports/${year}/${paddedMonth}/weekly/${term}`;
+                    weekReportPath = `reports/weekly/${year}-${paddedMonth}/${term}`;
                     const docSnapshot = await db.doc(weekReportPath).get();
 
                     if (docSnapshot.exists) {
@@ -136,7 +136,7 @@ export class ReportController {
                     }
                 } else {
                     // 特定の月のすべての週レポートを取得
-                    const weeklyReportsPath = `reports/${year}/${paddedMonth}/weekly`;
+                    const weeklyReportsPath = `reports/weekly/${year}-${paddedMonth}`;
                     const weeklyCollectionRef = db.collection(weeklyReportsPath);
                     const weeklyDocsSnapshot = await weeklyCollectionRef.get();
 
