@@ -21,6 +21,9 @@ export interface ParsedEmail {
 export class ImapEmailService {
   private client: any = null;
   private keepAliveTimer: NodeJS.Timeout | null = null;
+  private pollingTimer: NodeJS.Timeout | null = null;                       // ポーリング用タイマー
+  private processedUids = new Set<string>();                               // 既処理UID管理
+  private reconnectAttempts = 0;                                            // 再接続試行回数
   
   /**
    * インスタンスを初期化
@@ -59,9 +62,11 @@ export class ImapEmailService {
     
     // キープアライブタイマーを設定
     this.setupKeepAlive();
+    this.setupPolling(callback);                         // ポーリング開始
     
     // 接続イベント
     this.client.on("connect", () => {
+      this.reconnectAttempts = 0;                        // 成功時にリセット
       this.client.listMailboxes((err: any, mailboxes: string[]) => {
         if (err) {
           console.error("❌ メールボックスの一覧取得に失敗しました:", err);
@@ -95,8 +100,7 @@ export class ImapEmailService {
     this.client.on("error", (error: any) => {
       console.error("❌ IMAPエラー:", error);
       if (error.code === 'ETIMEDOUT') {
-        console.log('🔄 再接続を試みています...');
-        setTimeout(() => this.reconnect(mailboxName, callback), 5000);
+        this.scheduleReconnect(mailboxName, callback);
       }
     });
     
@@ -107,8 +111,11 @@ export class ImapEmailService {
         clearInterval(this.keepAliveTimer);
         this.keepAliveTimer = null;
       }
-      console.log("🔄 5秒後に再接続を試みます");
-      setTimeout(() => this.reconnect(mailboxName, callback), 5000);
+      if (this.pollingTimer) {
+        clearInterval(this.pollingTimer);
+        this.pollingTimer = null;
+      }
+      this.scheduleReconnect(mailboxName, callback);
     });
     
     return this.client;
@@ -118,20 +125,22 @@ export class ImapEmailService {
    * IMAPサーバーに再接続
    */
   private async reconnect(mailboxName: string, callback: (email: ParsedEmail) => Promise<void>): Promise<void> {
+    console.log(`🔌 reconnect(): 前回接続をクローズして再接続準備`);
     if (this.client) {
       try {
         this.client.close();
+        console.log('🔌 既存クライアントをクローズしました');
       } catch (error) {
-        // 既に閉じている場合は無視
+        console.warn('⚠️ クライアントクローズ中に警告:', error);
       }
       this.client = null;
     }
-    
     await this.connect(mailboxName, callback);
+    console.log('🔌 reconnect(): connect() 完了');
   }
   
   /**
-   * キープアライブタイマーを設定
+   * キープアライブタイマーを設定 (1分間隔)
    */
   private setupKeepAlive(): void {
     if (this.keepAliveTimer) {
@@ -140,9 +149,59 @@ export class ImapEmailService {
     
     this.keepAliveTimer = setInterval(() => {
       if (this.client && this.client._state === 'logged in') {
+        console.log('🔔 KeepAlive ping送信');
         this.client.listMailboxes(() => {});
       }
-    }, 5 * 60 * 1000); // 5分ごと
+    }, 1 * 60 * 1000); // 1分ごと
+  }
+
+  /**
+   * ポーリングによる未読メール取得 (3分間隔)
+   */
+  private setupPolling(callback: (email: ParsedEmail) => Promise<void>): void {
+    if (this.pollingTimer) clearInterval(this.pollingTimer);
+    this.pollingTimer = setInterval(() => {
+      if (this.client && this.client._state === 'logged in') {
+        console.log('🔎 ポーリング実行: UNSEEN 検索開始');
+        this.client.search(['UNSEEN'], async (err: any, uids: number[]) => {
+          if (err) {
+            console.error('❌ Polling search error:', err);
+            return;
+          }
+          console.log(`🔎 Polling search: 見つかった未読数=${uids.length}`, uids);
+          if (!uids.length) return;
+          for (const uid of uids) {
+            const key = uid.toString();
+            if (this.processedUids.has(key)) continue;
+            console.log(`⚙️ PollingでUID=${key}を処理開始`);
+            try {
+              const parsed = await this.processEmail({ UID: uid, title: '', from: { address: '' }, date: Date.now() });
+              if (parsed) {
+                await callback(parsed);
+                this.processedUids.add(key);
+                console.log(`✅ Polling処理完了 UID=${key}`);
+              }
+            } catch (error) {
+              console.error(`❌ Polling処理失敗 UID=${key}:`, error);
+              // 処理失敗は次回再試行
+            }
+          }
+        });
+      }
+    }, 3 * 60 * 1000);
+  }
+
+  /**
+   * 再接続（指数的バックオフ）
+   */
+  private scheduleReconnect(mailboxName: string, callback: (email: ParsedEmail) => Promise<void>): void {
+    const delay = Math.min(5 * 60 * 1000, 1000 * Math.pow(2, this.reconnectAttempts));
+    console.log(`🔄 ${delay/1000}秒後に再接続を試みます (試行回数: ${this.reconnectAttempts})`);
+    setTimeout(async () => {
+      console.log(`⚙️ 再接続処理開始 mailbox=${mailboxName} attempt=${this.reconnectAttempts}`);
+      this.reconnectAttempts++;
+      await this.reconnect(mailboxName, callback);
+    }, delay);
   }
   
   /**
@@ -254,7 +313,10 @@ export class ImapEmailService {
       clearInterval(this.keepAliveTimer);
       this.keepAliveTimer = null;
     }
-    
+    if (this.pollingTimer) {
+      clearInterval(this.pollingTimer);
+      this.pollingTimer = null;
+    }
     if (this.client) {
       try {
         this.client.close();
