@@ -62,8 +62,15 @@ export class FirestoreCardUsageRepository implements ICardUsageRepository {
       const pathInfo = FirestoreCardUsageRepository.getFirestorePath(dateObj);
       console.log(`🗂 保存先: ${pathInfo.path}`);
 
+      // 新しいフィールドのデフォルト値を設定
+      const completeCardUsage: CardUsage = {
+        ...cardUsage,
+        memo: cardUsage.memo || '', // デフォルト値は空文字
+        is_active: cardUsage.is_active !== undefined ? cardUsage.is_active : true // デフォルト値はtrue
+      };
+
       // 共通サービスを使用してドキュメントを保存
-      await this.firestoreService.saveDocument(pathInfo.path, cardUsage);
+      await this.firestoreService.saveDocument(pathInfo.path, completeCardUsage);
 
       console.log('✅ カード利用データをFirestoreに保存しました');
       return pathInfo.path;
