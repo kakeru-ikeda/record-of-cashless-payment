@@ -9,6 +9,7 @@ import { WeeklyReportService } from './services/reports/WeeklyReportService';
 import { DailyReportService } from './services/reports/DailyReportService';
 import { MonthlyReportService } from './services/reports/MonthlyReportService';
 import { DateUtil } from '../../shared/utils/DateUtil';
+import { app as apiApp } from './api';
 
 // Firestoreサービスの初期化
 const firestoreService = FirestoreService.getInstance();
@@ -75,6 +76,12 @@ const discordNotifier = new DiscordWebhookNotifier(
 const weeklyReportService = new WeeklyReportService(firestoreService, discordNotifier);
 const dailyReportService = new DailyReportService(firestoreService, discordNotifier);
 const monthlyReportService = new MonthlyReportService(firestoreService, discordNotifier);
+
+// REST API エンドポイントを公開
+export const api = functions.https
+    .onRequest({
+        region: 'asia-northeast1',
+    }, apiApp);
 
 /**
  * Firestoreドキュメント作成時に実行
