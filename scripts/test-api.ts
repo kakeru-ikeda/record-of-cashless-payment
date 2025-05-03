@@ -3,10 +3,21 @@
  * 
  * 使用方法: npx ts-node scripts/test-api.ts
  */
-import axios, { AxiosResponse } from 'axios';
+import axios, { AxiosResponse, AxiosRequestConfig } from 'axios';
 
 // APIのベースURL
 const API_BASE_URL = 'YOUR_API_BASE_URL/api/v1';
+
+// テスト用の認証トークン
+const TEST_AUTH_TOKEN = process.env.API_TEST_TOKEN || 'test-token';
+
+// 認証ヘッダー付きのリクエスト設定
+const authConfig: AxiosRequestConfig = {
+  headers: {
+    'Authorization': `Bearer ${TEST_AUTH_TOKEN}`,
+    'Content-Type': 'application/json'
+  }
+};
 
 // レスポンスの型定義
 interface ApiResponse<T> {
@@ -67,7 +78,7 @@ async function testCreateCardUsage(): Promise<boolean> {
   try {
     console.log('2️⃣ カード利用データの作成をテスト中...');
     const response: AxiosResponse<ApiResponse<CardUsage>> =
-      await axios.post(`${API_BASE_URL}/card-usages`, testCardUsage);
+      await axios.post(`${API_BASE_URL}/card-usages`, testCardUsage, authConfig);
     console.log('✅ データ作成成功:', response.data);
 
     // 作成したデータのIDを保存
@@ -95,7 +106,7 @@ async function testGetCardUsageById(): Promise<boolean> {
   try {
     console.log(`3️⃣ ID: ${createdId} のカード利用データを取得中...`);
     const response: AxiosResponse<ApiResponse<CardUsage>> =
-      await axios.get(`${API_BASE_URL}/card-usages/${createdId}`);
+      await axios.get(`${API_BASE_URL}/card-usages/${createdId}`, authConfig);
     console.log('✅ データ取得成功:', response.data);
     return true;
   } catch (error: any) {
@@ -119,7 +130,7 @@ async function testGetAllCardUsages(): Promise<boolean> {
   try {
     console.log(`4️⃣ ${year}年${month}月のカード利用データ一覧を取得中...`);
     const response: AxiosResponse<ApiResponse<CardUsage[]>> =
-      await axios.get(`${API_BASE_URL}/card-usages?year=${year}&month=${month}`);
+      await axios.get(`${API_BASE_URL}/card-usages?year=${year}&month=${month}`, authConfig);
     console.log('✅ データ一覧取得成功:', response.data);
     console.log(`📊 取得したデータ数: ${response.data.data?.length || 0}`);
     return true;
@@ -149,7 +160,7 @@ async function testUpdateCardUsage(): Promise<boolean> {
   try {
     console.log(`5️⃣ ID: ${createdId} のカード利用データを更新中...`);
     const response: AxiosResponse<ApiResponse<CardUsage>> =
-      await axios.put(`${API_BASE_URL}/card-usages/${createdId}`, updateData);
+      await axios.put(`${API_BASE_URL}/card-usages/${createdId}`, updateData, authConfig);
     console.log('✅ データ更新成功:', response.data);
     return true;
   } catch (error: any) {
@@ -173,11 +184,33 @@ async function testDeleteCardUsage(): Promise<boolean> {
   try {
     console.log(`6️⃣ ID: ${createdId} のカード利用データを削除中...`);
     const response: AxiosResponse<ApiResponse<{ id: string; path: string }>> =
-      await axios.delete(`${API_BASE_URL}/card-usages/${createdId}`);
+      await axios.delete(`${API_BASE_URL}/card-usages/${createdId}`, authConfig);
     console.log('✅ データ削除成功:', response.data);
     return true;
   } catch (error: any) {
     console.error('❌ データ削除失敗:', error.message);
+    if (error.response) {
+      console.error('レスポンス:', error.response.data);
+    }
+    return false;
+  }
+}
+
+/**
+ * 認証なしでAPIアクセスした場合のテスト
+ */
+async function testAccessWithoutAuth(): Promise<boolean> {
+  try {
+    console.log('7️⃣ 認証なしでカード利用データ一覧アクセスをテスト中...');
+    await axios.get(`${API_BASE_URL}/card-usages?year=2025&month=5`);
+    console.log('❌ 認証なしで成功してしまいました（ミドルウェアが機能していない可能性があります）');
+    return false;
+  } catch (error: any) {
+    if (error.response && error.response.status === 401) {
+      console.log('✅ 正しく認証エラーになりました:', error.response.data);
+      return true;
+    }
+    console.error('❌ 予期しないエラー:', error.message);
     if (error.response) {
       console.error('レスポンス:', error.response.data);
     }
@@ -191,9 +224,13 @@ async function testDeleteCardUsage(): Promise<boolean> {
 async function runAllTests(): Promise<void> {
   console.log('🚀 APIテストを開始します...');
 
-  // ヘルスチェック
+  // ヘルスチェック（認証不要）
   await testHealthCheck();
 
+  // 認証なしアクセスのテスト
+  await testAccessWithoutAuth();
+
+  // 認証ありのテスト
   // データ作成
   const createSuccess = await testCreateCardUsage();
 
