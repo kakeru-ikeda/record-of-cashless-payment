@@ -5,7 +5,12 @@ pipeline {
         DOCKER_NETWORK = "jenkins-pipeline-network"
     }
     
-    stages {
+    options {
+        timestamps()
+        timeout(time: 30, unit: 'MINUTES')
+    }
+    
+    stages {       
         stage('Checkout') {
             steps {
                 echo "Checking out source code..."
@@ -35,6 +40,20 @@ pipeline {
                 '''
             }
         }
+        
+        stage('Deploy') {
+            when {
+                branch 'main'
+            }
+            steps {
+                echo "Deploying application..."
+                sh '''
+                docker-compose down || true
+                docker-compose up -d
+                '''
+                echo 'Deployment completed'
+            }
+        }
     }
     
     post {
@@ -54,6 +73,11 @@ pipeline {
             // Clean up workspace
             cleanWs()
         }
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed!'
+        }
     }
 }
-
