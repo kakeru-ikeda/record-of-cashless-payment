@@ -4,7 +4,7 @@ pipeline {
     environment {
         DOCKER_NETWORK = "jenkins-pipeline-network"
         DOCKER_HUB_CREDS = 'dockerhub-cred-id'
-        SSH_CREDS = 'home-server-ssh-id'
+        SSH_CREDS = 'jenkins_id_ed25519'
         DEPLOY_HOST = 'welcome-to-sukisuki-club.duckdns.org'
         DEPLOY_USER = 'server'
         IMAGE_NAME = 'record-of-cashless-payment'
@@ -87,10 +87,13 @@ pipeline {
             steps {
                 echo "Deploying to home server..."
                 script {
-                    sshagent([env.SSH_CREDS]) {
-                        sh '''
-                        # SSH to home server and deploy
-                        ssh -o StrictHostKeyChecking=no ${DEPLOY_USER}@${DEPLOY_HOST} << EOF
+                    sshCommand remote: [
+                        name: 'Home Server',
+                        host: env.DEPLOY_HOST,
+                        user: env.DEPLOY_USER,
+                        credentialsId: env.SSH_CREDS,
+                        port: 22
+                    ], command: '''
                         # Pull the latest image
                         docker pull ${DOCKER_HUB_CREDS_USR}/${IMAGE_NAME}:latest
                         
@@ -103,9 +106,7 @@ pipeline {
                         
                         # Show running containers
                         docker ps
-                        EOF
-                        '''
-                    }
+                    '''
                 }
                 echo "Deployment to home server completed"
             }
