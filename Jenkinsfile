@@ -94,15 +94,21 @@ pipeline {
                         string(credentialsId: 'DISCORD_WEBHOOK_URL', variable: 'DISCORD_WEBHOOK_URL'),
                         string(credentialsId: 'GOOGLE_APPLICATION_CREDENTIALS', variable: 'GOOGLE_APPLICATION_CREDENTIALS'),
                         file(credentialsId: 'FIREBASE_ADMIN_KEY', variable: 'FIREBASE_ADMIN_KEY'),
-                        usernamePassword(credentialsId: env.DOCKER_HUB_CREDS, usernameVariable: 'DOCKER_HUB_CREDS_USR', passwordVariable: 'DOCKER_HUB_CREDS_PSW')
+                        usernamePassword(credentialsId: env.DOCKER_HUB_CREDS, usernameVariable: 'DOCKER_HUB_CREDS_USR', passwordVariable: 'DOCKER_HUB_CREDS_PSW'),
+                        sshUserPrivateKey(credentialsId: env.SSH_CREDS, keyFileVariable: 'SSH_KEY', passphraseVariable: '', usernameVariable: 'SSH_USER')
                     ]) {
                         sshCommand remote: [
                             name: 'Home Server',
                             host: env.DEPLOY_HOST,
                             user: env.DEPLOY_USER,
-                            credentialsId: env.SSH_CREDS,
+                            identity: env.SSH_KEY,
+                            // Use the SSH key for authentication
+                            // The key file is passed as an environment variable
+                            keyFile: env.SSH_KEY,
+                            // Set the port to 22 for SSH
                             port: 22,
-                            allowAnyHosts: true
+                            allowAnyHosts: true,
+                            timeout: 60
                         ], command: """
                             docker pull ${DOCKER_HUB_CREDS_USR}/${IMAGE_NAME}:latest
                             
