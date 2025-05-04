@@ -4,7 +4,7 @@ pipeline {
     environment {
         DOCKER_NETWORK = "jenkins-pipeline-network"
         DOCKER_HUB_CREDS = 'dockerhub-cred-id'
-        DEPLOY_HOST = 'welcome-to-sukisuki-club.duckdns.org'
+        DEPLOY_HOST = '119.172.211.182'
         DEPLOY_USER = 'server'
         IMAGE_NAME = 'record-of-cashless-payment'
     }
