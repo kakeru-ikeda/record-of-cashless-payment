@@ -3,6 +3,11 @@ pipeline {
     
     environment {
         DOCKER_NETWORK = "jenkins-pipeline-network"
+        DOCKER_HUB_CREDS = 'docker-hub-credentials'
+        SSH_CREDS = 'ssh-key-home-server'
+        DEPLOY_HOST = 'welcome-to-sukisuki-club.duckdns.org'
+        DEPLOY_USER = 'server'
+        IMAGE_NAME = 'record-of-cashless-payment'
     }
     
     options {
@@ -28,15 +33,15 @@ pipeline {
             }
         }
         
-        // stage('Test') {
-        //     steps {
-        //         echo "Running tests..."
-        //         sh '''
-        //         # Build Docker image with test target
-        //         docker build --target test --network=${DOCKER_NETWORK} .
-        //         '''
-        //     }
-        // }
+        stage('Test') {
+            steps {
+                echo "Running tests..."
+                sh '''
+                # Build Docker image with test target
+                docker build --target test --network=${DOCKER_NETWORK} .
+                '''
+            }
+        }
         
         stage('Deploy') {
             when {
@@ -49,6 +54,65 @@ pipeline {
                 docker-compose up -d
                 '''
                 echo 'Deployment completed'
+            }
+        }
+        
+        stage('Publish') {
+            when {
+                branch 'main'
+            }
+            steps {
+                echo "Publishing Docker image..."
+                script {
+                    withCredentials([usernamePassword(credentialsId: env.DOCKER_HUB_CREDS, passwordVariable: 'DOCKER_HUB_CREDS_PSW', usernameVariable: 'DOCKER_HUB_CREDS_USR')]) {
+                        sh '''
+                        # Login to Docker Hub
+                        echo $DOCKER_HUB_CREDS_PSW | docker login -u $DOCKER_HUB_CREDS_USR --password-stdin
+                        
+                        # Tag the image
+                        docker tag ${IMAGE_NAME}:latest ${DOCKER_HUB_CREDS_USR}/${IMAGE_NAME}:latest
+                        docker tag ${IMAGE_NAME}:latest ${DOCKER_HUB_CREDS_USR}/${IMAGE_NAME}:${BUILD_NUMBER}
+                        
+                        # Push the images
+                        docker push ${DOCKER_HUB_CREDS_USR}/${IMAGE_NAME}:latest
+                        docker push ${DOCKER_HUB_CREDS_USR}/${IMAGE_NAME}:${BUILD_NUMBER}
+                        
+                        # Logout
+                        docker logout
+                        '''
+                    }
+                }
+            }
+        }
+        
+        stage('Deploy to Home') {
+            when {
+                branch 'main'
+            }
+            steps {
+                echo "Deploying to home server..."
+                script {
+                    sshagent([env.SSH_CREDS]) {
+                        sh '''
+                        # SSH to home server and deploy
+                        ssh -o StrictHostKeyChecking=no ${DEPLOY_USER}@${DEPLOY_HOST} << EOF
+                        # Pull the latest image
+                        docker pull ${DOCKER_HUB_CREDS_USR}/${IMAGE_NAME}:latest
+                        
+                        # Stop and remove existing container if any
+                        docker stop ${IMAGE_NAME} || true
+                        docker rm ${IMAGE_NAME} || true
+                        
+                        # Run the new container
+                        docker run -d --name ${IMAGE_NAME} -p 8080:8080 ${DOCKER_HUB_CREDS_USR}/${IMAGE_NAME}:latest
+                        
+                        # Show running containers
+                        docker ps
+                        EOF
+                        '''
+                    }
+                }
+                echo "Deployment to home server completed"
             }
         }
     }
