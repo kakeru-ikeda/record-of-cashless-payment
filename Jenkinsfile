@@ -87,27 +87,40 @@ pipeline {
             steps {
                 echo "Deploying to home server..."
                 script {
-                    sshCommand remote: [
-                        name: 'Home Server',
-                        host: env.DEPLOY_HOST,
-                        user: env.DEPLOY_USER,
-                        credentialsId: env.SSH_CREDS,
-                        port: 22,
-                        allowAnyHosts: true
-                    ], command: '''
-                        # Pull the latest image
-                        docker pull ${DOCKER_HUB_CREDS_USR}/${IMAGE_NAME}:latest
-                        
-                        # Stop and remove existing container if any
-                        docker stop ${IMAGE_NAME} || true
-                        docker rm ${IMAGE_NAME} || true
-                        
-                        # Run the new container
-                        docker run -d --name ${IMAGE_NAME} -p 3000:3000 ${DOCKER_HUB_CREDS_USR}/${IMAGE_NAME}:latest
-                        
-                        # Show running containers
-                        docker ps
-                    '''
+                    withCredentials([
+                        string(credentialsId: 'IMAP_SERVER', variable: 'IMAP_SERVER'),
+                        string(credentialsId: 'IMAP_USER', variable: 'IMAP_USER'),
+                        string(credentialsId: 'IMAP_PASSWORD', variable: 'IMAP_PASSWORD'),
+                        string(credentialsId: 'DISCORD_WEBHOOK_URL', variable: 'DISCORD_WEBHOOK_URL'),
+                        string(credentialsId: 'GOOGLE_APPLICATION_CREDENTIALS', variable: 'GOOGLE_APPLICATION_CREDENTIALS'),
+                        file(credentialsId: 'FIREBASE_ADMIN_KEY', variable: 'FIREBASE_ADMIN_KEY')
+                    ]) {
+                        sshCommand remote: [
+                            name: 'Home Server',
+                            host: env.DEPLOY_HOST,
+                            user: env.DEPLOY_USER,
+                            credentialsId: env.SSH_CREDS,
+                            port: 22,
+                            allowAnyHosts: true
+                        ], command: """
+                            docker pull ${DOCKER_HUB_CREDS_USR}/${IMAGE_NAME}:latest
+                            
+                            docker stop ${IMAGE_NAME} || true
+                            docker rm ${IMAGE_NAME} || true
+
+                            docker cp ${FIREBASE_ADMIN_KEY} ${IMAGE_NAME}:/app/firebase-admin-key.json
+                            
+                            docker run -d -p 3000:3000 \\
+                            -e IMAP_SERVER=\\"${IMAP_SERVER}\\" \\
+                            -e IMAP_USER=\\"${IMAP_USER}\\" \\
+                            -e IMAP_PASSWORD=\\"${IMAP_PASSWORD}\\" \\
+                            -e DISCORD_WEBHOOK_URL=\\"${DISCORD_WEBHOOK_URL}\\" \\
+                            -e GOOGLE_APPLICATION_CREDENTIALS=\\"${GOOGLE_APPLICATION_CREDENTIALS}\\" \\
+                            ${DOCKER_HUB_CREDS_USR}/${IMAGE_NAME}:latest
+                            
+                            docker ps
+                        """
+                    }
                 }
                 echo "Deployment to home server completed"
             }
