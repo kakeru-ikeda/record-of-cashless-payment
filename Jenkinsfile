@@ -239,8 +239,11 @@ pipeline {
                     # JSONをエスケープして正しく構築
                     JOB_NAME_ESC=$(echo "${JOB_NAME}" | sed 's/"/\\\\"/g')
                     
-                    # 正しいURLを構築する（duckdns.orgドメインを含む）
-                    CORRECT_BUILD_URL="${JENKINS_URL_FULL}/job/${JOB_NAME}/${BUILD_NUMBER}/"
+                    # JOB_NAMEをURLエンコード（スペースを%20に変換）
+                    JOB_NAME_ENCODED=$(echo "${JOB_NAME}" | sed 's/ /%20/g')
+                    
+                    # 正しいURLを構築する（duckdns.orgドメインを含み、スペースをURLエンコード）
+                    CORRECT_BUILD_URL="${JENKINS_URL_FULL}/job/${JOB_NAME_ENCODED}/${BUILD_NUMBER}/"
                     BUILD_URL_ESC=$(echo "${CORRECT_BUILD_URL}" | sed 's/"/\\\\"/g')
                     
                     # Discord通知をcurlで送信（ビルド成功）- JSON形式を修正
@@ -257,8 +260,11 @@ pipeline {
                     # JSONをエスケープして正しく構築
                     JOB_NAME_ESC=$(echo "${JOB_NAME}" | sed 's/"/\\\\"/g')
                     
-                    # 正しいURLを構築する（duckdns.orgドメインを含む）
-                    CORRECT_BUILD_URL="${JENKINS_URL_FULL}/job/${JOB_NAME}/${BUILD_NUMBER}/"
+                    # JOB_NAMEをURLエンコード（スペースを%20に変換）
+                    JOB_NAME_ENCODED=$(echo "${JOB_NAME}" | sed 's/ /%20/g')
+                    
+                    # 正しいURLを構築する（duckdns.orgドメインを含み、スペースをURLエンコード）
+                    CORRECT_BUILD_URL="${JENKINS_URL_FULL}/job/${JOB_NAME_ENCODED}/${BUILD_NUMBER}/"
                     BUILD_URL_ESC=$(echo "${CORRECT_BUILD_URL}" | sed 's/"/\\\\"/g')
                     
                     # Discord通知をcurlで送信（ビルド失敗）- JSON形式を修正
