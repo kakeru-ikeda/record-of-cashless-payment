@@ -102,6 +102,7 @@ pipeline {
                         )
                     ]) {
                         sshCommand remote: [
+                            name: 'home-server',
                             host: env.DEPLOY_HOST,
                             user: env.DEPLOY_USER,
                             identityFile: env.SSH_KEY,
