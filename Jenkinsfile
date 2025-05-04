@@ -50,6 +50,7 @@ pipeline {
         stage('Deploy') {
             when {
                 branch 'main'
+                branch 'refs/remotes/origin/main'
             }
             steps {
                 echo "Deploying application..."
@@ -64,6 +65,7 @@ pipeline {
         stage('Publish') {
             when {
                 branch 'main'
+                branch 'refs/remotes/origin/main'
             }
             steps {
                 echo "Publishing Docker image..."
@@ -92,6 +94,7 @@ pipeline {
         stage('Deploy to Home') {
             when {
                 branch 'main'
+                branch 'refs/remotes/origin/main'
             }
             steps {
                 echo "Deploying to home server..."
