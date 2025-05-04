@@ -1,6 +1,9 @@
 pipeline {
     agent {
-        label 'built-in'
+        node {
+            label 'built-in'
+            customWorkspace '/var/jenkins_home/workspace/RoCP Backend'
+        }
     }
     
     environment {
@@ -17,6 +20,19 @@ pipeline {
     }
     
     stages {       
+        stage('Workspace Debug') {
+            steps {
+                echo "Debugging workspace information..."
+                sh '''
+                echo "Current workspace: $(pwd)"
+                echo "Files in workspace:"
+                ls -la
+                echo "Environment variables:"
+                env | sort
+                '''
+            }
+        }
+        
         stage('Checkout') {
             steps {
                 echo "Checking out source code..."
@@ -95,7 +111,7 @@ pipeline {
                         sh '''
                         echo "===== SSH DEBUG ====="
                         echo "SSH_USER=$SSH_USER"
-                        ls -l $SSH_KEY                   # ファイルの有無とパーミッションを確認
+                                                ls -l $SSH_KEY                   # ファイルの有無とパーミッションを確認
                         wc -l $SSH_KEY                   # 行数を表示（4096bit RSAならだいたい > 40行）
                         head -n1 $SSH_KEY                # -----BEGIN OPENSSH PRIVATE KEY----- が見えればOK
                         echo "===================="
@@ -123,11 +139,13 @@ pipeline {
                             usernameVariable: 'SSH_USER'
                         )
                     ]) {
-                        // Firebase キーを一時ファイルに保存
+                        // Firebaseキーを一時ファイルに保存
                         sh '''
-                        cat ${FIREBASE_ADMIN_KEY} > ./firebase-admin-key-deploy.json
+                        cp ${FIREBASE_ADMIN_KEY} ./firebase-admin-key-deploy.json
+                        ls -la ./firebase-admin-key-deploy.json
                         '''
                         
+                        // メインコンテナをデプロイ
                         sshCommand remote: [
                             name: 'Home Server',
                             host: env.DEPLOY_HOST,
@@ -153,7 +171,7 @@ pipeline {
                             docker ps
                         """
                         
-                        // Firebase キーをリモートサーバーに転送してコンテナにコピー
+                        // Firebaseキーを転送してコンテナにコピー
                         sshPut remote: [
                             name: 'Home Server',
                             host: env.DEPLOY_HOST,
