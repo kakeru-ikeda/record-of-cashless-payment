@@ -95,26 +95,23 @@ pipeline {
                         string(credentialsId: 'GOOGLE_APPLICATION_CREDENTIALS', variable: 'GOOGLE_APPLICATION_CREDENTIALS'),
                         file(credentialsId: 'FIREBASE_ADMIN_KEY', variable: 'FIREBASE_ADMIN_KEY'),
                         usernamePassword(credentialsId: env.DOCKER_HUB_CREDS, usernameVariable: 'DOCKER_HUB_CREDS_USR', passwordVariable: 'DOCKER_HUB_CREDS_PSW'),
-                        sshUserPrivateKey(credentialsId: env.SSH_CREDS, keyFileVariable: 'SSH_KEY', passphraseVariable: '', usernameVariable: 'SSH_USER')
+                        sshUserPrivateKey(
+                            credentialsId: env.SSH_CREDS,
+                            keyFileVariable: 'SSH_KEY',
+                            usernameVariable: 'SSH_USER'
+                        )
                     ]) {
                         sshCommand remote: [
-                            name: 'Home Server',
                             host: env.DEPLOY_HOST,
                             user: env.DEPLOY_USER,
-                            identity: env.SSH_KEY,
-                            // Use the SSH key for authentication
-                            // The key file is passed as an environment variable
-                            keyFile: env.SSH_KEY,
-                            // Set the port to 22 for SSH
+                            identityFile: env.SSH_KEY,
                             port: 22,
                             allowAnyHosts: true,
                             timeout: 60
                         ], command: """
                             docker pull ${DOCKER_HUB_CREDS_USR}/${IMAGE_NAME}:latest
-                            
                             docker stop ${IMAGE_NAME} || true
                             docker rm ${IMAGE_NAME} || true
-
                             docker cp ${FIREBASE_ADMIN_KEY} ${IMAGE_NAME}:/app/firebase-admin-key.json
 
                             docker run -d -p 3000:3000 \\
