@@ -68,8 +68,21 @@ pipeline {
             steps {
                 echo "Deploying application..."
                 sh '''
-                docker-compose down || true
-                docker-compose up -d
+                    # 既存のコンテナとネットワークを強制的に停止・削除
+                    docker-compose down --remove-orphans || true
+                    docker stop $(docker ps -a -q --filter ancestor=${IMAGE_NAME}:latest --format="{{.ID}}") || true
+                    docker rm $(docker ps -a -q --filter ancestor=${IMAGE_NAME}:latest --format="{{.ID}}") || true
+                    
+                    # 強制的にポート3000を使用しているコンテナを特定して停止
+                    CONTAINER_USING_PORT=$(docker ps -q --filter publish=3000)
+                    if [ ! -z "$CONTAINER_USING_PORT" ]; then
+                        echo "Found container using port 3000: $CONTAINER_USING_PORT"
+                        docker stop $CONTAINER_USING_PORT || true
+                        docker rm $CONTAINER_USING_PORT || true
+                    fi
+                    
+                    # 新しいコンテナをデプロイ
+                    docker-compose up -d
                 '''
                 echo 'Deployment completed'
             }
@@ -206,7 +219,7 @@ pipeline {
             echo "Cleaning up..."
             sh '''
                 # Stop and remove all containers started by docker-compose
-                docker-compose down || true
+                docker-compose down --remove-orphans || true
                 
                 # Clean up any dangling images to free up space
                 docker image prune -f
@@ -218,31 +231,37 @@ pipeline {
             // Clean up workspace
             cleanWs()
             
-            // Discord通知を送信
-            discordSend description: "ビルドが完了しました", 
-                        footer: "${env.JOB_NAME} - ビルド#${env.BUILD_NUMBER}", 
-                        link: env.BUILD_URL, 
-                        result: currentBuild.currentResult, 
-                        title: "${env.JOB_NAME} - ${currentBuild.currentResult}", 
-                        webhookURL: "${DISCORD_WEBHOOK}"
+            // Discord通知を送信（ドキュメントに基づいた形式）
+            discordSend(
+                description: "ビルドが完了しました", 
+                footer: "${env.JOB_NAME} - ビルド#${env.BUILD_NUMBER}", 
+                link: env.BUILD_URL, 
+                result: currentBuild.currentResult, 
+                title: "${env.JOB_NAME} - ${currentBuild.currentResult}", 
+                webhookURL: "${DISCORD_WEBHOOK}"
+            )
         }
         success {
             echo 'Pipeline completed successfully!'
-            discordSend description: "ビルドが成功しました 🎉", 
-                        footer: "${env.JOB_NAME} - ビルド#${env.BUILD_NUMBER}", 
-                        link: env.BUILD_URL, 
-                        result: "SUCCESS", 
-                        title: "${env.JOB_NAME} - ビルド成功", 
-                        webhookURL: "${DISCORD_WEBHOOK}"
+            discordSend(
+                description: "ビルドが成功しました 🎉", 
+                footer: "${env.JOB_NAME} - ビルド#${env.BUILD_NUMBER}", 
+                link: env.BUILD_URL, 
+                result: "SUCCESS", 
+                title: "${env.JOB_NAME} - ビルド成功", 
+                webhookURL: "${DISCORD_WEBHOOK}"
+            )
         }
         failure {
             echo 'Pipeline failed!'
-            discordSend description: "ビルドが失敗しました 🚨", 
-                        footer: "${env.JOB_NAME} - ビルド#${env.BUILD_NUMBER}", 
-                        link: env.BUILD_URL, 
-                        result: "FAILURE", 
-                        title: "${env.JOB_NAME} - ビルド失敗", 
-                        webhookURL: "${DISCORD_WEBHOOK}"
+            discordSend(
+                description: "ビルドが失敗しました 🚨", 
+                footer: "${env.JOB_NAME} - ビルド#${env.BUILD_NUMBER}", 
+                link: env.BUILD_URL, 
+                result: "FAILURE", 
+                title: "${env.JOB_NAME} - ビルド失敗", 
+                webhookURL: "${DISCORD_WEBHOOK}"
+            )
         }
     }
 }
