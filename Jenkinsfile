@@ -1,9 +1,6 @@
 pipeline {
     agent {
-        node {
-            label 'built-in'
-            customWorkspace '/var/jenkins_home/workspace/RoCP Backend'
-        }
+        label 'built-in'
     }
     
     environment {
@@ -27,6 +24,8 @@ pipeline {
                 echo "Current workspace: $(pwd)"
                 echo "Files in workspace:"
                 ls -la
+                echo "Parent directory:"
+                ls -la ..
                 echo "Environment variables:"
                 env | sort
                 '''
@@ -111,9 +110,23 @@ pipeline {
                         sh '''
                         echo "===== SSH DEBUG ====="
                         echo "SSH_USER=$SSH_USER"
-                                                ls -l $SSH_KEY                   # ファイルの有無とパーミッションを確認
-                        wc -l $SSH_KEY                   # 行数を表示（4096bit RSAならだいたい > 40行）
-                        head -n1 $SSH_KEY                # -----BEGIN OPENSSH PRIVATE KEY----- が見えればOK
+                        echo "SSH_KEY=$SSH_KEY"
+                        echo "Current directory: $(pwd)"
+                        
+                        # SSHキーの存在確認とパーミッション（絶対パス形式で）
+                        if [ -f "$SSH_KEY" ]; then
+                            ls -la "$SSH_KEY"
+                            echo "SSH key file exists"
+                            wc -l "$SSH_KEY"
+                            head -n1 "$SSH_KEY"
+                        else
+                            echo "SSH key file not found at path: $SSH_KEY"
+                            # 代替方法として一時ファイルを作成
+                            cp /home/server/.ssh/jenkins_deploy ~/.ssh/jenkins_deploy_temp
+                            chmod 600 ~/.ssh/jenkins_deploy_temp
+                            echo "Created temporary SSH key at ~/.ssh/jenkins_deploy_temp"
+                            ls -la ~/.ssh/jenkins_deploy_temp
+                        fi
                         echo "===================="
                         '''
                     }
@@ -143,59 +156,55 @@ pipeline {
                         sh '''
                         cp ${FIREBASE_ADMIN_KEY} ./firebase-admin-key-deploy.json
                         ls -la ./firebase-admin-key-deploy.json
+                        
+                        # SSH_KEYが利用可能か確認し、必要なら代替手段を使用
+                        SSH_KEY_PATH="$SSH_KEY"
+                        if [ ! -f "$SSH_KEY_PATH" ]; then
+                            echo "Using alternative SSH key path"
+                            cp /home/server/.ssh/jenkins_deploy ~/.ssh/jenkins_deploy_temp
+                            chmod 600 ~/.ssh/jenkins_deploy_temp
+                            SSH_KEY_PATH=~/.ssh/jenkins_deploy_temp
+                        fi
                         '''
                         
-                        // メインコンテナをデプロイ
-                        sshCommand remote: [
-                            name: 'Home Server',
-                            host: env.DEPLOY_HOST,
-                            user: env.DEPLOY_USER,
-                            identityFile: env.SSH_KEY,
-                            port: 22,
-                            allowAnyHosts: true,
-                            timeout: 60
-                        ], command: """
-                            docker pull ${DOCKER_HUB_CREDS_USR}/${IMAGE_NAME}:latest
-                            docker stop ${IMAGE_NAME} || true
-                            docker rm ${IMAGE_NAME} || true
-                            
-                            docker run -d -p 3000:3000 \\
-                            -e IMAP_SERVER=\\"${IMAP_SERVER}\\" \\
-                            -e IMAP_USER=\\"${IMAP_USER}\\" \\
-                            -e IMAP_PASSWORD=\\"${IMAP_PASSWORD}\\" \\
-                            -e DISCORD_WEBHOOK_URL=\\"${DISCORD_WEBHOOK_URL}\\" \\
-                            -e GOOGLE_APPLICATION_CREDENTIALS=\\"${GOOGLE_APPLICATION_CREDENTIALS}\\" \\
-                            --name ${IMAGE_NAME} \\
-                            ${DOCKER_HUB_CREDS_USR}/${IMAGE_NAME}:latest
-                            
-                            docker ps
+                        // メインコンテナをデプロイ（代替SSH方法を使用）
+                        sh """
+                            # 直接SSHコマンドを使用
+                            ssh -i /home/server/.ssh/jenkins_deploy -o StrictHostKeyChecking=no ${env.DEPLOY_USER}@${env.DEPLOY_HOST} '
+                                docker pull ${env.DOCKER_HUB_CREDS_USR}/${env.IMAGE_NAME}:latest
+                                docker stop ${env.IMAGE_NAME} || true
+                                docker rm ${env.IMAGE_NAME} || true
+                                
+                                docker run -d -p 3000:3000 \\
+                                -e IMAP_SERVER="${env.IMAP_SERVER}" \\
+                                -e IMAP_USER="${env.IMAP_USER}" \\
+                                -e IMAP_PASSWORD="${env.IMAP_PASSWORD}" \\
+                                -e DISCORD_WEBHOOK_URL="${env.DISCORD_WEBHOOK_URL}" \\
+                                -e GOOGLE_APPLICATION_CREDENTIALS="${env.GOOGLE_APPLICATION_CREDENTIALS}" \\
+                                --name ${env.IMAGE_NAME} \\
+                                ${env.DOCKER_HUB_CREDS_USR}/${env.IMAGE_NAME}:latest
+                                
+                                docker ps
+                            '
                         """
                         
-                        // Firebaseキーを転送してコンテナにコピー
-                        sshPut remote: [
-                            name: 'Home Server',
-                            host: env.DEPLOY_HOST,
-                            user: env.DEPLOY_USER,
-                            identityFile: env.SSH_KEY,
-                            port: 22,
-                            allowAnyHosts: true
-                        ], from: './firebase-admin-key-deploy.json', into: './firebase-admin-key.json'
-                        
-                        sshCommand remote: [
-                            name: 'Home Server',
-                            host: env.DEPLOY_HOST,
-                            user: env.DEPLOY_USER,
-                            identityFile: env.SSH_KEY,
-                            port: 22,
-                            allowAnyHosts: true,
-                            timeout: 60
-                        ], command: """
-                            docker cp ./firebase-admin-key.json ${IMAGE_NAME}:/app/firebase-admin-key.json
-                            rm -f ./firebase-admin-key.json
+                        // Firebaseキーを転送してコンテナにコピー（代替SSH方法を使用）
+                        sh """
+                            # SCPでファイルを転送
+                            scp -i /home/server/.ssh/jenkins_deploy -o StrictHostKeyChecking=no ./firebase-admin-key-deploy.json ${env.DEPLOY_USER}@${env.DEPLOY_HOST}:./firebase-admin-key.json
+                            
+                            # SSHでリモートコマンドを実行
+                            ssh -i /home/server/.ssh/jenkins_deploy -o StrictHostKeyChecking=no ${env.DEPLOY_USER}@${env.DEPLOY_HOST} '
+                                docker cp ./firebase-admin-key.json ${env.IMAGE_NAME}:/app/firebase-admin-key.json
+                                rm -f ./firebase-admin-key.json
+                            '
                         """
                         
                         // 一時ファイルを削除
-                        sh 'rm -f ./firebase-admin-key-deploy.json'
+                        sh '''
+                        rm -f ./firebase-admin-key-deploy.json
+                        rm -f ~/.ssh/jenkins_deploy_temp || true
+                        '''
                     }
                 }
                 echo "Deployment to home server completed"
