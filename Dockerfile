@@ -14,6 +14,9 @@ WORKDIR /usr/src/app
 ENV PORT=3000
 ENV TZ=Asia/Tokyo
 
+# ヘルスチェック用のcurlをインストール
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
 # パッケージ定義ファイルをコピーして、依存関係をインストール
 COPY package*.json ./
 RUN npm install

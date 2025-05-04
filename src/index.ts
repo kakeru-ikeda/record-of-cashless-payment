@@ -1,5 +1,6 @@
 import * as dotenv from 'dotenv';
 import * as path from 'path';
+import express from 'express';
 import { Environment } from './infrastructure/config/environment';
 import { ImapEmailService } from './infrastructure/email/ImapEmailService';
 import { FirestoreCardUsageRepository } from './infrastructure/firebase/FirestoreCardUsageRepository';
@@ -22,6 +23,20 @@ async function bootstrap() {
         }
 
         console.log('🚀 アプリケーションを起動しています...');
+
+        // Express.jsサーバーの初期化
+        const app = express();
+        const port = process.env.PORT || 3000;
+
+        // ヘルスチェックエンドポイント
+        app.get('/health', (req, res) => {
+            res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+        });
+
+        // サーバーの起動
+        const server = app.listen(port, () => {
+            console.log(`🌐 HTTPサーバーがポート${port}で起動しました`);
+        });
 
         // インフラストラクチャレイヤーの初期化
         const emailService = new ImapEmailService(
@@ -69,7 +84,14 @@ async function bootstrap() {
             process.on('SIGINT', () => {
                 console.log('👋 アプリケーションを終了しています...');
                 emailController.stopMonitoring();
-                process.exit(0);
+                if (server) {
+                    server.close(() => {
+                        console.log('🔒 HTTPサーバーを停止しました');
+                        process.exit(0);
+                    });
+                } else {
+                    process.exit(0);
+                }
             });
         }
     } catch (error) {

@@ -49,11 +49,43 @@ pipeline {
         stage('Deploy') {
             steps {
                 echo "Deploying application..."
-                sh '''
-                docker-compose down --remove-orphans || true
-                docker network prune -f || true
-                docker-compose up -d
-                '''
+                withCredentials([
+                    string(credentialsId: 'IMAP_SERVER', variable: 'IMAP_SERVER'),
+                    string(credentialsId: 'IMAP_USER', variable: 'IMAP_USER'),
+                    string(credentialsId: 'IMAP_PASSWORD', variable: 'IMAP_PASSWORD'),
+                    string(credentialsId: 'DISCORD_WEBHOOK_URL', variable: 'DISCORD_WEBHOOK_URL'),
+                    string(credentialsId: 'GOOGLE_APPLICATION_CREDENTIALS', variable: 'GOOGLE_APPLICATION_CREDENTIALS'),
+                    file(credentialsId: 'FIREBASE_ADMIN_KEY', variable: 'FIREBASE_ADMIN_KEY')
+                ]) {
+                    sh '''
+                    # 古いコンテナの停止と削除
+                    docker stop ${IMAGE_NAME} || true
+                    docker rm ${IMAGE_NAME} || true
+                    
+                    # 新しいコンテナの起動
+                    docker run -d -p 3000:3000 \\
+                      --name ${IMAGE_NAME} \\
+                      -e PORT=3000 \\
+                      -e TZ=Asia/Tokyo \\
+                      -e IMAP_SERVER="${IMAP_SERVER}" \\
+                      -e IMAP_USER="${IMAP_USER}" \\
+                      -e IMAP_PASSWORD="${IMAP_PASSWORD}" \\
+                      -e DISCORD_WEBHOOK_URL="${DISCORD_WEBHOOK_URL}" \\
+                      -e GOOGLE_APPLICATION_CREDENTIALS="${GOOGLE_APPLICATION_CREDENTIALS}" \\
+                      ${IMAGE_NAME}:latest
+                    
+                    # Firebaseキーのコピー
+                    docker cp ${FIREBASE_ADMIN_KEY} ${IMAGE_NAME}:/usr/src/app/firebase-admin-key.json
+                    '''
+                    
+                    // ヘルスチェック待機
+                    timeout(time: 1, unit: 'MINUTES') {
+                        retry(5) {
+                            sleep(time: 10, unit: 'SECONDS')
+                            sh 'curl -f http://localhost:3000/health || exit 1'
+                        }
+                    }
+                }
                 echo 'Deployment completed'
             }
         }
