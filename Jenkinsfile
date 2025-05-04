@@ -4,7 +4,6 @@ pipeline {
     environment {
         DOCKER_NETWORK = "jenkins-pipeline-network"
         DOCKER_HUB_CREDS = 'dockerhub-cred-id'
-        SSH_CREDS = 'jenkins_id_ed25519'
         DEPLOY_HOST = 'welcome-to-sukisuki-club.duckdns.org'
         DEPLOY_USER = 'server'
         IMAGE_NAME = 'record-of-cashless-payment'
@@ -97,7 +96,7 @@ pipeline {
                         file(credentialsId: 'FIREBASE_ADMIN_KEY', variable: 'FIREBASE_ADMIN_KEY'),
                         usernamePassword(credentialsId: env.DOCKER_HUB_CREDS, usernameVariable: 'DOCKER_HUB_CREDS_USR', passwordVariable: 'DOCKER_HUB_CREDS_PSW'),
                         sshUserPrivateKey(
-                            credentialsId: env.SSH_CREDS,
+                            credentialsId: 'jenkins_id_rsa',
                             keyFileVariable: 'SSH_KEY',
                             usernameVariable: 'SSH_USER'
                         )
