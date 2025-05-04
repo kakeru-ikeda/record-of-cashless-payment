@@ -152,6 +152,10 @@ pipeline {
                             usernameVariable: 'SSH_USER'
                         )
                     ]) {
+                        // ファイルをリモートホストにコピー
+                        sh "scp -i \"${SSH_KEY}\" \"${FIREBASE_ADMIN_KEY}\" ${DEPLOY_USER}@${DEPLOY_HOST}:/tmp/firebase-admin-key.json"
+                        
+                        // リモートコマンドでデプロイを実行
                         sshCommand remote: [
                             name: 'Home Server',
                             host: env.DEPLOY_HOST,
@@ -160,21 +164,35 @@ pipeline {
                             port: 22,
                             allowAnyHosts: true,
                             timeout: 60
-                        ], command: """
-                            docker pull ${DOCKER_HUB_CREDS_USR}/${IMAGE_NAME}:latest
-                            docker stop ${IMAGE_NAME} || true
-                            docker rm ${IMAGE_NAME} || true
-                            docker cp ${FIREBASE_ADMIN_KEY} ${IMAGE_NAME}:/app/firebase-admin-key.json
-                            docker run -d -p 3000:3000 \\
-                            -e IMAP_SERVER=\\"${IMAP_SERVER}\\" \\
-                            -e IMAP_USER=\\"${IMAP_USER}\\" \\
-                            -e IMAP_PASSWORD=\\"${IMAP_PASSWORD}\\" \\
-                            -e DISCORD_WEBHOOK_URL=\\"${DISCORD_WEBHOOK_URL}\\" \\
-                            -e GOOGLE_APPLICATION_CREDENTIALS=\\"${GOOGLE_APPLICATION_CREDENTIALS}\\" \\
-                            ${DOCKER_HUB_CREDS_USR}/${IMAGE_NAME}:latest
+                        ], command: '''
+                            # イメージをプル
+                            docker pull ''' + env.DOCKER_HUB_CREDS_USR + '/' + env.IMAGE_NAME + ''':latest
                             
+                            # 古いコンテナを停止・削除
+                            docker stop ''' + env.IMAGE_NAME + ''' || true
+                            docker rm ''' + env.IMAGE_NAME + ''' || true
+                            
+                            # 新しいコンテナを起動
+                            docker run -d --name ''' + env.IMAGE_NAME + ''' -p 3000:3000 \\
+                            -e IMAP_SERVER="''' + env.IMAP_SERVER + '''" \\
+                            -e IMAP_USER="''' + env.IMAP_USER + '''" \\
+                            -e IMAP_PASSWORD="''' + env.IMAP_PASSWORD + '''" \\
+                            -e DISCORD_WEBHOOK_URL="''' + env.DISCORD_WEBHOOK_URL + '''" \\
+                            -e GOOGLE_APPLICATION_CREDENTIALS="/app/firebase-admin-key.json" \\
+                            ''' + env.DOCKER_HUB_CREDS_USR + '/' + env.IMAGE_NAME + ''':latest
+                            
+                            # ファイルをコンテナにコピー
+                            docker cp /tmp/firebase-admin-key.json ''' + env.IMAGE_NAME + ''':/app/firebase-admin-key.json
+                            
+                            # コンテナを再起動して設定を反映
+                            docker restart ''' + env.IMAGE_NAME + '''
+                            
+                            # 稼働中のコンテナを確認
                             docker ps
-                        """
+                            
+                            # 一時ファイルを削除
+                            rm -f /tmp/firebase-admin-key.json
+                        '''
                     }
                 }
                 echo "Deployment to home server completed"
