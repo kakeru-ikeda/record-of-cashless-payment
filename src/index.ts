@@ -35,7 +35,7 @@ async function bootstrap() {
 
         // サーバーの起動
         const server = app.listen(port, () => {
-            console.log(`🌐 HTTPサーバーがポート${port}で起動しました！`);
+            console.log(`🌐 HTTPサーバーがポート${port}で起動しました`);
         });
 
         // インフラストラクチャレイヤーの初期化
