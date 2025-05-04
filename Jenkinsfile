@@ -1,9 +1,6 @@
 pipeline {
     agent {
-        docker {
-            image 'docker:stable'
-            args '-v /var/run/docker.sock:/var/run/docker.sock'
-        }
+        label 'built-in'
     }
     
     environment {
@@ -26,33 +23,13 @@ pipeline {
                 checkout scm
             }
         }
-        
-        stage('Setup') {
-            steps {
-                echo "Installing docker-compose..."
-                sh '''
-                # Alpine Linux用docker-compose（Pythonベース）のインストール
-                apk add --update --no-cache py3-pip python3 curl
-                pip3 install docker-compose
-                
-                # パスを確認
-                echo "PATH=$PATH"
-                
-                # docker-composeが使用可能かを確認
-                which docker-compose || echo "docker-compose not found in PATH"
-                docker-compose --version || echo "docker-compose command failed"
-                '''
-            }
-        }
                
         stage('Build') {
             steps {
                 echo "Building Docker image..."
                 sh '''
                 docker network create ${DOCKER_NETWORK} || true
-                
-                # フルパスでdocker-composeを実行
-                /usr/bin/docker-compose build || /usr/local/bin/docker-compose build || ~/.local/bin/docker-compose build
+                docker-compose build
                 '''
             }
         }
@@ -212,23 +189,20 @@ pipeline {
     
     post {
         always {
-            node('built-in') {
-                echo "Cleaning up..."
-                sh '''
-                    # Stop and remove all containers started by docker-compose
-                    # Jenkinsコンテナ内ではdocker-composeが使えるのでそのまま実行
-                    docker-compose down || true
-                    
-                    # Clean up any dangling images to free up space
-                    docker image prune -f
-                    
-                    # Remove the network if it exists
-                    docker network rm ${DOCKER_NETWORK} || true
-                '''
+            echo "Cleaning up..."
+            sh '''
+                # Stop and remove all containers started by docker-compose
+                docker-compose down || true
                 
-                // Clean up workspace
-                cleanWs()
-            }
+                # Clean up any dangling images to free up space
+                docker image prune -f
+                
+                # Remove the network if it exists
+                docker network rm ${DOCKER_NETWORK} || true
+            '''
+            
+            // Clean up workspace
+            cleanWs()
         }
         success {
             echo 'Pipeline completed successfully!'
