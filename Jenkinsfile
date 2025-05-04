@@ -31,8 +31,16 @@ pipeline {
             steps {
                 echo "Installing docker-compose..."
                 sh '''
-                apk add --no-cache docker-compose
-                docker-compose --version
+                # Alpine Linux用docker-compose（Pythonベース）のインストール
+                apk add --update --no-cache py3-pip python3 curl
+                pip3 install docker-compose
+                
+                # パスを確認
+                echo "PATH=$PATH"
+                
+                # docker-composeが使用可能かを確認
+                which docker-compose || echo "docker-compose not found in PATH"
+                docker-compose --version || echo "docker-compose command failed"
                 '''
             }
         }
@@ -42,7 +50,9 @@ pipeline {
                 echo "Building Docker image..."
                 sh '''
                 docker network create ${DOCKER_NETWORK} || true
-                docker-compose build
+                
+                # フルパスでdocker-composeを実行
+                /usr/bin/docker-compose build || /usr/local/bin/docker-compose build || ~/.local/bin/docker-compose build
                 '''
             }
         }
@@ -206,6 +216,7 @@ pipeline {
                 echo "Cleaning up..."
                 sh '''
                     # Stop and remove all containers started by docker-compose
+                    # Jenkinsコンテナ内ではdocker-composeが使えるのでそのまま実行
                     docker-compose down || true
                     
                     # Clean up any dangling images to free up space
