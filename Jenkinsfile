@@ -93,7 +93,8 @@ pipeline {
                         string(credentialsId: 'IMAP_PASSWORD', variable: 'IMAP_PASSWORD'),
                         string(credentialsId: 'DISCORD_WEBHOOK_URL', variable: 'DISCORD_WEBHOOK_URL'),
                         string(credentialsId: 'GOOGLE_APPLICATION_CREDENTIALS', variable: 'GOOGLE_APPLICATION_CREDENTIALS'),
-                        file(credentialsId: 'FIREBASE_ADMIN_KEY', variable: 'FIREBASE_ADMIN_KEY')
+                        file(credentialsId: 'FIREBASE_ADMIN_KEY', variable: 'FIREBASE_ADMIN_KEY'),
+                        usernamePassword(credentialsId: env.DOCKER_HUB_CREDS, usernameVariable: 'DOCKER_HUB_CREDS_USR', passwordVariable: 'DOCKER_HUB_CREDS_PSW')
                     ]) {
                         sshCommand remote: [
                             name: 'Home Server',
@@ -109,7 +110,7 @@ pipeline {
                             docker rm ${IMAGE_NAME} || true
 
                             docker cp ${FIREBASE_ADMIN_KEY} ${IMAGE_NAME}:/app/firebase-admin-key.json
-                            
+
                             docker run -d -p 3000:3000 \\
                             -e IMAP_SERVER=\\"${IMAP_SERVER}\\" \\
                             -e IMAP_USER=\\"${IMAP_USER}\\" \\
