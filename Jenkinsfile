@@ -3,8 +3,8 @@ pipeline {
     
     environment {
         DOCKER_NETWORK = "jenkins-pipeline-network"
-        DOCKER_HUB_CREDS = 'docker-hub-credentials'
-        SSH_CREDS = 'ssh-key-home-server'
+        DOCKER_HUB_CREDS = 'dockerhub-cred-id'
+        SSH_CREDS = 'home-server-ssh-id'
         DEPLOY_HOST = 'welcome-to-sukisuki-club.duckdns.org'
         DEPLOY_USER = 'server'
         IMAGE_NAME = 'record-of-cashless-payment'
@@ -99,7 +99,7 @@ pipeline {
                         docker rm ${IMAGE_NAME} || true
                         
                         # Run the new container
-                        docker run -d --name ${IMAGE_NAME} -p 8080:8080 ${DOCKER_HUB_CREDS_USR}/${IMAGE_NAME}:latest
+                        docker run -d --name ${IMAGE_NAME} -p 3000:3000 ${DOCKER_HUB_CREDS_USR}/${IMAGE_NAME}:latest
                         
                         # Show running containers
                         docker ps
