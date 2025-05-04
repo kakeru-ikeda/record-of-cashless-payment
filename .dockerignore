@@ -1,6 +1,3 @@
 node_modules
 dist
 functions
-tests
-jest.config.jest
-samplemail.txt
