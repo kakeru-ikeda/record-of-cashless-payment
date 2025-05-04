@@ -51,43 +51,10 @@ pipeline {
         stage('Deploy') {
             steps {
                 echo "Deploying application..."
-                withCredentials([
-                    string(credentialsId: 'IMAP_SERVER', variable: 'IMAP_SERVER'),
-                    string(credentialsId: 'IMAP_USER', variable: 'IMAP_USER'),
-                    string(credentialsId: 'IMAP_PASSWORD', variable: 'IMAP_PASSWORD'),
-                    string(credentialsId: 'DISCORD_WEBHOOK_URL', variable: 'DISCORD_WEBHOOK_URL'),
-                    string(credentialsId: 'GOOGLE_APPLICATION_CREDENTIALS', variable: 'GOOGLE_APPLICATION_CREDENTIALS'),
-                    file(credentialsId: 'FIREBASE_ADMIN_KEY', variable: 'FIREBASE_ADMIN_KEY')
-                ]) {
-                    sh '''
-                    # 古いコンテナの停止と削除
-                    docker stop ${IMAGE_NAME} || true
-                    docker rm ${IMAGE_NAME} || true
-                    
-                    # 新しいコンテナの起動
-                    docker run -d -p 3000:3000 \\
-                      --name ${IMAGE_NAME} \\
-                      -e PORT=3000 \\
-                      -e TZ=Asia/Tokyo \\
-                      -e IMAP_SERVER="${IMAP_SERVER}" \\
-                      -e IMAP_USER="${IMAP_USER}" \\
-                      -e IMAP_PASSWORD="${IMAP_PASSWORD}" \\
-                      -e DISCORD_WEBHOOK_URL="${DISCORD_WEBHOOK_URL}" \\
-                      -e GOOGLE_APPLICATION_CREDENTIALS="${GOOGLE_APPLICATION_CREDENTIALS}" \\
-                      ${IMAGE_NAME}:latest
-                    
-                    # Firebaseキーのコピー
-                    docker cp ${FIREBASE_ADMIN_KEY} ${IMAGE_NAME}:/usr/src/app/firebase-admin-key.json
-                    '''
-                    
-                    // ヘルスチェック待機
-                    timeout(time: 1, unit: 'MINUTES') {
-                        retry(5) {
-                            sleep(time: 10, unit: 'SECONDS')
-                            sh 'curl -f http://localhost:3000/health || exit 1'
-                        }
-                    }
-                }
+                sh '''
+                docker-compose down || true
+                docker-compose up -d
+                '''
                 echo 'Deployment completed'
             }
         }
@@ -156,6 +123,11 @@ pipeline {
                             usernameVariable: 'SSH_USER'
                         )
                     ]) {
+                        // Firebase キーを一時ファイルに保存
+                        sh '''
+                        cat ${FIREBASE_ADMIN_KEY} > ./firebase-admin-key-deploy.json
+                        '''
+                        
                         sshCommand remote: [
                             name: 'Home Server',
                             host: env.DEPLOY_HOST,
@@ -168,18 +140,44 @@ pipeline {
                             docker pull ${DOCKER_HUB_CREDS_USR}/${IMAGE_NAME}:latest
                             docker stop ${IMAGE_NAME} || true
                             docker rm ${IMAGE_NAME} || true
-                            docker cp ${FIREBASE_ADMIN_KEY} ${IMAGE_NAME}:/app/firebase-admin-key.json
-
+                            
                             docker run -d -p 3000:3000 \\
                             -e IMAP_SERVER=\\"${IMAP_SERVER}\\" \\
                             -e IMAP_USER=\\"${IMAP_USER}\\" \\
                             -e IMAP_PASSWORD=\\"${IMAP_PASSWORD}\\" \\
                             -e DISCORD_WEBHOOK_URL=\\"${DISCORD_WEBHOOK_URL}\\" \\
                             -e GOOGLE_APPLICATION_CREDENTIALS=\\"${GOOGLE_APPLICATION_CREDENTIALS}\\" \\
+                            --name ${IMAGE_NAME} \\
                             ${DOCKER_HUB_CREDS_USR}/${IMAGE_NAME}:latest
                             
                             docker ps
                         """
+                        
+                        // Firebase キーをリモートサーバーに転送してコンテナにコピー
+                        sshPut remote: [
+                            name: 'Home Server',
+                            host: env.DEPLOY_HOST,
+                            user: env.DEPLOY_USER,
+                            identityFile: env.SSH_KEY,
+                            port: 22,
+                            allowAnyHosts: true
+                        ], from: './firebase-admin-key-deploy.json', into: './firebase-admin-key.json'
+                        
+                        sshCommand remote: [
+                            name: 'Home Server',
+                            host: env.DEPLOY_HOST,
+                            user: env.DEPLOY_USER,
+                            identityFile: env.SSH_KEY,
+                            port: 22,
+                            allowAnyHosts: true,
+                            timeout: 60
+                        ], command: """
+                            docker cp ./firebase-admin-key.json ${IMAGE_NAME}:/app/firebase-admin-key.json
+                            rm -f ./firebase-admin-key.json
+                        """
+                        
+                        // 一時ファイルを削除
+                        sh 'rm -f ./firebase-admin-key-deploy.json'
                     }
                 }
                 echo "Deployment to home server completed"
