@@ -2,7 +2,7 @@ services:
   app:
     build: .
     ports:
-      - "8080:8080"
+      - "3000:3000"
     dns:
       - 8.8.8.8
       - 8.8.4.4
@@ -13,7 +13,7 @@ services:
       - NO_PROXY=${NO_PROXY:-}
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health || exit 1"]
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
