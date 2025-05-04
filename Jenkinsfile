@@ -82,6 +82,27 @@ pipeline {
                 }
             }
         }
+
+        stage('Debug SSH Key') {
+            steps {
+                script {
+                    withCredentials([sshUserPrivateKey(
+                        credentialsId: 'jenkins_deploy',
+                        keyFileVariable: 'SSH_KEY',
+                        usernameVariable: 'SSH_USER'
+                    )]) {
+                        sh '''
+                        echo "===== SSH DEBUG ====="
+                        echo "SSH_USER=$SSH_USER"
+                        ls -l $SSH_KEY                   # ファイルの有無とパーミッションを確認
+                        wc -l $SSH_KEY                   # 行数を表示（4096bit RSAならだいたい > 40行）
+                        head -n1 $SSH_KEY                # -----BEGIN OPENSSH PRIVATE KEY----- が見えればOK
+                        echo "===================="
+                        '''
+                    }
+                }
+            }
+        }
         
         stage('Deploy to Home') {
             steps {
@@ -96,7 +117,7 @@ pipeline {
                         file(credentialsId: 'FIREBASE_ADMIN_KEY', variable: 'FIREBASE_ADMIN_KEY'),
                         usernamePassword(credentialsId: env.DOCKER_HUB_CREDS, usernameVariable: 'DOCKER_HUB_CREDS_USR', passwordVariable: 'DOCKER_HUB_CREDS_PSW'),
                         sshUserPrivateKey(
-                            credentialsId: 'jenkins_id_rsa',
+                            credentialsId: 'jenkins_deploy',
                             keyFileVariable: 'SSH_KEY',
                             usernameVariable: 'SSH_USER'
                         )
