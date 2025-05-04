@@ -192,20 +192,22 @@ pipeline {
     
     post {
         always {
-            echo "Cleaning up..."
-            sh '''
-                # Stop and remove all containers started by docker-compose
-                docker compose down
+            node('built-in') {
+                echo "Cleaning up..."
+                sh '''
+                    # Stop and remove all containers started by docker-compose
+                    docker compose down
+                    
+                    # Clean up any dangling images to free up space
+                    docker image prune -f
+                    
+                    # Remove the network if it exists
+                    docker network rm ${DOCKER_NETWORK} || true
+                '''
                 
-                # Clean up any dangling images to free up space
-                docker image prune -f
-                
-                # Remove the network if it exists
-                docker network rm ${DOCKER_NETWORK} || true
-            '''
-            
-            // Clean up workspace
-            cleanWs()
+                // Clean up workspace
+                cleanWs()
+            }
         }
         success {
             echo 'Pipeline completed successfully!'
