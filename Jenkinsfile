@@ -1,5 +1,10 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'docker:stable'
+            args '-v /var/run/docker.sock:/var/run/docker.sock'
+        }
+    }
     
     environment {
         DOCKER_NETWORK = "jenkins-pipeline-network"
@@ -21,7 +26,7 @@ pipeline {
                 checkout scm
             }
         }
-        
+               
         stage('Build') {
             steps {
                 echo "Building Docker image..."
