@@ -230,38 +230,24 @@ pipeline {
             
             // Clean up workspace
             cleanWs()
-            
-            // Discord通知を送信（ドキュメントに基づいた形式）
-            discordSend(
-                description: "ビルドが完了しました", 
-                footer: "${env.JOB_NAME} - ビルド#${env.BUILD_NUMBER}", 
-                link: env.BUILD_URL, 
-                result: currentBuild.currentResult, 
-                title: "${env.JOB_NAME} - ${currentBuild.currentResult}", 
-                webhookURL: "${DISCORD_WEBHOOK}"
-            )
         }
         success {
             echo 'Pipeline completed successfully!'
-            discordSend(
-                description: "ビルドが成功しました 🎉", 
-                footer: "${env.JOB_NAME} - ビルド#${env.BUILD_NUMBER}", 
-                link: env.BUILD_URL, 
-                result: "SUCCESS", 
-                title: "${env.JOB_NAME} - ビルド成功", 
-                webhookURL: "${DISCORD_WEBHOOK}"
-            )
+            withCredentials([string(credentialsId: 'discord-webhook-url', variable: 'WEBHOOK_URL')]) {
+                discordSend webhookURL: "${WEBHOOK_URL}", 
+                           title: "SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}", 
+                           description: "ビルドが成功しました 🎉", 
+                           link: env.BUILD_URL
+            }
         }
         failure {
             echo 'Pipeline failed!'
-            discordSend(
-                description: "ビルドが失敗しました 🚨", 
-                footer: "${env.JOB_NAME} - ビルド#${env.BUILD_NUMBER}", 
-                link: env.BUILD_URL, 
-                result: "FAILURE", 
-                title: "${env.JOB_NAME} - ビルド失敗", 
-                webhookURL: "${DISCORD_WEBHOOK}"
-            )
+            withCredentials([string(credentialsId: 'discord-webhook-url', variable: 'WEBHOOK_URL')]) {
+                discordSend webhookURL: "${WEBHOOK_URL}", 
+                           title: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}", 
+                           description: "ビルドが失敗しました 🚨", 
+                           link: env.BUILD_URL
+            }
         }
     }
 }
