@@ -32,7 +32,7 @@ pipeline {
                 echo "Building Docker image..."
                 sh '''
                 docker network create ${DOCKER_NETWORK} || true
-                docker compose build
+                docker-compose build
                 '''
             }
         }
@@ -196,7 +196,7 @@ pipeline {
                 echo "Cleaning up..."
                 sh '''
                     # Stop and remove all containers started by docker-compose
-                    docker compose down
+                    docker-compose down
                     
                     # Clean up any dangling images to free up space
                     docker image prune -f
