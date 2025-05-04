@@ -9,6 +9,7 @@ pipeline {
         DEPLOY_HOST = '192.168.40.99'
         DEPLOY_USER = 'server'
         IMAGE_NAME = 'record-of-cashless-payment'
+        DISCORD_WEBHOOK = credentials('discord-webhook-url')
     }
     
     options {
@@ -216,12 +217,32 @@ pipeline {
             
             // Clean up workspace
             cleanWs()
+            
+            // Discord通知を送信
+            discordSend description: "ビルドが完了しました", 
+                        footer: "${env.JOB_NAME} - ビルド#${env.BUILD_NUMBER}", 
+                        link: env.BUILD_URL, 
+                        result: currentBuild.currentResult, 
+                        title: "${env.JOB_NAME} - ${currentBuild.currentResult}", 
+                        webhookURL: "${DISCORD_WEBHOOK}"
         }
         success {
             echo 'Pipeline completed successfully!'
+            discordSend description: "ビルドが成功しました 🎉", 
+                        footer: "${env.JOB_NAME} - ビルド#${env.BUILD_NUMBER}", 
+                        link: env.BUILD_URL, 
+                        result: "SUCCESS", 
+                        title: "${env.JOB_NAME} - ビルド成功", 
+                        webhookURL: "${DISCORD_WEBHOOK}"
         }
         failure {
             echo 'Pipeline failed!'
+            discordSend description: "ビルドが失敗しました 🚨", 
+                        footer: "${env.JOB_NAME} - ビルド#${env.BUILD_NUMBER}", 
+                        link: env.BUILD_URL, 
+                        result: "FAILURE", 
+                        title: "${env.JOB_NAME} - ビルド失敗", 
+                        webhookURL: "${DISCORD_WEBHOOK}"
         }
     }
 }
