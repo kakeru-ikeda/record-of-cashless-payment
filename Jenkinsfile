@@ -32,11 +32,16 @@ pipeline {
             steps {
                 echo "Running tests..."
                 sh '''
+                # Debug information
+                pwd
+                ls -la
+                
                 # Run tests in a container, using the network so MongoDB can be accessed
                 docker run --rm --network=${DOCKER_NETWORK} \
-                    -v $(pwd):/app -w /app \
+                    -v ${WORKSPACE}:/usr/src/app \
+                    -w /usr/src/app \
                     node:18 \
-                    sh -c "npm install && npm test"
+                    sh -c "ls -la && npm install && npm test"
                 '''
             }
         }
