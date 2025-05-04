@@ -235,10 +235,14 @@ pipeline {
             echo 'Pipeline completed successfully!'
             withCredentials([string(credentialsId: 'discord-webhook-url', variable: 'WEBHOOK_URL')]) {
                 sh '''
-                    # Discord通知をcurlで送信（ビルド成功）
-                    curl -H "Content-Type: application/json" \\
-                         -d '{"content": "**ビルド成功** 🎉\nジョブ: '"${JOB_NAME}"'\nビルド番号: #'"${BUILD_NUMBER}"'\n詳細: '"${BUILD_URL}"'"}' \\
-                         $WEBHOOK_URL
+                    # JSONをエスケープして正しく構築
+                    JOB_NAME_ESC=$(echo "${JOB_NAME}" | sed 's/"/\\\\"/g')
+                    BUILD_URL_ESC=$(echo "${BUILD_URL}" | sed 's/"/\\\\"/g')
+                    
+                    # Discord通知をcurlで送信（ビルド成功）- JSON形式を修正
+                    curl -X POST -H "Content-Type: application/json" \\
+                         -d "{\\\"content\\\":\\\"**ビルド成功** 🎉\\nジョブ: ${JOB_NAME_ESC}\\nビルド番号: #${BUILD_NUMBER}\\n詳細: ${BUILD_URL_ESC}\\\"}" \\
+                         "${WEBHOOK_URL}"
                 '''
             }
         }
@@ -246,10 +250,14 @@ pipeline {
             echo 'Pipeline failed!'
             withCredentials([string(credentialsId: 'discord-webhook-url', variable: 'WEBHOOK_URL')]) {
                 sh '''
-                    # Discord通知をcurlで送信（ビルド失敗）
-                    curl -H "Content-Type: application/json" \\
-                         -d '{"content": "**ビルド失敗** 🚨\nジョブ: '"${JOB_NAME}"'\nビルド番号: #'"${BUILD_NUMBER}"'\n詳細: '"${BUILD_URL}"'"}' \\
-                         $WEBHOOK_URL
+                    # JSONをエスケープして正しく構築
+                    JOB_NAME_ESC=$(echo "${JOB_NAME}" | sed 's/"/\\\\"/g')
+                    BUILD_URL_ESC=$(echo "${BUILD_URL}" | sed 's/"/\\\\"/g')
+                    
+                    # Discord通知をcurlで送信（ビルド失敗）- JSON形式を修正
+                    curl -X POST -H "Content-Type: application/json" \\
+                         -d "{\\\"content\\\":\\\"**ビルド失敗** 🚨\\nジョブ: ${JOB_NAME_ESC}\\nビルド番号: #${BUILD_NUMBER}\\n詳細: ${BUILD_URL_ESC}\\\"}" \\
+                         "${WEBHOOK_URL}"
                 '''
             }
         }
