@@ -1,5 +1,5 @@
 import { CardUsageNotification } from '../../shared/types/CardUsageNotification';
-import { WeeklyReportNotification } from '../../shared/types/WeeklyReportNotification';
+import { WeeklyReportNotification } from '../../shared/types/reports/ReportNotifications';
 import { DiscordNotifier } from '../../shared/discord/DiscordNotifier';
 
 /**
@@ -42,6 +42,32 @@ export class MockDiscordNotifier implements DiscordNotifier {
             throw new Error('週次レポート通知の送信に失敗しました（モック）');
         }
         this.weeklyReportNotifications.push({ ...data });
+        return true;
+    }
+
+    /**
+     * 日次レポートを通知する
+     * @param data 日次レポート情報
+     * @returns 成功時はtrue、失敗時はfalse
+     */
+    async notifyDailyReport(data: any): Promise<boolean> {
+        if (this.shouldFail) {
+            throw new Error('日次レポート通知の送信に失敗しました（モック）');
+        }
+        // Mock implementation for daily report notification
+        return true;
+    }
+
+    /**
+     * 月次レポートを通知する
+     * @param data 月次レポート情報
+     * @returns 成功時はtrue、失敗時はfalse
+     */
+    async notifyMonthlyReport(data: any): Promise<boolean> {
+        if (this.shouldFail) {
+            throw new Error('月次レポート通知の送信に失敗しました（モック）');
+        }
+        // Mock implementation for monthly report notification
         return true;
     }
 

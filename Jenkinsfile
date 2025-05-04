@@ -38,7 +38,11 @@ pipeline {
                 echo "Running tests..."
                 sh '''
                 # Build Docker image with test target
-                docker build --target test --network=${DOCKER_NETWORK} .
+                docker build --target test .
+                
+                # Alternative approach: Build image first and then run tests in a container
+                # docker build --target test -t ${IMAGE_NAME}:test .
+                # docker run --rm --name test-container ${IMAGE_NAME}:test npm test
                 '''
             }
         }
