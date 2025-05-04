@@ -175,11 +175,15 @@ pipeline {
                             -e IMAP_USER=\"${IMAP_USER}\" \\
                             -e IMAP_PASSWORD=\"${IMAP_PASSWORD}\" \\
                             -e DISCORD_WEBHOOK_URL=\"${DISCORD_WEBHOOK_URL}\" \\
-                            -e GOOGLE_APPLICATION_CREDENTIALS=\"/app/firebase-admin-key.json\" \\
+                            -e GOOGLE_APPLICATION_CREDENTIALS=\"/usr/src/app/firebase-admin-key.json\" \\
                             ${DOCKER_HUB_CREDS_USR}/${IMAGE_NAME}:latest
                             
+                            # コンテナが起動していることを確認
+                            echo "Waiting for container to start..."
+                            sleep 5
+                            
                             # ファイルをコンテナにコピー
-                            docker cp /tmp/firebase-admin-key.json ${IMAGE_NAME}:/app/firebase-admin-key.json
+                            docker cp /tmp/firebase-admin-key.json ${IMAGE_NAME}:/usr/src/app/firebase-admin-key.json
                             
                             # コンテナを再起動して設定を反映
                             docker restart ${IMAGE_NAME}
