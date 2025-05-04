@@ -93,7 +93,7 @@ pipeline {
                         user: env.DEPLOY_USER,
                         credentialsId: env.SSH_CREDS,
                         port: 22,
-                        knownHosts: '/home/server/.ssh/known_hosts'
+                        allowAnyHosts: true
                     ], command: '''
                         # Pull the latest image
                         docker pull ${DOCKER_HUB_CREDS_USR}/${IMAGE_NAME}:latest
