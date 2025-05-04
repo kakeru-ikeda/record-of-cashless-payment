@@ -26,13 +26,23 @@ pipeline {
                 checkout scm
             }
         }
+        
+        stage('Setup') {
+            steps {
+                echo "Installing docker-compose..."
+                sh '''
+                apk add --no-cache docker-compose
+                docker-compose --version
+                '''
+            }
+        }
                
         stage('Build') {
             steps {
                 echo "Building Docker image..."
                 sh '''
                 docker network create ${DOCKER_NETWORK} || true
-                docker compose build
+                docker-compose build
                 '''
             }
         }
@@ -196,7 +206,7 @@ pipeline {
                 echo "Cleaning up..."
                 sh '''
                     # Stop and remove all containers started by docker-compose
-                    docker compose down
+                    docker-compose down || true
                     
                     # Clean up any dangling images to free up space
                     docker image prune -f
