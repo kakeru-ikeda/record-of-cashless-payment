@@ -48,10 +48,6 @@ pipeline {
         }
         
         stage('Deploy') {
-            when {
-                branch 'main'
-                branch 'refs/remotes/origin/main'
-            }
             steps {
                 echo "Deploying application..."
                 sh '''
@@ -63,10 +59,6 @@ pipeline {
         }
         
         stage('Publish') {
-            when {
-                branch 'main'
-                branch 'refs/remotes/origin/main'
-            }
             steps {
                 echo "Publishing Docker image..."
                 script {
@@ -92,10 +84,6 @@ pipeline {
         }
         
         stage('Deploy to Home') {
-            when {
-                branch 'main'
-                branch 'refs/remotes/origin/main'
-            }
             steps {
                 echo "Deploying to home server..."
                 script {
