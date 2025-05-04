@@ -51,7 +51,8 @@ pipeline {
             steps {
                 echo "Deploying application..."
                 sh '''
-                docker-compose down || true
+                docker-compose down --remove-orphans || true
+                docker network prune -f || true
                 docker-compose up -d
                 '''
                 echo 'Deployment completed'
@@ -102,7 +103,7 @@ pipeline {
                         )
                     ]) {
                         sshCommand remote: [
-                            name: 'home-server',
+                            name: 'Home Server',
                             host: env.DEPLOY_HOST,
                             user: env.DEPLOY_USER,
                             identityFile: env.SSH_KEY,
