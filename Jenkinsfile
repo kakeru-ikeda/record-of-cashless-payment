@@ -234,19 +234,23 @@ pipeline {
         success {
             echo 'Pipeline completed successfully!'
             withCredentials([string(credentialsId: 'discord-webhook-url', variable: 'WEBHOOK_URL')]) {
-                discordSend webhookURL: "${WEBHOOK_URL}", 
-                           title: "SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}", 
-                           description: "ビルドが成功しました 🎉", 
-                           link: env.BUILD_URL
+                sh '''
+                    # Discord通知をcurlで送信（ビルド成功）
+                    curl -H "Content-Type: application/json" \\
+                         -d '{"content": "**ビルド成功** 🎉\nジョブ: '"${JOB_NAME}"'\nビルド番号: #'"${BUILD_NUMBER}"'\n詳細: '"${BUILD_URL}"'"}' \\
+                         $WEBHOOK_URL
+                '''
             }
         }
         failure {
             echo 'Pipeline failed!'
             withCredentials([string(credentialsId: 'discord-webhook-url', variable: 'WEBHOOK_URL')]) {
-                discordSend webhookURL: "${WEBHOOK_URL}", 
-                           title: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}", 
-                           description: "ビルドが失敗しました 🚨", 
-                           link: env.BUILD_URL
+                sh '''
+                    # Discord通知をcurlで送信（ビルド失敗）
+                    curl -H "Content-Type: application/json" \\
+                         -d '{"content": "**ビルド失敗** 🚨\nジョブ: '"${JOB_NAME}"'\nビルド番号: #'"${BUILD_NUMBER}"'\n詳細: '"${BUILD_URL}"'"}' \\
+                         $WEBHOOK_URL
+                '''
             }
         }
     }
