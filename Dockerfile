@@ -1,7 +1,13 @@
-# ベースイメージとして公式のNode.jsイメージを使用
-FROM node:22
+# Test stage
+FROM node:18 AS test
+WORKDIR /usr/src/app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm test
 
-# アプリケーションディレクトリを作成
+# ベースイメージとして公式のNode.jsイメージを使用
+FROM node:22 AS build
 WORKDIR /usr/src/app
 
 # 環境変数を設定 - Cloud Runは8080ポートを使用
@@ -17,7 +23,6 @@ COPY . .
 
 # TypeScript をコンパイル
 RUN npm run build
-
 # コンテナ起動時に公開するポート
 EXPOSE 8080
 
