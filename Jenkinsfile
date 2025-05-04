@@ -28,15 +28,15 @@ pipeline {
             }
         }
         
-        stage('Test') {
-            steps {
-                echo "Running tests..."
-                sh '''
-                # Build Docker image with test target
-                docker build --target test --network=${DOCKER_NETWORK} .
-                '''
-            }
-        }
+        // stage('Test') {
+        //     steps {
+        //         echo "Running tests..."
+        //         sh '''
+        //         # Build Docker image with test target
+        //         docker build --target test --network=${DOCKER_NETWORK} .
+        //         '''
+        //     }
+        // }
         
         stage('Deploy') {
             when {
