@@ -135,9 +135,7 @@ pipeline {
                     ]) {
                         sh '''
                             scp -o StrictHostKeyChecking=no -i "$SSH_KEY" "$FIREBASE_ADMIN_KEY" ''' + "${env.DEPLOY_USER}@${env.DEPLOY_HOST}" + ''':/tmp/firebase-admin-key.json
-                        '''
-                        
-                        sh '''
+
                             # 環境変数ファイルを作成
                             cat > /tmp/env_vars.sh << EOL
                             IMAP_SERVER="$IMAP_SERVER"
@@ -147,12 +145,13 @@ pipeline {
                             DOCKER_HUB_USER="$DOCKER_HUB_CREDS_USR"
                             IMAGE_NAME="$IMAGE_NAME"
                             EOL
+
+                            # ファイル内容を確認
+                            echo "環境変数ファイルの内容:"
+                            cat /tmp/env_vars.sh
                             
                             # ファイルを安全に転送
                             scp -o StrictHostKeyChecking=no -i "$SSH_KEY" /tmp/env_vars.sh ''' + "${env.DEPLOY_USER}@${env.DEPLOY_HOST}" + ''':/tmp/env_vars.sh
-                            
-                            # ファイルのパーミッションを設定
-                            ssh -o StrictHostKeyChecking=no -i "$SSH_KEY" ''' + "${env.DEPLOY_USER}@${env.DEPLOY_HOST}" + ''' "chmod 600 /tmp/env_vars.sh"
                         '''
                         
                         sshCommand remote: [
@@ -165,6 +164,7 @@ pipeline {
                             timeout: 60
                         ], command: '''
                             # 環境変数を読み込む
+                            chmod +x /tmp/env_vars.sh
                             source /tmp/env_vars.sh
 
                             # 環境変数を確認
