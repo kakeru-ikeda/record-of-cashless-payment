@@ -21,6 +21,7 @@ module.exports = {
     '/lib/**/*', // Ignore built files.
     '/generated/**/*', // Ignore generated files.
     '/fix-imports.js', // Ignore the fix-imports script.
+    '/coverage/**/*', // Ignore coverage report files.
   ],
   plugins: [
     '@typescript-eslint',

@@ -176,11 +176,29 @@ export const dailyReportSchedule = functions.scheduler
             if (yesterday.getDay() === 1 || dateInfo.isLastDayOfTerm || dateInfo.isLastDayOfMonth) {
                 // 月曜日の場合、または週の最終日の場合、または月の最終日の場合
                 console.log('📅 週次レポート条件に一致: 週次レポートを送信します');
+
+                // 前週の情報を取得 - 月が変わる場合は同じ月内の週を参照する
                 const lastWeekInfo = DateUtil.getLastTermInfo(yesterday);
+
+                // 月をまたぐ場合は当月の情報を使用
+                const reportYear = dateInfo.month !== lastWeekInfo.month ?
+                    dateInfo.year.toString() :
+                    lastWeekInfo.year.toString();
+
+                const reportMonth = dateInfo.month !== lastWeekInfo.month ?
+                    dateInfo.month.toString().padStart(2, '0') :
+                    lastWeekInfo.month.toString().padStart(2, '0');
+
+                const reportTerm = dateInfo.month !== lastWeekInfo.month ?
+                    `term${dateInfo.term}` :
+                    `term${lastWeekInfo.term}`;
+
+                console.log(`📊 週次レポート対象: ${reportYear}年${reportMonth}月${reportTerm}`);
+
                 weeklyReportResult = await weeklyReportService.sendWeeklyReport(
-                    lastWeekInfo.year.toString(),
-                    lastWeekInfo.month.toString().padStart(2, '0'),
-                    `term${lastWeekInfo.term}`
+                    reportYear,
+                    reportMonth,
+                    reportTerm
                 );
             }
 
