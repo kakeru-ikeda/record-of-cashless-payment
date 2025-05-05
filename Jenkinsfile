@@ -182,14 +182,14 @@ pipeline {
                             timeout: 60
                         ], command: """
                             # 最新イメージをプル
-                            docker-compose pull
+                            docker compose pull
                             # 環境変数を渡してデプロイ
                             IMAP_SERVER="${IMAP_SERVER}" \
                             IMAP_USER="${IMAP_USER}" \
                             IMAP_PASSWORD="${IMAP_PASSWORD}" \
                             DISCORD_WEBHOOK_URL="${DISCORD_WEBHOOK_URL}" \
                             FIREBASE_ADMIN_KEY_PATH="/tmp/firebase-admin-key.json" \
-                            docker-compose up -d
+                            docker compose up -d
                             # デプロイ後の稼働確認
                             docker ps
                             # 一時ファイルを削除
