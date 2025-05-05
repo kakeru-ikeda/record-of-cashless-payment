@@ -181,22 +181,41 @@ pipeline {
                             allowAnyHosts: true,
                             timeout: 60
                         ], command: """
-                            # 最新イメージをプル
-                            docker compose pull
-                            # 環境変数を渡してデプロイ
-                            IMAP_SERVER="${IMAP_SERVER}" \
-                            IMAP_USER="${IMAP_USER}" \
-                            IMAP_PASSWORD="${IMAP_PASSWORD}" \
-                            DISCORD_WEBHOOK_URL="${DISCORD_WEBHOOK_URL}" \
-                            FIREBASE_ADMIN_KEY_PATH="/tmp/firebase-admin-key.json" \
-                            docker compose up -d
+                            docker pull ${DOCKER_HUB_CREDS_USR}/${IMAGE_NAME}:latest
+                            docker stop ${IMAGE_NAME} || true
+                            docker rm ${IMAGE_NAME} || true
+                            
+                            # 新しいコンテナを起動
+                            docker run -d --name ${IMAGE_NAME} -p 3000:3000 \\
+                            -e IMAP_SERVER=\"${IMAP_SERVER}\" \\
+                            -e IMAP_USER=\"${IMAP_USER}\" \\
+                            -e IMAP_PASSWORD=\"${IMAP_PASSWORD}\" \\
+                            -e DISCORD_WEBHOOK_URL=\"${DISCORD_WEBHOOK_URL}\" \\
+                            -e GOOGLE_APPLICATION_CREDENTIALS=\"/usr/src/app/firebase-admin-key.json\" \\
+                            -v /tmp/firebase-admin-key.json:/usr/src/app/firebase-admin-key.json \\
+                            ${DOCKER_HUB_CREDS_USR}/${IMAGE_NAME}:latest
+                            
+                            # コンテナが起動していることを確認
+                            echo "Waiting for container to start..."
+                            sleep 5
+
                             # デプロイ後の稼働確認
                             docker ps
+                            
+                            # コンテナの詳細情報を表示
+                            CONTAINER_ID=\$(docker ps -qa --filter name=${IMAGE_NAME})
+                            if [ ! -z "\$CONTAINER_ID" ]; then
+                                echo "コンテナ情報:"
+                                docker inspect \$CONTAINER_ID | grep -E "State|Error|ExitCode"
+                            fi
+                            
                             # 一時ファイルを削除
                             rm -f /tmp/firebase-admin-key.json
 
-                            # コンテナが稼働していない場合はパイプラインを失敗させる
-                            if [ -z "\$(docker ps -q --filter name=${IMAGE_NAME})" ]; then
+                            # コンテナが稼働していない場合はログを取得してからパイプラインを失敗させる
+                            if [ -z "\$(docker ps -q --filter name=${IMAGE_NAME} --filter status=running)" ]; then
+                                echo "コンテナが正常に実行されていません。ログを取得します:"
+                                docker logs \$(docker ps -qa --filter name=${IMAGE_NAME}) || echo "ログの取得に失敗しました"
                                 echo "Container is not running. Failing the pipeline."
                                 exit 1
                             fi
