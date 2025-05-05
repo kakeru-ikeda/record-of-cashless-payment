@@ -21,14 +21,14 @@ pipeline {
     stages {       
         stage('Workspace Debug') {
             steps {
-                echo "Debugging workspace information..."
+                echo "ワークスペース情報をデバッグ中..."
                 sh '''
-                echo "Current workspace: $(pwd)"
-                echo "Files in workspace:"
+                echo "現在のワークスペース: $(pwd)"
+                echo "ワークスペース内のファイル:"
                 ls -la
-                echo "Parent directory:"
+                echo "親ディレクトリ:"
                 ls -la ..
-                echo "Environment variables:"
+                echo "環境変数:"
                 env | sort
                 '''
             }
@@ -36,14 +36,14 @@ pipeline {
         
         stage('Checkout') {
             steps {
-                echo "Checking out source code..."
+                echo "ソースコードをチェックアウト中..."
                 checkout scm
             }
         }
                
         stage('Build') {
             steps {
-                echo "Building Docker image..."
+                echo "Dockerイメージをビルド中..."
                 sh '''
                 docker network create ${DOCKER_NETWORK} || true
                 docker-compose build
@@ -53,12 +53,12 @@ pipeline {
         
         stage('Test') {
             steps {
-                echo "Running tests..."
+                echo "テストを実行中..."
                 sh '''
-                # Build Docker image with test target
+                # テスト用Dockerイメージをビルド
                 docker build --target test .
                 
-                # Alternative approach: Build image first and then run tests in a container
+                # 代替アプローチ：イメージを先にビルドしてからテストを実行するコンテナで実行
                 # docker build --target test -t ${IMAGE_NAME}:test .
                 # docker run --rm --name test-container ${IMAGE_NAME}:test npm test
                 '''
@@ -67,7 +67,7 @@ pipeline {
         
         stage('Deploy') {
             steps {
-                echo "Deploying application..."
+                echo "アプリケーションをデプロイ中..."
                 sh '''
                     # 既存のコンテナとネットワークを強制的に停止・削除
                     docker-compose down --remove-orphans || true
@@ -77,7 +77,7 @@ pipeline {
                     # 強制的にポート3000を使用しているコンテナを特定して停止
                     CONTAINER_USING_PORT=$(docker ps -q --filter publish=3000)
                     if [ ! -z "$CONTAINER_USING_PORT" ]; then
-                        echo "Found container using port 3000: $CONTAINER_USING_PORT"
+                        echo "ポート3000を使用しているコンテナを発見: $CONTAINER_USING_PORT"
                         docker stop $CONTAINER_USING_PORT || true
                         docker rm $CONTAINER_USING_PORT || true
                     fi
@@ -85,28 +85,28 @@ pipeline {
                     # 新しいコンテナをデプロイ
                     docker-compose up -d
                 '''
-                echo 'Deployment completed'
+                echo 'デプロイが完了しました'
             }
         }
         
         stage('Publish') {
             steps {
-                echo "Publishing Docker image..."
+                echo "Dockerイメージを公開中..."
                 script {
                     withCredentials([usernamePassword(credentialsId: env.DOCKER_HUB_CREDS, passwordVariable: 'DOCKER_HUB_CREDS_PSW', usernameVariable: 'DOCKER_HUB_CREDS_USR')]) {
                         sh '''
-                        # Login to Docker Hub
+                        # Docker Hubにログイン
                         echo $DOCKER_HUB_CREDS_PSW | docker login -u $DOCKER_HUB_CREDS_USR --password-stdin
                         
-                        # Tag the image
+                        # イメージにタグを付ける
                         docker tag ${IMAGE_NAME}:latest ${DOCKER_HUB_CREDS_USR}/${IMAGE_NAME}:latest
                         docker tag ${IMAGE_NAME}:latest ${DOCKER_HUB_CREDS_USR}/${IMAGE_NAME}:${BUILD_NUMBER}
                         
-                        # Push the images
+                        # イメージをプッシュ
                         docker push ${DOCKER_HUB_CREDS_USR}/${IMAGE_NAME}:latest
                         docker push ${DOCKER_HUB_CREDS_USR}/${IMAGE_NAME}:${BUILD_NUMBER}
                         
-                        # Logout
+                        # ログアウト
                         docker logout
                         '''
                     }
@@ -123,23 +123,23 @@ pipeline {
                         usernameVariable: 'SSH_USER'
                     )]) {
                         sh '''
-                        echo "===== SSH DEBUG ====="
+                        echo "===== SSHデバッグ ====="
                         echo "SSH_USER=$SSH_USER"
                         echo "SSH_KEY=$SSH_KEY"
-                        echo "Current directory: $(pwd)"
+                        echo "現在のディレクトリ: $(pwd)"
                         
                         # SSHキーの存在確認とパーミッション（絶対パス形式で）
                         if [ -f "$SSH_KEY" ]; then
                             ls -la "$SSH_KEY"
-                            echo "SSH key file exists"
+                            echo "SSHキーファイルが存在します"
                             wc -l "$SSH_KEY"
                             head -n1 "$SSH_KEY"
                         else
-                            echo "SSH key file not found at path: $SSH_KEY"
+                            echo "SSHキーファイルが見つかりません: $SSH_KEY"
                             # 代替方法として一時ファイルを作成
                             cp /home/server/.ssh/jenkins_deploy ~/.ssh/jenkins_deploy_temp
                             chmod 600 ~/.ssh/jenkins_deploy_temp
-                            echo "Created temporary SSH key at ~/.ssh/jenkins_deploy_temp"
+                            echo "一時SSHキーを作成しました: ~/.ssh/jenkins_deploy_temp"
                             ls -la ~/.ssh/jenkins_deploy_temp
                         fi
                         echo "===================="
@@ -151,7 +151,7 @@ pipeline {
         
         stage('Deploy to Home') {
             steps {
-                echo "Deploying to home server..."
+                echo "ホームサーバーにデプロイ中..."
                 script {
                     withCredentials([
                         string(credentialsId: 'IMAP_SERVER', variable: 'IMAP_SERVER'),
@@ -168,7 +168,7 @@ pipeline {
                             usernameVariable: 'SSH_USER'
                         )
                     ]) {
-                        // ファイルをリモートホストにコピー（ホストキー検証をスキップ）
+                        // Firebaseの管理キーファイルをリモートホストにコピー（ホストキー検証をスキップ）
                         sh "scp -o StrictHostKeyChecking=no -i \"${SSH_KEY}\" \"${FIREBASE_ADMIN_KEY}\" ${DEPLOY_USER}@${DEPLOY_HOST}:/tmp/firebase-admin-key.json"
                         
                         // リモートコマンドでデプロイを実行
@@ -195,8 +195,8 @@ pipeline {
                             -v /tmp/firebase-admin-key.json:/usr/src/app/firebase-admin-key.json \\
                             ${DOCKER_HUB_CREDS_USR}/${IMAGE_NAME}:latest
                             
-                            # コンテナが起動していることを確認
-                            echo "Waiting for container to start..."
+                            # コンテナの起動を待機中
+                            echo "コンテナの起動を待機中..."
                             sleep 5
 
                             # デプロイ後の稼働確認
@@ -216,42 +216,42 @@ pipeline {
                             if [ -z "\$(docker ps -q --filter name=${IMAGE_NAME} --filter status=running)" ]; then
                                 echo "コンテナが正常に実行されていません。ログを取得します:"
                                 docker logs \$(docker ps -qa --filter name=${IMAGE_NAME}) || echo "ログの取得に失敗しました"
-                                echo "Container is not running. Failing the pipeline."
+                                echo "コンテナが実行されていないため、パイプラインを失敗させます。"
                                 exit 1
                             fi
                         """
                     }
                 }
-                echo "Deployment to home server completed"
+                echo "ホームサーバーへのデプロイが完了しました"
             }
         }
     }
     
     post {
         always {
-            echo "Cleaning up..."
+            echo "クリーンアップを実行中..."
             sh '''
-                # Stop and remove all containers started by docker-compose
+                # docker-composeで起動したすべてのコンテナを停止・削除
                 docker-compose down --remove-orphans || true
                 
-                # Clean up any dangling images to free up space
+                # 未使用イメージを削除して領域を解放
                 docker image prune -f
                 
-                # Remove the network if it exists
+                # 存在する場合はネットワークを削除
                 docker network rm ${DOCKER_NETWORK} || true
             '''
             
-            // Clean up workspace
+            // ワークスペースをクリーンアップ
             cleanWs()
         }
         success {
-            echo 'Pipeline completed successfully!'
+            echo 'パイプラインが正常に完了しました！'
             withCredentials([string(credentialsId: 'DISCORD_WEBHOOK_JENKINS_LOG_URL', variable: 'DISCORD_WEBHOOK_JENKINS_LOG_URL')]) {
                 sh '''
                     # JSONをエスケープして正しく構築
                     JOB_NAME_ESC=$(echo "${JOB_NAME}" | sed 's/"/\\\\"/g')
                     
-                    # Discord通知をcurlで送信（ビルド成功
+                    # Discord通知をcurlで送信（ビルド成功）
                     curl -X POST -H "Content-Type: application/json" \\
                          -d "{\\\"content\\\":\\\"**ビルド成功** 🎉\\nジョブ: ${JOB_NAME_ESC}\\nビルド番号: #${BUILD_NUMBER}\\\"}" \\
                          "${DISCORD_WEBHOOK_JENKINS_LOG_URL}"
@@ -259,13 +259,13 @@ pipeline {
             }
         }
         failure {
-            echo 'Pipeline failed!'
+            echo 'パイプラインが失敗しました！'
             withCredentials([string(credentialsId: 'DISCORD_WEBHOOK_JENKINS_LOG_URL', variable: 'DISCORD_WEBHOOK_JENKINS_LOG_URL')]) {
                 sh '''
                     # JSONをエスケープして正しく構築
                     JOB_NAME_ESC=$(echo "${JOB_NAME}" | sed 's/"/\\\\"/g')
                     
-                    # Discord通知をcurlで送信（ビルド失敗
+                    # Discord通知をcurlで送信（ビルド失敗）
                     curl -X POST -H "Content-Type: application/json" \\
                          -d "{\\\"content\\\":\\\"**ビルド失敗** 🚨\\nジョブ: ${JOB_NAME_ESC}\\nビルド番号: #${BUILD_NUMBER}\\\"}" \\
                          "${DISCORD_WEBHOOK_JENKINS_LOG_URL}"
