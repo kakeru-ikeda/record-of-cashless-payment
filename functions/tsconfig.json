@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
-    "module": "NodeNext",
+    "module": "commonjs",
     "esModuleInterop": true,
-    "moduleResolution": "nodenext",
+    "moduleResolution": "node",
     "noImplicitReturns": true,
     "noUnusedLocals": true,
     "outDir": "lib",
@@ -11,7 +11,8 @@
     "target": "es2017",
     "skipLibCheck": true,
     "rootDir": "..",
-    "baseUrl": ".."
+    "baseUrl": "..",
+    "isolatedModules": true
   },
   "compileOnSave": true,
   "include": [
