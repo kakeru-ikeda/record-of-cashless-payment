@@ -1,3 +1,13 @@
+# dockerignore
+# Node.js dependencies
 node_modules
+# ビルド成果物
 dist
+# 環境設定ファイル
+.env
+# Firebase Admin SDK のサービスアカウントキーを除外
+firebase-admin-key.json
+# npmログ
+npm-debug.log*
+# Functions
 functions

@@ -169,7 +169,7 @@ pipeline {
                         )
                     ]) {
                         // ファイルをリモートホストにコピー（ホストキー検証をスキップ）
-                        sh "scp -o StrictHostKeyChecking=no -i \"${SSH_KEY}\" \"${FIREBASE_ADMIN_KEY}\" ${DEPLOY_USER}@${DEPLOY_HOST}:/tmp/firebase-admin-key.json"
+                        sh "scp -o StrictHostKeyChecking=no -i \"${SSH_KEY}\" \"${FIREBASE_ADMIN_KEY}\" ${DEPLOY_USER}@${DEPLOY_HOST}:~/firebase-admin-key.json"
                         
                         // リモートコマンドでデプロイを実行
                         sshCommand remote: [
@@ -181,45 +181,17 @@ pipeline {
                             allowAnyHosts: true,
                             timeout: 60
                         ], command: """
-                            docker pull ${DOCKER_HUB_CREDS_USR}/${IMAGE_NAME}:latest
-                            docker stop ${IMAGE_NAME} || true
-                            docker rm ${IMAGE_NAME} || true
-                            
-                            # 新しいコンテナを起動
-                            docker run -d --name ${IMAGE_NAME} -p 3000:3000 \\
-                            -v /tmp/firebase-admin-key.json:/usr/src/app/firebase-admin-key.json:ro \\
-                            -e IMAP_SERVER=\"${IMAP_SERVER}\" \\
-                            -e IMAP_USER=\"${IMAP_USER}\" \\
-                            -e IMAP_PASSWORD=\"${IMAP_PASSWORD}\" \\
-                            -e DISCORD_WEBHOOK_URL=\"${DISCORD_WEBHOOK_URL}\" \\
-                            -e GOOGLE_APPLICATION_CREDENTIALS=\"/usr/src/app/firebase-admin-key.json\" \\
-                            ${DOCKER_HUB_CREDS_USR}/${IMAGE_NAME}:latest
-                            
-                            # コンテナが起動していることを確認
-                            echo "Waiting for container to start..."
-                            sleep 5
-                            
-                            # コンテナが実際に起動しているか確認
-                            CONTAINER_RUNNING=\$(docker ps --filter "name=${IMAGE_NAME}" --filter "status=running" -q)
-                            
-                            if [ -z "\$CONTAINER_RUNNING" ]; then
-                                echo "ERROR: Container failed to start properly!"
-                                
-                                # コンテナのログを取得して問題を診断
-                                echo "Container logs:"
-                                docker logs ${IMAGE_NAME} || true
-                                
-                                # Discord通知を送信（起動失敗）
-                                curl -X POST -H "Content-Type: application/json" \\
-                                     -d "{\\\"content\\\":\\\"**コンテナ起動失敗** 🚨\\nジョブ: ${JOB_NAME}\\nビルド番号: #${BUILD_NUMBER}\\nコンテナ: ${IMAGE_NAME}\\\"}" \\
-                                     "${DISCORD_WEBHOOK_JENKINS_LOG_URL}"
-                                     
-                                # エラーを発生させてパイプラインを失敗させる
-                                exit 1
-                            else
-                                echo "Container successfully started with ID: \$CONTAINER_RUNNING"
-                            fi
-                            
+                            cd ~/record-of-cashless-payment
+                            # 最新イメージをプル
+                            docker-compose pull
+                            # 環境変数を渡してデプロイ
+                            IMAP_SERVER="${IMAP_SERVER}" \
+                            IMAP_USER="${IMAP_USER}" \
+                            IMAP_PASSWORD="${IMAP_PASSWORD}" \
+                            DISCORD_WEBHOOK_URL="${DISCORD_WEBHOOK_URL}" \
+                            FIREBASE_ADMIN_KEY_PATH="~/firebase-admin-key.json" \
+                            docker-compose up -d
+                            # デプロイ後の稼働確認
                             docker ps
                         """
                     }
