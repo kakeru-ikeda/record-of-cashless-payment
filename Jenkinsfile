@@ -71,75 +71,9 @@ pipeline {
                 sh '''
                     # 現在のパイプラインで実行中のコンテナをクリーンアップ
                     docker-compose down --remove-orphans || true
-                    
-                    # 現在稼働中のコンテナ情報を保存（ポート3000利用のもの）
-                    CURRENT_CONTAINER=$(docker ps -q --filter publish=3000)
-                    CURRENT_CONTAINER_IMAGE=""
-                    
-                    # 現在稼働中コンテナの情報を記録
-                    if [ ! -z "$CURRENT_CONTAINER" ]; then
-                        echo "ポート3000で稼働中のコンテナを発見: $CURRENT_CONTAINER"
-                        CURRENT_CONTAINER_IMAGE=$(docker inspect --format='{{.Config.Image}}' $CURRENT_CONTAINER)
-                        echo "現在のイメージ: $CURRENT_CONTAINER_IMAGE"
-                        # 既存コンテナをリネームでバックアップ
-                        docker rename $CURRENT_CONTAINER ${IMAGE_NAME}-backup-$(date +%s) || true
-                        docker stop $CURRENT_CONTAINER || true
-                    fi
-                    
+
                     echo "新しいコンテナをデプロイします..."
                     docker-compose up -d
-                    
-                    # 起動確認のため少し待機
-                    sleep 5
-                    
-                    # 新しいコンテナが正常に起動したか確認
-                    if [ -z "$(docker ps -q --filter ancestor=${IMAGE_NAME}:latest --filter status=running)" ]; then
-                        echo "新しいコンテナの起動に失敗しました。バックアップを復元します。"
-                        
-                        # 失敗したコンテナのログを出力
-                        docker logs $(docker ps -qa --filter ancestor=${IMAGE_NAME}:latest) || echo "ログの取得に失敗"
-                        
-                        # 起動に失敗したコンテナを削除
-                        docker-compose down || true
-                        
-                        # バックアップを復元（存在している場合）
-                        BACKUP_CONTAINER=$(docker ps -aq --filter name=${IMAGE_NAME}-backup)
-                        if [ ! -z "$BACKUP_CONTAINER" ]; then
-                            # 最新のバックアップを取得して復元
-                            LATEST_BACKUP=$(docker ps -aq --filter name=${IMAGE_NAME}-backup | head -1)
-                            echo "バックアップコンテナを復元中: $LATEST_BACKUP"
-                            docker rename $LATEST_BACKUP ${IMAGE_NAME} || true
-                            docker start ${IMAGE_NAME} || true
-                            
-                            # 復元できたか確認
-                            if [ -z "$(docker ps -q --filter name=${IMAGE_NAME} --filter status=running)" ]; then
-                                echo "バックアップコンテナの復元に失敗しました。"
-                                exit 1
-                            else
-                                echo "バックアップコンテナを正常に復元しました。"
-                            fi
-                        elif [ ! -z "$CURRENT_CONTAINER_IMAGE" ]; then
-                            # 直前のイメージから再起動
-                            echo "バックアップイメージから再起動中: $CURRENT_CONTAINER_IMAGE"
-                            docker run -d --name ${IMAGE_NAME} -p 3000:3000 $CURRENT_CONTAINER_IMAGE
-                            
-                            # 再起動確認
-                            if [ -z "$(docker ps -q --filter name=${IMAGE_NAME} --filter status=running)" ]; then
-                                echo "バックアップイメージからの再起動に失敗しました。"
-                                exit 1
-                            else
-                                echo "バックアップイメージから正常に再起動しました。"
-                            fi
-                        else
-                            echo "復元できるバックアップがありません。デプロイ失敗。"
-                            exit 1
-                        fi
-                    else
-                        echo "新しいコンテナが正常に起動しました。"
-                        
-                        # バックアップは不要なので削除
-                        docker ps -aq --filter name=${IMAGE_NAME}-backup | xargs -r docker rm -f || true
-                    fi
                 '''
                 echo 'デプロイが完了しました'
             }
