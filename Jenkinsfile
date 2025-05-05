@@ -65,20 +65,6 @@ pipeline {
             }
         }
         
-        stage('Deploy') {
-            steps {
-                echo "アプリケーションをデプロイ中..."
-                sh '''
-                    # 現在のパイプラインで実行中のコンテナをクリーンアップ
-                    docker-compose down --remove-orphans || true
-
-                    echo "新しいコンテナをデプロイします... composeは3001ポートを使用します"
-                    docker-compose up -d
-                '''
-                echo 'デプロイが完了しました'
-            }
-        }
-        
         stage('Publish') {
             steps {
                 echo "Dockerイメージを公開中..."
@@ -278,9 +264,6 @@ pipeline {
         always {
             echo "クリーンアップを実行中..."
             sh '''
-                # docker-composeで起動したすべてのコンテナを停止・削除
-                docker-compose down --remove-orphans || true
-                
                 # 未使用イメージを削除して領域を解放
                 docker image prune -f
                 
