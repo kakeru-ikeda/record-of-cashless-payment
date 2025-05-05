@@ -169,7 +169,7 @@ pipeline {
                         )
                     ]) {
                         // ファイルをリモートホストにコピー（ホストキー検証をスキップ）
-                        sh "scp -o StrictHostKeyChecking=no -i \"${SSH_KEY}\" \"${FIREBASE_ADMIN_KEY}\" ${DEPLOY_USER}@${DEPLOY_HOST}:~/firebase-admin-key.json"
+                        sh "scp -o StrictHostKeyChecking=no -i \"${SSH_KEY}\" \"${FIREBASE_ADMIN_KEY}\" ${DEPLOY_USER}@${DEPLOY_HOST}:/tmp/firebase-admin-key.json"
                         
                         // リモートコマンドでデプロイを実行
                         sshCommand remote: [
@@ -181,7 +181,6 @@ pipeline {
                             allowAnyHosts: true,
                             timeout: 60
                         ], command: """
-                            cd ~/record-of-cashless-payment
                             # 最新イメージをプル
                             docker-compose pull
                             # 環境変数を渡してデプロイ
@@ -189,10 +188,18 @@ pipeline {
                             IMAP_USER="${IMAP_USER}" \
                             IMAP_PASSWORD="${IMAP_PASSWORD}" \
                             DISCORD_WEBHOOK_URL="${DISCORD_WEBHOOK_URL}" \
-                            FIREBASE_ADMIN_KEY_PATH="~/firebase-admin-key.json" \
+                            FIREBASE_ADMIN_KEY_PATH="/tmp/firebase-admin-key.json" \
                             docker-compose up -d
                             # デプロイ後の稼働確認
                             docker ps
+                            # 一時ファイルを削除
+                            rm -f /tmp/firebase-admin-key.json
+
+                            # コンテナが稼働していない場合はパイプラインを失敗させる
+                            if [ -z "\$(docker ps -q --filter name=${IMAGE_NAME})" ]; then
+                                echo "Container is not running. Failing the pipeline."
+                                exit 1
+                            fi
                         """
                     }
                 }
