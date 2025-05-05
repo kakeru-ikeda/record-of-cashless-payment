@@ -144,6 +144,10 @@ pipeline {
                                 echo "現在のイメージ: \$CURRENT_CONTAINER_IMAGE"
                             fi
                             
+                            # 既存のバックアップコンテナを確認
+                            BACKUP_COUNT=\$(docker ps -a --filter name=${imageName}-backup --format="{{.Names}}" | wc -l)
+                            echo "既存のバックアップコンテナ数: \$BACKUP_COUNT"
+                            
                             # 一時的なコンテナ名
                             TEMP_CONTAINER_NAME="${imageName}-new-\$(date +%s)"
                             
@@ -172,9 +176,24 @@ pipeline {
                                 # 既存コンテナを停止して入れ替え
                                 if [ ! -z "\$RUNNING_PORT3000" ]; then
                                     echo "ポート3000で稼働中のコンテナを停止します: \$RUNNING_PORT3000"
+                                    # タイムスタンプを含むバックアップ名を生成
+                                    BACKUP_NAME="${imageName}-backup-\$(date +%s)"
+                                    echo "バックアップ名: \$BACKUP_NAME"
+                                    
                                     # リネームして保持（バックアップ用）
-                                    docker rename \$(docker ps -q --filter publish=3000) ${imageName}-backup-\$(date +%s) || true
-                                    docker stop \$RUNNING_PORT3000 || true
+                                    docker rename \$(docker ps -q --filter publish=3000) \$BACKUP_NAME || true
+                                    docker stop \$BACKUP_NAME || true
+                                    
+                                    # 古いバックアップコンテナの削除（最新のバックアップは残す）
+                                    if [ \$BACKUP_COUNT -ge 1 ]; then
+                                        echo "古いバックアップを削除します"
+                                        # 新しく作ったバックアップを除く全バックアップを取得
+                                        OLD_BACKUPS=\$(docker ps -a --filter name=${imageName}-backup --filter status=exited --format="{{.Names}}" | grep -v \$BACKUP_NAME)
+                                        if [ ! -z "\$OLD_BACKUPS" ]; then
+                                            echo "\$OLD_BACKUPS" | xargs docker rm -f
+                                            echo "古いバックアップコンテナを削除しました"
+                                        fi
+                                    fi
                                 fi
                                 
                                 # テストコンテナを停止
@@ -206,9 +225,9 @@ pipeline {
                                         docker rm -f ${imageName} || true
                                         
                                         # バックアップコンテナを復元
-                                        BACKUP_CONTAINER=\$(docker ps -aq --filter name=${imageName}-backup)
+                                        BACKUP_CONTAINER=\$(docker ps -aq --filter name=${imageName}-backup --filter status=exited | head -1)
                                         if [ ! -z "\$BACKUP_CONTAINER" ]; then
-                                            docker rename \$(docker ps -aq --filter name=${imageName}-backup | head -1) ${imageName} || true
+                                            docker rename \$BACKUP_CONTAINER ${imageName} || true
                                             docker start ${imageName} || true
                                             echo "バックアップコンテナを復元しました"
                                         else
@@ -223,6 +242,12 @@ pipeline {
                                             \$CURRENT_CONTAINER_IMAGE
                                         fi
                                     fi
+                                else
+                                    echo "新しいコンテナが正常に起動しました"
+                                    
+                                    # バックアップの状況をログに出力
+                                    echo "現在のバックアップ状況:"
+                                    docker ps -a --filter name=${imageName}-backup --format "表 {{.Names}}: {{.Status}}"
                                 fi
                             else
                                 echo "テストコンテナの起動に失敗しました"
