@@ -69,21 +69,77 @@ pipeline {
             steps {
                 echo "アプリケーションをデプロイ中..."
                 sh '''
-                    # 既存のコンテナとネットワークを強制的に停止・削除
+                    # 現在のパイプラインで実行中のコンテナをクリーンアップ
                     docker-compose down --remove-orphans || true
-                    docker stop $(docker ps -a -q --filter ancestor=${IMAGE_NAME}:latest --format="{{.ID}}") || true
-                    docker rm $(docker ps -a -q --filter ancestor=${IMAGE_NAME}:latest --format="{{.ID}}") || true
                     
-                    # 強制的にポート3000を使用しているコンテナを特定して停止
-                    CONTAINER_USING_PORT=$(docker ps -q --filter publish=3000)
-                    if [ ! -z "$CONTAINER_USING_PORT" ]; then
-                        echo "ポート3000を使用しているコンテナを発見: $CONTAINER_USING_PORT"
-                        docker stop $CONTAINER_USING_PORT || true
-                        docker rm $CONTAINER_USING_PORT || true
+                    # 現在稼働中のコンテナ情報を保存（ポート3000利用のもの）
+                    CURRENT_CONTAINER=$(docker ps -q --filter publish=3000)
+                    CURRENT_CONTAINER_IMAGE=""
+                    
+                    # 現在稼働中コンテナの情報を記録
+                    if [ ! -z "$CURRENT_CONTAINER" ]; then
+                        echo "ポート3000で稼働中のコンテナを発見: $CURRENT_CONTAINER"
+                        CURRENT_CONTAINER_IMAGE=$(docker inspect --format='{{.Config.Image}}' $CURRENT_CONTAINER)
+                        echo "現在のイメージ: $CURRENT_CONTAINER_IMAGE"
+                        # 既存コンテナをリネームでバックアップ
+                        docker rename $CURRENT_CONTAINER ${IMAGE_NAME}-backup-$(date +%s) || true
+                        docker stop $CURRENT_CONTAINER || true
                     fi
                     
-                    # 新しいコンテナをデプロイ
+                    echo "新しいコンテナをデプロイします..."
                     docker-compose up -d
+                    
+                    # 起動確認のため少し待機
+                    sleep 5
+                    
+                    # 新しいコンテナが正常に起動したか確認
+                    if [ -z "$(docker ps -q --filter ancestor=${IMAGE_NAME}:latest --filter status=running)" ]; then
+                        echo "新しいコンテナの起動に失敗しました。バックアップを復元します。"
+                        
+                        # 失敗したコンテナのログを出力
+                        docker logs $(docker ps -qa --filter ancestor=${IMAGE_NAME}:latest) || echo "ログの取得に失敗"
+                        
+                        # 起動に失敗したコンテナを削除
+                        docker-compose down || true
+                        
+                        # バックアップを復元（存在している場合）
+                        BACKUP_CONTAINER=$(docker ps -aq --filter name=${IMAGE_NAME}-backup)
+                        if [ ! -z "$BACKUP_CONTAINER" ]; then
+                            # 最新のバックアップを取得して復元
+                            LATEST_BACKUP=$(docker ps -aq --filter name=${IMAGE_NAME}-backup | head -1)
+                            echo "バックアップコンテナを復元中: $LATEST_BACKUP"
+                            docker rename $LATEST_BACKUP ${IMAGE_NAME} || true
+                            docker start ${IMAGE_NAME} || true
+                            
+                            # 復元できたか確認
+                            if [ -z "$(docker ps -q --filter name=${IMAGE_NAME} --filter status=running)" ]; then
+                                echo "バックアップコンテナの復元に失敗しました。"
+                                exit 1
+                            else
+                                echo "バックアップコンテナを正常に復元しました。"
+                            fi
+                        elif [ ! -z "$CURRENT_CONTAINER_IMAGE" ]; then
+                            # 直前のイメージから再起動
+                            echo "バックアップイメージから再起動中: $CURRENT_CONTAINER_IMAGE"
+                            docker run -d --name ${IMAGE_NAME} -p 3000:3000 $CURRENT_CONTAINER_IMAGE
+                            
+                            # 再起動確認
+                            if [ -z "$(docker ps -q --filter name=${IMAGE_NAME} --filter status=running)" ]; then
+                                echo "バックアップイメージからの再起動に失敗しました。"
+                                exit 1
+                            else
+                                echo "バックアップイメージから正常に再起動しました。"
+                            fi
+                        else
+                            echo "復元できるバックアップがありません。デプロイ失敗。"
+                            exit 1
+                        fi
+                    else
+                        echo "新しいコンテナが正常に起動しました。"
+                        
+                        # バックアップは不要なので削除
+                        docker ps -aq --filter name=${IMAGE_NAME}-backup | xargs -r docker rm -f || true
+                    fi
                 '''
                 echo 'デプロイが完了しました'
             }
@@ -153,12 +209,30 @@ pipeline {
                             allowAnyHosts: true,
                             timeout: 60
                         ], command: """
+                            # 最新イメージをプル
                             docker pull ${dockerHubUser}/${imageName}:latest
-                            docker stop ${imageName} || true
-                            docker rm ${imageName} || true
                             
-                            # 新しいコンテナを起動 - 環境変数を明示的に設定
-                            docker run -d --name ${imageName} -p 3000:3000 \\
+                            # 現在稼働中のコンテナ情報を保存（バックアップ用）
+                            CURRENT_CONTAINER=\$(docker ps -q --filter name=${imageName} --filter status=running)
+                            CURRENT_CONTAINER_IMAGE=""
+                            RUNNING_PORT3000=\$(docker ps -q --filter publish=3000)
+                            
+                            # 現在稼働中コンテナの情報をログに記録
+                            if [ ! -z "\$CURRENT_CONTAINER" ]; then
+                                echo "現在稼働中のコンテナを発見: \$CURRENT_CONTAINER"
+                                CURRENT_CONTAINER_IMAGE=\$(docker inspect --format='{{.Config.Image}}' \$CURRENT_CONTAINER)
+                                echo "現在のイメージ: \$CURRENT_CONTAINER_IMAGE"
+                            fi
+                            
+                            # 一時的なコンテナ名
+                            TEMP_CONTAINER_NAME="${imageName}-new-\$(date +%s)"
+                            
+                            # 一時的なコンテナを起動してテスト（ポート3001で）
+                            echo "新しいコンテナを一時的にポート3001で起動してテスト中..."
+                            DEPLOY_SUCCESS=false
+                            
+                            # 一時的なテストコンテナを起動
+                            docker run -d --name \$TEMP_CONTAINER_NAME -p 3001:3000 \\
                             -e IMAP_SERVER='${imapServer}' \\
                             -e IMAP_USER='${imapUser}' \\
                             -e IMAP_PASSWORD='${imapPassword}' \\
@@ -167,12 +241,80 @@ pipeline {
                             -v /tmp/firebase-admin-key.json:/usr/src/app/firebase-admin-key.json \\
                             ${dockerHubUser}/${imageName}:latest
                             
-                            # コンテナの起動を待機中
-                            echo "コンテナの起動を待機中..."
-                            sleep 5
-
-                            # デプロイ後の稼働確認
-                            docker ps
+                            # 起動待機
+                            sleep 10
+                            
+                            # 稼働チェック
+                            if docker ps -q --filter name=\$TEMP_CONTAINER_NAME --filter status=running | grep -q .; then
+                                echo "テストコンテナは正常に起動しています"
+                                DEPLOY_SUCCESS=true
+                                
+                                # 既存コンテナを停止して入れ替え
+                                if [ ! -z "\$RUNNING_PORT3000" ]; then
+                                    echo "ポート3000で稼働中のコンテナを停止します: \$RUNNING_PORT3000"
+                                    # リネームして保持（バックアップ用）
+                                    docker rename \$(docker ps -q --filter publish=3000) ${imageName}-backup-\$(date +%s) || true
+                                    docker stop \$RUNNING_PORT3000 || true
+                                fi
+                                
+                                # テストコンテナを停止
+                                docker stop \$TEMP_CONTAINER_NAME || true
+                                docker rm \$TEMP_CONTAINER_NAME || true
+                                
+                                # 本番コンテナを起動
+                                docker run -d --name ${imageName} -p 3000:3000 \\
+                                -e IMAP_SERVER='${imapServer}' \\
+                                -e IMAP_USER='${imapUser}' \\
+                                -e IMAP_PASSWORD='${imapPassword}' \\
+                                -e DISCORD_WEBHOOK_URL='${discordWebhookUrl}' \\
+                                -e GOOGLE_APPLICATION_CREDENTIALS='/usr/src/app/firebase-admin-key.json' \\
+                                -v /tmp/firebase-admin-key.json:/usr/src/app/firebase-admin-key.json \\
+                                ${dockerHubUser}/${imageName}:latest
+                                
+                                # 起動待機
+                                sleep 5
+                                
+                                # 最終確認
+                                if [ -z "\$(docker ps -q --filter name=${imageName} --filter status=running)" ]; then
+                                    echo "本番コンテナの起動に失敗しました。バックアップを復元します"
+                                    DEPLOY_SUCCESS=false
+                                    
+                                    # 古いバックアップを復元
+                                    if [ ! -z "\$CURRENT_CONTAINER_IMAGE" ]; then
+                                        echo "バックアップから復元中..."
+                                        # 起動に失敗したコンテナを削除
+                                        docker rm -f ${imageName} || true
+                                        
+                                        # バックアップコンテナを復元
+                                        BACKUP_CONTAINER=\$(docker ps -aq --filter name=${imageName}-backup)
+                                        if [ ! -z "\$BACKUP_CONTAINER" ]; then
+                                            docker rename \$(docker ps -aq --filter name=${imageName}-backup | head -1) ${imageName} || true
+                                            docker start ${imageName} || true
+                                            echo "バックアップコンテナを復元しました"
+                                        else
+                                            echo "バックアップコンテナが見つからないため、イメージから再起動します"
+                                            docker run -d --name ${imageName} -p 3000:3000 \\
+                                            -e IMAP_SERVER='${imapServer}' \\
+                                            -e IMAP_USER='${imapUser}' \\
+                                            -e IMAP_PASSWORD='${imapPassword}' \\
+                                            -e DISCORD_WEBHOOK_URL='${discordWebhookUrl}' \\
+                                            -e GOOGLE_APPLICATION_CREDENTIALS='/usr/src/app/firebase-admin-key.json' \\
+                                            -v /tmp/firebase-admin-key.json:/usr/src/app/firebase-admin-key.json \\
+                                            \$CURRENT_CONTAINER_IMAGE
+                                        fi
+                                    fi
+                                fi
+                            else
+                                echo "テストコンテナの起動に失敗しました"
+                                docker logs \$TEMP_CONTAINER_NAME || echo "ログの取得に失敗"
+                                docker rm -f \$TEMP_CONTAINER_NAME || true
+                            fi
+                            
+                            # 一時ファイルを削除
+                            rm -f /tmp/firebase-admin-key.json
+                            
+                            # デプロイ結果の確認
+                            docker ps | grep ${imageName}
                             
                             # コンテナの詳細情報を表示
                             CONTAINER_ID=\$(docker ps -qa --filter name=${imageName})
@@ -181,15 +323,14 @@ pipeline {
                                 docker inspect \$CONTAINER_ID | grep -E "State|Error|ExitCode"
                             fi
                             
-                            # 一時ファイルを削除
-                            rm -f /tmp/firebase-admin-key.json
-
-                            # コンテナが稼働していない場合はログを取得してからパイプラインを失敗させる
-                            if [ -z "\$(docker ps -q --filter name=${imageName} --filter status=running)" ]; then
-                                echo "コンテナが正常に実行されていません。ログを取得します:"
+                            # デプロイ結果のステータスに基づいてパイプラインの成否を決定
+                            if [ "\$DEPLOY_SUCCESS" = false ] || [ -z "\$(docker ps -q --filter name=${imageName} --filter status=running)" ]; then
+                                echo "デプロイに失敗しました。コンテナログを確認:"
                                 docker logs \$(docker ps -qa --filter name=${imageName}) || echo "ログの取得に失敗しました"
-                                echo "コンテナが実行されていないため、パイプラインを失敗させます。"
+                                echo "デプロイが失敗しました。パイプラインを終了します。"
                                 exit 1
+                            else
+                                echo "デプロイに成功しました！"
                             fi
                         """
                     }
