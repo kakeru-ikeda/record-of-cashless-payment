@@ -137,12 +137,23 @@ pipeline {
                             scp -o StrictHostKeyChecking=no -i "$SSH_KEY" "$FIREBASE_ADMIN_KEY" ''' + "${env.DEPLOY_USER}@${env.DEPLOY_HOST}" + ''':/tmp/firebase-admin-key.json
                         '''
                         
-                        def imapServer = sh(script: 'echo "$IMAP_SERVER"', returnStdout: true).trim()
-                        def imapUser = sh(script: 'echo "$IMAP_USER"', returnStdout: true).trim()
-                        def imapPassword = sh(script: 'echo "$IMAP_PASSWORD"', returnStdout: true).trim()
-                        def discordWebhookUrl = sh(script: 'echo "$DISCORD_WEBHOOK_URL"', returnStdout: true).trim()
-                        def dockerHubUser = env.DOCKER_HUB_CREDS_USR
-                        def imageName = env.IMAGE_NAME
+                        sh '''
+                            # 環境変数ファイルを作成
+                            cat > /tmp/env_vars.sh << EOL
+                            IMAP_SERVER="$IMAP_SERVER"
+                            IMAP_USER="$IMAP_USER"
+                            IMAP_PASSWORD="$IMAP_PASSWORD"
+                            DISCORD_WEBHOOK_URL="$DISCORD_WEBHOOK_URL"
+                            DOCKER_HUB_USER="$DOCKER_HUB_CREDS_USR"
+                            IMAGE_NAME="$IMAGE_NAME"
+                            EOL
+                            
+                            # ファイルを安全に転送
+                            scp -o StrictHostKeyChecking=no -i "$SSH_KEY" /tmp/env_vars.sh ''' + "${env.DEPLOY_USER}@${env.DEPLOY_HOST}" + ''':/tmp/env_vars.sh
+                            
+                            # ファイルのパーミッションを設定
+                            ssh -o StrictHostKeyChecking=no -i "$SSH_KEY" ''' + "${env.DEPLOY_USER}@${env.DEPLOY_HOST}" + ''' "chmod 600 /tmp/env_vars.sh"
+                        '''
                         
                         sshCommand remote: [
                             name: 'Home Server',
@@ -152,20 +163,24 @@ pipeline {
                             port: 22,
                             allowAnyHosts: true,
                             timeout: 60
-                        ], command: """
-                            docker pull ${dockerHubUser}/${imageName}:latest
-                            docker stop ${imageName} || true
-                            docker rm ${imageName} || true
+                        ], command: '''
+                            # 環境変数を読み込む
+                            source /tmp/env_vars.sh
                             
-                            # 新しいコンテナを起動 - 環境変数を明示的に設定
-                            docker run -d --name ${imageName} -p 3000:3000 \\
-                            -e IMAP_SERVER='${imapServer}' \\
-                            -e IMAP_USER='${imapUser}' \\
-                            -e IMAP_PASSWORD='${imapPassword}' \\
-                            -e DISCORD_WEBHOOK_URL='${discordWebhookUrl}' \\
-                            -e GOOGLE_APPLICATION_CREDENTIALS='/usr/src/app/firebase-admin-key.json' \\
+                            # Dockerコマンドを実行
+                            docker pull $DOCKER_HUB_USER/$IMAGE_NAME:latest
+                            docker stop $IMAGE_NAME || true
+                            docker rm $IMAGE_NAME || true
+                            
+                            # 新しいコンテナを起動
+                            docker run -d --name $IMAGE_NAME -p 3000:3000 \\
+                            -e IMAP_SERVER="$IMAP_SERVER" \\
+                            -e IMAP_USER="$IMAP_USER" \\
+                            -e IMAP_PASSWORD="$IMAP_PASSWORD" \\
+                            -e DISCORD_WEBHOOK_URL="$DISCORD_WEBHOOK_URL" \\
+                            -e GOOGLE_APPLICATION_CREDENTIALS="/usr/src/app/firebase-admin-key.json" \\
                             -v /tmp/firebase-admin-key.json:/usr/src/app/firebase-admin-key.json \\
-                            ${dockerHubUser}/${imageName}:latest
+                            $DOCKER_HUB_USER/$IMAGE_NAME:latest
                             
                             # コンテナの起動を待機中
                             echo "コンテナの起動を待機中..."
@@ -175,23 +190,24 @@ pipeline {
                             docker ps
                             
                             # コンテナの詳細情報を表示
-                            CONTAINER_ID=\$(docker ps -qa --filter name=${imageName})
-                            if [ ! -z "\$CONTAINER_ID" ]; then
+                            CONTAINER_ID=$(docker ps -qa --filter name=$IMAGE_NAME)
+                            if [ ! -z "$CONTAINER_ID" ]; then
                                 echo "コンテナ情報:"
-                                docker inspect \$CONTAINER_ID | grep -E "State|Error|ExitCode"
+                                docker inspect $CONTAINER_ID | grep -E "State|Error|ExitCode"
                             fi
                             
                             # 一時ファイルを削除
                             rm -f /tmp/firebase-admin-key.json
+                            rm -f /tmp/env_vars.sh
 
                             # コンテナが稼働していない場合はログを取得してからパイプラインを失敗させる
-                            if [ -z "\$(docker ps -q --filter name=${imageName} --filter status=running)" ]; then
+                            if [ -z "$(docker ps -q --filter name=$IMAGE_NAME --filter status=running)" ]; then
                                 echo "コンテナが正常に実行されていません。ログを取得します:"
-                                docker logs \$(docker ps -qa --filter name=${imageName}) || echo "ログの取得に失敗しました"
+                                docker logs $(docker ps -qa --filter name=$IMAGE_NAME) || echo "ログの取得に失敗しました"
                                 echo "コンテナが実行されていないため、パイプラインを失敗させます。"
                                 exit 1
                             fi
-                        """
+                        '''
                     }
                 }
                 echo "ホームサーバーへのデプロイが完了しました"
