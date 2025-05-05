@@ -9,7 +9,7 @@ pipeline {
         DEPLOY_HOST = '192.168.40.99'
         DEPLOY_USER = 'server'
         IMAGE_NAME = 'record-of-cashless-payment'
-        DISCORD_WEBHOOK = credentials('discord-webhook-url')
+        DISCORD_WEBHOOK = credentials('DISCORD_WEBHOOK_JENKINS_LOG_URL')
         JENKINS_URL_FULL = 'https://welcome-to-sukisuki-club.duckdns.org/jenkins'
     }
     
@@ -158,6 +158,7 @@ pipeline {
                         string(credentialsId: 'IMAP_USER', variable: 'IMAP_USER'),
                         string(credentialsId: 'IMAP_PASSWORD', variable: 'IMAP_PASSWORD'),
                         string(credentialsId: 'DISCORD_WEBHOOK_URL', variable: 'DISCORD_WEBHOOK_URL'),
+                        string(credentialsId: 'DISCORD_WEBHOOK_JENKINS_LOG_URL', variable: 'DISCORD_WEBHOOK_JENKINS_LOG_URL'),
                         string(credentialsId: 'GOOGLE_APPLICATION_CREDENTIALS', variable: 'GOOGLE_APPLICATION_CREDENTIALS'),
                         file(credentialsId: 'FIREBASE_ADMIN_KEY', variable: 'FIREBASE_ADMIN_KEY'),
                         usernamePassword(credentialsId: env.DOCKER_HUB_CREDS, usernameVariable: 'DOCKER_HUB_CREDS_USR', passwordVariable: 'DOCKER_HUB_CREDS_PSW'),
@@ -186,6 +187,7 @@ pipeline {
                             
                             # 新しいコンテナを起動
                             docker run -d --name ${IMAGE_NAME} -p 3000:3000 \\
+                            -v /tmp/firebase-admin-key.json:/usr/src/app/firebase-admin-key.json:ro \\
                             -e IMAP_SERVER=\"${IMAP_SERVER}\" \\
                             -e IMAP_USER=\"${IMAP_USER}\" \\
                             -e IMAP_PASSWORD=\"${IMAP_PASSWORD}\" \\
@@ -210,42 +212,13 @@ pipeline {
                                 # Discord通知を送信（起動失敗）
                                 curl -X POST -H "Content-Type: application/json" \\
                                      -d "{\\\"content\\\":\\\"**コンテナ起動失敗** 🚨\\nジョブ: ${JOB_NAME}\\nビルド番号: #${BUILD_NUMBER}\\nコンテナ: ${IMAGE_NAME}\\\"}" \\
-                                     "${DISCORD_WEBHOOK_URL}"
+                                     "${DISCORD_WEBHOOK_JENKINS_LOG_URL}"
                                      
                                 # エラーを発生させてパイプラインを失敗させる
                                 exit 1
                             else
                                 echo "Container successfully started with ID: \$CONTAINER_RUNNING"
                             fi
-                            
-                            # ファイルをコンテナにコピー
-                            docker cp /tmp/firebase-admin-key.json ${IMAGE_NAME}:/usr/src/app/firebase-admin-key.json
-                            
-                            # コンテナを再起動して設定を反映
-                            docker restart ${IMAGE_NAME}
-                            
-                            # 再起動後も正常に動作しているか確認
-                            sleep 5
-                            CONTAINER_RUNNING=\$(docker ps --filter "name=${IMAGE_NAME}" --filter "status=running" -q)
-                            
-                            if [ -z "\$CONTAINER_RUNNING" ]; then
-                                echo "ERROR: Container failed to restart properly!"
-                                
-                                # コンテナのログを取得して問題を診断
-                                echo "Container logs after restart:"
-                                docker logs ${IMAGE_NAME} || true
-                                
-                                # Discord通知を送信（再起動失敗）
-                                curl -X POST -H "Content-Type: application/json" \\
-                                     -d "{\\\"content\\\":\\\"**コンテナ再起動失敗** 🚨\\nジョブ: ${JOB_NAME}\\nビルド番号: #${BUILD_NUMBER}\\nコンテナ: ${IMAGE_NAME}\\\"}" \\
-                                     "${DISCORD_WEBHOOK_URL}"
-                                     
-                                # エラーを発生させてパイプラインを失敗させる
-                                exit 1
-                            fi
-                            
-                            # 一時ファイルを削除
-                            rm -f /tmp/firebase-admin-key.json
                             
                             docker ps
                         """
@@ -275,7 +248,7 @@ pipeline {
         }
         success {
             echo 'Pipeline completed successfully!'
-            withCredentials([string(credentialsId: 'discord-webhook-url', variable: 'WEBHOOK_URL')]) {
+            withCredentials([string(credentialsId: 'DISCORD_WEBHOOK_JENKINS_LOG_URL', variable: 'DISCORD_WEBHOOK_JENKINS_LOG_URL')]) {
                 sh '''
                     # JSONをエスケープして正しく構築
                     JOB_NAME_ESC=$(echo "${JOB_NAME}" | sed 's/"/\\\\"/g')
@@ -283,13 +256,13 @@ pipeline {
                     # Discord通知をcurlで送信（ビルド成功
                     curl -X POST -H "Content-Type: application/json" \\
                          -d "{\\\"content\\\":\\\"**ビルド成功** 🎉\\nジョブ: ${JOB_NAME_ESC}\\nビルド番号: #${BUILD_NUMBER}\\\"}" \\
-                         "${WEBHOOK_URL}"
+                         "${DISCORD_WEBHOOK_JENKINS_LOG_URL}"
                 '''
             }
         }
         failure {
             echo 'Pipeline failed!'
-            withCredentials([string(credentialsId: 'discord-webhook-url', variable: 'WEBHOOK_URL')]) {
+            withCredentials([string(credentialsId: 'DISCORD_WEBHOOK_JENKINS_LOG_URL', variable: 'DISCORD_WEBHOOK_JENKINS_LOG_URL')]) {
                 sh '''
                     # JSONをエスケープして正しく構築
                     JOB_NAME_ESC=$(echo "${JOB_NAME}" | sed 's/"/\\\\"/g')
@@ -297,7 +270,7 @@ pipeline {
                     # Discord通知をcurlで送信（ビルド失敗
                     curl -X POST -H "Content-Type: application/json" \\
                          -d "{\\\"content\\\":\\\"**ビルド失敗** 🚨\\nジョブ: ${JOB_NAME_ESC}\\nビルド番号: #${BUILD_NUMBER}\\\"}" \\
-                         "${WEBHOOK_URL}"
+                         "${DISCORD_WEBHOOK_JENKINS_LOG_URL}"
                 '''
             }
         }
