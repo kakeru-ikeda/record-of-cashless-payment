@@ -28,7 +28,7 @@ export class WeeklyReportService extends BaseReportService {
             // DateUtilを使用してパスを取得
             const dateObj = new Date(parseInt(year), parseInt(month) - 1, 1); // 月の初日を使用
             const pathInfo = DateUtil.getFirestorePath(dateObj);
-            const weeklyReportPath = pathInfo.weekReportPath;
+            const weeklyReportPath = pathInfo.weeklyReportPath;
 
             // ドキュメントのフルパスを生成
             const documentFullPath = document.ref.path;
@@ -416,7 +416,7 @@ export class WeeklyReportService extends BaseReportService {
             // DateUtilを使用してパスを取得
             const dateObj = new Date(parseInt(year), parseInt(month) - 1, 1); // 月の初日を使用
             const pathInfo = DateUtil.getFirestorePath(dateObj);
-            const weeklyReportPath = pathInfo.weekReportPath;
+            const weeklyReportPath = pathInfo.weeklyReportPath;
 
             // レポートデータを取得
             const reportData = await this.firestoreService.getDocument<WeeklyReport>(weeklyReportPath);
