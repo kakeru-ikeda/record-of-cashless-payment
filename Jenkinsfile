@@ -197,11 +197,52 @@ pipeline {
                             echo "Waiting for container to start..."
                             sleep 5
                             
+                            # コンテナが実際に起動しているか確認
+                            CONTAINER_RUNNING=\$(docker ps --filter "name=${IMAGE_NAME}" --filter "status=running" -q)
+                            
+                            if [ -z "\$CONTAINER_RUNNING" ]; then
+                                echo "ERROR: Container failed to start properly!"
+                                
+                                # コンテナのログを取得して問題を診断
+                                echo "Container logs:"
+                                docker logs ${IMAGE_NAME} || true
+                                
+                                # Discord通知を送信（起動失敗）
+                                curl -X POST -H "Content-Type: application/json" \\
+                                     -d "{\\\"content\\\":\\\"**コンテナ起動失敗** 🚨\\nジョブ: ${JOB_NAME}\\nビルド番号: #${BUILD_NUMBER}\\nコンテナ: ${IMAGE_NAME}\\\"}" \\
+                                     "${DISCORD_WEBHOOK_URL}"
+                                     
+                                # エラーを発生させてパイプラインを失敗させる
+                                exit 1
+                            else
+                                echo "Container successfully started with ID: \$CONTAINER_RUNNING"
+                            fi
+                            
                             # ファイルをコンテナにコピー
                             docker cp /tmp/firebase-admin-key.json ${IMAGE_NAME}:/usr/src/app/firebase-admin-key.json
                             
                             # コンテナを再起動して設定を反映
                             docker restart ${IMAGE_NAME}
+                            
+                            # 再起動後も正常に動作しているか確認
+                            sleep 5
+                            CONTAINER_RUNNING=\$(docker ps --filter "name=${IMAGE_NAME}" --filter "status=running" -q)
+                            
+                            if [ -z "\$CONTAINER_RUNNING" ]; then
+                                echo "ERROR: Container failed to restart properly!"
+                                
+                                # コンテナのログを取得して問題を診断
+                                echo "Container logs after restart:"
+                                docker logs ${IMAGE_NAME} || true
+                                
+                                # Discord通知を送信（再起動失敗）
+                                curl -X POST -H "Content-Type: application/json" \\
+                                     -d "{\\\"content\\\":\\\"**コンテナ再起動失敗** 🚨\\nジョブ: ${JOB_NAME}\\nビルド番号: #${BUILD_NUMBER}\\nコンテナ: ${IMAGE_NAME}\\\"}" \\
+                                     "${DISCORD_WEBHOOK_URL}"
+                                     
+                                # エラーを発生させてパイプラインを失敗させる
+                                exit 1
+                            fi
                             
                             # 一時ファイルを削除
                             rm -f /tmp/firebase-admin-key.json
@@ -239,16 +280,9 @@ pipeline {
                     # JSONをエスケープして正しく構築
                     JOB_NAME_ESC=$(echo "${JOB_NAME}" | sed 's/"/\\\\"/g')
                     
-                    # JOB_NAMEをURLエンコード（スペースを%20に変換）
-                    JOB_NAME_ENCODED=$(echo "${JOB_NAME}" | sed 's/ /%20/g')
-                    
-                    # 正しいURLを構築する（duckdns.orgドメインを含み、スペースをURLエンコード）
-                    CORRECT_BUILD_URL="${JENKINS_URL_FULL}/job/${JOB_NAME_ENCODED}/${BUILD_NUMBER}/"
-                    BUILD_URL_ESC=$(echo "${CORRECT_BUILD_URL}" | sed 's/"/\\\\"/g')
-                    
-                    # Discord通知をcurlで送信（ビルド成功）- JSON形式を修正
+                    # Discord通知をcurlで送信（ビルド成功
                     curl -X POST -H "Content-Type: application/json" \\
-                         -d "{\\\"content\\\":\\\"**ビルド成功** 🎉\\nジョブ: ${JOB_NAME_ESC}\\nビルド番号: #${BUILD_NUMBER}\\n詳細: ${BUILD_URL_ESC}\\\"}" \\
+                         -d "{\\\"content\\\":\\\"**ビルド成功** 🎉\\nジョブ: ${JOB_NAME_ESC}\\nビルド番号: #${BUILD_NUMBER}\\\"}" \\
                          "${WEBHOOK_URL}"
                 '''
             }
@@ -260,16 +294,9 @@ pipeline {
                     # JSONをエスケープして正しく構築
                     JOB_NAME_ESC=$(echo "${JOB_NAME}" | sed 's/"/\\\\"/g')
                     
-                    # JOB_NAMEをURLエンコード（スペースを%20に変換）
-                    JOB_NAME_ENCODED=$(echo "${JOB_NAME}" | sed 's/ /%20/g')
-                    
-                    # 正しいURLを構築する（duckdns.orgドメインを含み、スペースをURLエンコード）
-                    CORRECT_BUILD_URL="${JENKINS_URL_FULL}/job/${JOB_NAME_ENCODED}/${BUILD_NUMBER}/"
-                    BUILD_URL_ESC=$(echo "${CORRECT_BUILD_URL}" | sed 's/"/\\\\"/g')
-                    
-                    # Discord通知をcurlで送信（ビルド失敗）- JSON形式を修正
+                    # Discord通知をcurlで送信（ビルド失敗
                     curl -X POST -H "Content-Type: application/json" \\
-                         -d "{\\\"content\\\":\\\"**ビルド失敗** 🚨\\nジョブ: ${JOB_NAME_ESC}\\nビルド番号: #${BUILD_NUMBER}\\n詳細: ${BUILD_URL_ESC}\\\"}" \\
+                         -d "{\\\"content\\\":\\\"**ビルド失敗** 🚨\\nジョブ: ${JOB_NAME_ESC}\\nビルド番号: #${BUILD_NUMBER}\\\"}" \\
                          "${WEBHOOK_URL}"
                 '''
             }
