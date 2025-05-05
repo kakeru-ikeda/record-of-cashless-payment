@@ -133,32 +133,41 @@ pipeline {
                             usernameVariable: 'SSH_USER'
                         )
                     ]) {
-                        // Firebaseの管理キーファイルをリモートホストにコピー（ホストキー検証をスキップ）
-                        sh "scp -o StrictHostKeyChecking=no -i \"${SSH_KEY}\" \"${FIREBASE_ADMIN_KEY}\" ${DEPLOY_USER}@${DEPLOY_HOST}:/tmp/firebase-admin-key.json"
+                        writeFile file: 'deploy_scp.sh', text: '''#!/bin/bash
+                          set -e
+                          scp -o StrictHostKeyChecking=no -i "$1" "$2" "$3@$4:/tmp/firebase-admin-key.json"
+                        '''
+                        sh 'chmod +x deploy_scp.sh'
+                        sh "./deploy_scp.sh '${SSH_KEY}' '${FIREBASE_ADMIN_KEY}' '${DEPLOY_USER}' '${DEPLOY_HOST}'"
                         
-                        // リモートコマンドでデプロイを実行
+                        def imapServer = IMAP_SERVER
+                        def imapUser = IMAP_USER
+                        def imapPassword = IMAP_PASSWORD
+                        def discordWebhookUrl = DISCORD_WEBHOOK_URL
+                        def dockerHubUser = DOCKER_HUB_CREDS_USR
+                        
                         sshCommand remote: [
                             name: 'Home Server',
                             host: env.DEPLOY_HOST,
                             user: env.DEPLOY_USER,
-                            identityFile: env.SSH_KEY,
+                            identityFile: SSH_KEY,
                             port: 22,
                             allowAnyHosts: true,
                             timeout: 60
                         ], command: """
-                            docker pull ${DOCKER_HUB_CREDS_USR}/${IMAGE_NAME}:latest
+                            docker pull ${dockerHubUser}/${IMAGE_NAME}:latest
                             docker stop ${IMAGE_NAME} || true
                             docker rm ${IMAGE_NAME} || true
                             
-                            # 新しいコンテナを起動
+                            # 新しいコンテナを起動 - 安全なパラメータ指定
                             docker run -d --name ${IMAGE_NAME} -p 3000:3000 \\
-                            -e IMAP_SERVER=\"${IMAP_SERVER}\" \\
-                            -e IMAP_USER=\"${IMAP_USER}\" \\
-                            -e IMAP_PASSWORD=\"${IMAP_PASSWORD}\" \\
-                            -e DISCORD_WEBHOOK_URL=\"${DISCORD_WEBHOOK_URL}\" \\
-                            -e GOOGLE_APPLICATION_CREDENTIALS=\"/usr/src/app/firebase-admin-key.json\" \\
+                            -e IMAP_SERVER='${imapServer}' \\
+                            -e IMAP_USER='${imapUser}' \\
+                            -e IMAP_PASSWORD='${imapPassword}' \\
+                            -e DISCORD_WEBHOOK_URL='${discordWebhookUrl}' \\
+                            -e GOOGLE_APPLICATION_CREDENTIALS='/usr/src/app/firebase-admin-key.json' \\
                             -v /tmp/firebase-admin-key.json:/usr/src/app/firebase-admin-key.json \\
-                            ${DOCKER_HUB_CREDS_USR}/${IMAGE_NAME}:latest
+                            ${dockerHubUser}/${IMAGE_NAME}:latest
                             
                             # コンテナの起動を待機中
                             echo "コンテナの起動を待機中..."
