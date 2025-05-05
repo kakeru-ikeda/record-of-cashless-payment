@@ -72,7 +72,7 @@ pipeline {
                     # 現在のパイプラインで実行中のコンテナをクリーンアップ
                     docker-compose down --remove-orphans || true
 
-                    echo "新しいコンテナをデプロイします..."
+                    echo "新しいコンテナをデプロイします... composeは3001ポートを使用します"
                     docker-compose up -d
                 '''
                 echo 'デプロイが完了しました'

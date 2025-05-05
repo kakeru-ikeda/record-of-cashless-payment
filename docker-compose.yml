@@ -5,7 +5,7 @@ services:
     build: .
     image: "${IMAGE_NAME:-record-of-cashless-payment}:latest"
     ports:
-      - "3000:3000"
+      - "3001:3001"
     dns:
       - 8.8.8.8
       - 8.8.4.4
@@ -23,7 +23,7 @@ services:
       - ${FIREBASE_ADMIN_KEY_PATH:-/usr/src/app/firebase-admin-key.json}:/usr/src/app/firebase-admin-key.json:ro
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health || exit 1"]
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
