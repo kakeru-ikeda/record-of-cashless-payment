@@ -113,41 +113,6 @@ pipeline {
                 }
             }
         }
-
-        stage('Debug SSH Key') {
-            steps {
-                script {
-                    withCredentials([sshUserPrivateKey(
-                        credentialsId: 'jenkins_deploy',
-                        keyFileVariable: 'SSH_KEY',
-                        usernameVariable: 'SSH_USER'
-                    )]) {
-                        sh '''
-                        echo "===== SSHデバッグ ====="
-                        echo "SSH_USER=$SSH_USER"
-                        echo "SSH_KEY=$SSH_KEY"
-                        echo "現在のディレクトリ: $(pwd)"
-                        
-                        # SSHキーの存在確認とパーミッション（絶対パス形式で）
-                        if [ -f "$SSH_KEY" ]; then
-                            ls -la "$SSH_KEY"
-                            echo "SSHキーファイルが存在します"
-                            wc -l "$SSH_KEY"
-                            head -n1 "$SSH_KEY"
-                        else
-                            echo "SSHキーファイルが見つかりません: $SSH_KEY"
-                            # 代替方法として一時ファイルを作成
-                            cp /home/server/.ssh/jenkins_deploy ~/.ssh/jenkins_deploy_temp
-                            chmod 600 ~/.ssh/jenkins_deploy_temp
-                            echo "一時SSHキーを作成しました: ~/.ssh/jenkins_deploy_temp"
-                            ls -la ~/.ssh/jenkins_deploy_temp
-                        fi
-                        echo "===================="
-                        '''
-                    }
-                }
-            }
-        }
         
         stage('Deploy to Home') {
             steps {
