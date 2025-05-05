@@ -46,7 +46,7 @@ pipeline {
                 echo "Dockerイメージをビルド中..."
                 sh '''
                 docker network create ${DOCKER_NETWORK} || true
-                docker-compose build
+                docker build -t ${IMAGE_NAME}:latest .
                 '''
             }
         }
