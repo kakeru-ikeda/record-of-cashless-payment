@@ -218,7 +218,7 @@ pipeline {
                     
                     # Discord通知をcurlで送信（ビルド成功）
                     curl -X POST -H "Content-Type: application/json" \\
-                         -d "{\\\"content\\\":\\\"**ビルド成功** 🎉\\nジョブ: ${JOB_NAME_ESC}\\nビルド番号: #${BUILD_NUMBER}\\\"}" \\
+                         -d "{\\\"content\\\":\\\"**ビルド成功** ✨\\nジョブ: ${JOB_NAME_ESC}\\nビルド番号: #${BUILD_NUMBER}\\\"}" \\
                          "${DISCORD_WEBHOOK_JENKINS_LOG_URL}"
                 '''
             }
