@@ -166,6 +166,14 @@ pipeline {
                         ], command: '''
                             # 環境変数を読み込む
                             source /tmp/env_vars.sh
+
+                            # 環境変数を確認
+                            echo "IMAP_SERVER: $IMAP_SERVER"
+                            echo "IMAP_USER: $IMAP_USER"
+                            echo "IMAP_PASSWORD: $IMAP_PASSWORD"
+                            echo "DISCORD_WEBHOOK_URL: $DISCORD_WEBHOOK_URL"
+                            echo "DOCKER_HUB_USER: $DOCKER_HUB_USER"
+                            echo "IMAGE_NAME: $IMAGE_NAME"
                             
                             # Dockerコマンドを実行
                             docker pull $DOCKER_HUB_USER/$IMAGE_NAME:latest
@@ -184,7 +192,7 @@ pipeline {
                             
                             # コンテナの起動を待機中
                             echo "コンテナの起動を待機中..."
-                            sleep 5
+                            sleep 10
 
                             # デプロイ後の稼働確認
                             docker ps
