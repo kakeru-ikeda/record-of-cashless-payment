@@ -28,7 +28,7 @@ export class WeeklyReportService extends BaseReportService {
             // DateUtilを使用してパスを取得
             const dateObj = new Date(parseInt(year), parseInt(month) - 1, 1); // 月の初日を使用
             const pathInfo = DateUtil.getFirestorePath(dateObj);
-            const weeklyReportPath = pathInfo.weekReportPath;
+            const weeklyReportPath = pathInfo.weeklyReportPath;
 
             // ドキュメントのフルパスを生成
             const documentFullPath = document.ref.path;
@@ -111,10 +111,14 @@ export class WeeklyReportService extends BaseReportService {
         amountDiff: number
     ): Promise<void> {
         try {
-            const { year, month, term } = params;
+            const { year, month } = params;
 
-            // 正しい週のパスを使用
-            const weeklyReportPath = `reports/weekly/${year}-${month.padStart(2, '0')}/${term}`;
+            // DateUtilを使用して正しい週のパスを取得
+            const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(params.day)); // 日付オブジェクトを作成
+            const pathInfo = DateUtil.getFirestorePath(dateObj);
+
+            // ドキュメントの実際のパスから正しいtermを抽出して使用
+            const weeklyReportPath = pathInfo.weeklyReportPath;
 
             // ドキュメントのフルパスを生成
 
@@ -138,7 +142,11 @@ export class WeeklyReportService extends BaseReportService {
             console.log(`✅ ウィークリーレポート金額更新完了: ${weeklyReportPath}, 差分: ${amountDiff}`);
 
             // 金額が変わったので、アラート条件もチェック
-            const weekNumber = parseInt(term.replace('term', ''));
+            // 正しいtermからweekNumberを取得
+            const pathParts = weeklyReportPath.split('/');
+            const correctTerm = pathParts[pathParts.length - 1];
+            const weekNumber = parseInt(correctTerm.replace('term', ''));
+
             await this.checkAndSendAlert(updatedReport, weekNumber, year, month);
         } catch (error) {
             const appError = error instanceof AppError ? error : new AppError(
@@ -167,13 +175,12 @@ export class WeeklyReportService extends BaseReportService {
         countDiff: number
     ): Promise<void> {
         try {
-            const { year, month, term } = params;
+            const { year, month, day } = params;
 
-            // DateUtilを使用してパスを取得
-            // 正しい週のパスを使用
-            const weeklyReportPath = `reports/weekly/${year}-${month.padStart(2, '0')}/${term}`;
-
-            // ドキュメントのフルパスを生成
+            // DateUtilを使用して正しい週のパスを取得
+            const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            const pathInfo = DateUtil.getFirestorePath(dateObj);
+            const weeklyReportPath = pathInfo.weeklyReportPath;
 
             // 既存のウィークリーレポートを取得
             const existingReport = await this.firestoreService.getDocument<WeeklyReport>(weeklyReportPath);
@@ -197,7 +204,11 @@ export class WeeklyReportService extends BaseReportService {
             console.log(`✅ ウィークリーレポート削除更新完了: ${weeklyReportPath}, 金額差分: ${amountDiff}, カウント差分: ${countDiff}`);
 
             // 金額が変わったので、アラート条件もチェック（金額が減る場合はアラートレベル変更の可能性も）
-            const weekNumber = parseInt(term.replace('term', ''));
+            // 正しいtermからweekNumberを取得
+            const pathParts = weeklyReportPath.split('/');
+            const correctTerm = pathParts[pathParts.length - 1];
+            const weekNumber = parseInt(correctTerm.replace('term', ''));
+
             await this.checkAndSendAlert(updatedReport, weekNumber, year, month);
         } catch (error) {
             const appError = error instanceof AppError ? error : new AppError(
@@ -226,12 +237,12 @@ export class WeeklyReportService extends BaseReportService {
         countToAdd: number
     ): Promise<void> {
         try {
-            const { year, month, term } = params;
+            const { year, month, day } = params;
 
-            // DateUtilを使用してパスを取得
-            const dateInfo = DateUtil.getCurrentDateInfo();
-            // 正しい週のパスを使用
-            const weeklyReportPath = `reports/weekly/${year}-${month.padStart(2, '0')}/${term}`;
+            // DateUtilを使用して正しい週のパスを取得
+            const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day)); // 日付オブジェクトを作成
+            const pathInfo = DateUtil.getFirestorePath(dateObj);
+            const weeklyReportPath = pathInfo.weeklyReportPath;
 
             // ドキュメントのフルパスを生成
             const documentFullPath = docRef.path;
@@ -242,6 +253,7 @@ export class WeeklyReportService extends BaseReportService {
             if (!existingReport) {
                 console.log(`⚠️ 更新対象のウィークリーレポートが存在しません: ${weeklyReportPath}`);
                 // 既存のレポートがない場合は新規作成
+                const dateInfo = pathInfo;
                 const weeklyReport: WeeklyReport = {
                     totalAmount: amountToAdd,
                     totalCount: countToAdd,
@@ -260,7 +272,11 @@ export class WeeklyReportService extends BaseReportService {
                 console.log(`✅ ウィークリーレポート新規作成完了（再アクティブ化）: ${weeklyReportPath}`);
 
                 // 金額が変わったので、アラート条件をチェック
-                const weekNumber = parseInt(term.replace('term', ''));
+                // 正しいtermからweekNumberを取得
+                const pathParts = weeklyReportPath.split('/');
+                const correctTerm = pathParts[pathParts.length - 1];
+                const weekNumber = parseInt(correctTerm.replace('term', ''));
+
                 await this.checkAndSendAlert(weeklyReport, weekNumber, year, month);
 
                 return;
@@ -284,7 +300,11 @@ export class WeeklyReportService extends BaseReportService {
             console.log(`✅ ウィークリーレポート再アクティブ化更新完了: ${weeklyReportPath}, 金額追加: ${amountToAdd}, カウント追加: ${countToAdd}`);
 
             // 金額が変わったので、アラート条件をチェック
-            const weekNumber = parseInt(term.replace('term', ''));
+            // 正しいtermからweekNumberを取得
+            const pathParts = weeklyReportPath.split('/');
+            const correctTerm = pathParts[pathParts.length - 1];
+            const weekNumber = parseInt(correctTerm.replace('term', ''));
+
             await this.checkAndSendAlert(updatedReport, weekNumber, year, month);
         } catch (error) {
             const appError = error instanceof AppError ? error : new AppError(
@@ -416,7 +436,7 @@ export class WeeklyReportService extends BaseReportService {
             // DateUtilを使用してパスを取得
             const dateObj = new Date(parseInt(year), parseInt(month) - 1, 1); // 月の初日を使用
             const pathInfo = DateUtil.getFirestorePath(dateObj);
-            const weeklyReportPath = pathInfo.weekReportPath;
+            const weeklyReportPath = pathInfo.weeklyReportPath;
 
             // レポートデータを取得
             const reportData = await this.firestoreService.getDocument<WeeklyReport>(weeklyReportPath);
