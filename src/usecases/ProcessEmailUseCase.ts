@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin';
 import { CardUsage } from '../domain/entities/CardUsage';
 import { CardUsageNotification } from '../../shared/types/CardUsageNotification';
 import { ICardUsageRepository } from '../domain/repositories/ICardUsageRepository';
-import { ImapEmailService } from '../infrastructure/email/ImapEmailService';
+import { ImapEmailService, CardCompany } from '../infrastructure/email/ImapEmailService';
 import { DiscordNotifier } from '../../shared/discord/DiscordNotifier';
 
 /**
@@ -24,14 +24,15 @@ export class ProcessEmailUseCase {
   /**
    * メール本文を処理してカード利用情報を抽出・保存・通知する
    * @param emailBody メール本文
+   * @param cardCompany カード会社の種類
    * @returns 保存されたパス
    */
-  async execute(emailBody: string): Promise<string> {
+  async execute(emailBody: string, cardCompany: CardCompany = CardCompany.MUFG): Promise<string> {
     try {
-      console.log('📨 メール本文の解析を開始します...');
+      console.log(`📨 ${cardCompany}のメール本文の解析を開始します...`);
 
       // メール本文からカード利用情報を抽出
-      const usage = await this.emailService.parseCardUsageFromEmail(emailBody);
+      const usage = await this.emailService.parseCardUsageFromEmail(emailBody, cardCompany);
 
       // Firestoreのタイムスタンプに変換
       const firestoreTimestamp = admin.firestore.Timestamp.fromDate(new Date(usage.datetime_of_use));
@@ -47,7 +48,7 @@ export class ProcessEmailUseCase {
 
       // リポジトリを通じてFirestoreに保存
       const savedPath = await this.cardUsageRepository.save(cardUsageEntity);
-      console.log('💾 カード利用情報を保存しました:', savedPath);
+      console.log(`💾 ${cardCompany}のカード利用情報を保存しました:`, savedPath);
 
       // Discord通知を送信
       await this.discordNotifier.notify({
@@ -59,7 +60,7 @@ export class ProcessEmailUseCase {
 
       return savedPath;
     } catch (error) {
-      console.error('❌ メール処理中にエラーが発生しました:', error);
+      console.error(`❌ ${cardCompany}のメール処理中にエラーが発生しました:`, error);
       throw error;
     }
   }
@@ -67,18 +68,19 @@ export class ProcessEmailUseCase {
   /**
    * サンプルメールでのテスト実行
    * @param emailBody テスト用のメール本文
+   * @param cardCompany カード会社の種類
    * @returns 処理結果
    */
-  async executeTest(emailBody: string): Promise<{
+  async executeTest(emailBody: string, cardCompany: CardCompany = CardCompany.MUFG): Promise<{
     parsedData: CardUsageNotification;
     savedPath: string;
     notificationSent: boolean;
   }> {
     try {
-      console.log('🧪 テストモードでメール処理を実行します');
+      console.log(`🧪 テストモードで${cardCompany}のメール処理を実行します`);
 
       // メール本文からカード利用情報を抽出
-      const usage = await this.emailService.parseCardUsageFromEmail(emailBody);
+      const usage = await this.emailService.parseCardUsageFromEmail(emailBody, cardCompany);
 
       // Firestoreのタイムスタンプに変換
       const firestoreTimestamp = admin.firestore.Timestamp.fromDate(new Date(usage.datetime_of_use));
@@ -110,7 +112,7 @@ export class ProcessEmailUseCase {
         notificationSent
       };
     } catch (error) {
-      console.error('❌ テスト実行中にエラーが発生しました:', error);
+      console.error(`❌ ${cardCompany}のテスト実行中にエラーが発生しました:`, error);
       throw error;
     }
   }

@@ -16,6 +16,14 @@ export interface ParsedEmail {
 }
 
 /**
+ * カード会社の種類
+ */
+export enum CardCompany {
+  MUFG = 'MUFG',        // 三菱UFJ銀行
+  SMBC = 'SMBC'         // 三井住友カード
+}
+
+/**
  * IMAP接続とメール処理のサービス
  */
 export class ImapEmailService {
@@ -71,7 +79,7 @@ export class ImapEmailService {
         if (err) {
           console.error("❌ メールボックスの一覧取得に失敗しました:", err);
         } else {
-          console.log("📬 利用可能なメールボックス:", mailboxes);
+          // console.log("📬 利用可能なメールボックス:", mailboxes);
         }
       });
       
@@ -263,16 +271,40 @@ export class ImapEmailService {
   }
   
   /**
-   * メールから三菱UFJ銀行のカード利用情報を抽出
+   * メールからカード利用情報を抽出
    * @param body メール本文
+   * @param cardCompany カード会社の種類
    * @returns 抽出されたカード利用情報
    */
-  async parseCardUsageFromEmail(body: string): Promise<{
+  async parseCardUsageFromEmail(body: string, cardCompany: CardCompany = CardCompany.MUFG): Promise<{
     card_name: string;
     datetime_of_use: string;
     amount: number;
     where_to_use: string;
   }> {
+    console.log(`🔍 ${cardCompany}のカード利用情報を抽出します`);
+    
+    switch (cardCompany) {
+      case CardCompany.MUFG:
+        return this.parseMufgEmail(body);
+      case CardCompany.SMBC:
+        return this.parseSmbcEmail(body);
+      default:
+        throw new Error(`未対応のカード会社: ${cardCompany}`);
+    }
+  }
+
+  /**
+   * 三菱UFJ銀行のメールからカード利用情報を抽出
+   * @param body メール本文
+   * @returns 抽出されたカード利用情報
+   */
+  private parseMufgEmail(body: string): {
+    card_name: string;
+    datetime_of_use: string;
+    amount: number;
+    where_to_use: string;
+  } {
     // 正規表現パターン
     const cardNameMatch = body.match(/カード名称[　\s]+：[　\s]+(.+?)(?=[\s\n]いつも|$)/);
     const dateMatch = body.match(/【ご利用日時\(日本時間\)】[　\s]+([\d年月日 :]+)/);
@@ -286,7 +318,7 @@ export class ImapEmailService {
     const where_to_use = whereToUseMatch?.[1]?.trim() || '';
     
     // 抽出結果をログ出力
-    console.log("抽出データ:", {
+    console.log("抽出データ（MUFG）:", {
       card_name,
       datetime_of_use,
       amount: parseInt(amountStr, 10),
@@ -296,6 +328,68 @@ export class ImapEmailService {
     // 日付文字列をISOフォーマットに変換
     const isoDate = new Date(datetime_of_use.replace(/年|月/g, '-').replace('日', '')).toISOString();
     console.log("変換後日時:", isoDate);
+    
+    return {
+      card_name,
+      datetime_of_use: isoDate,
+      amount: parseInt(amountStr, 10),
+      where_to_use,
+    };
+  }
+
+  /**
+   * 三井住友カードのメールからカード利用情報を抽出
+   * @param body メール本文
+   * @returns 抽出されたカード利用情報
+   */
+  private parseSmbcEmail(body: string): {
+    card_name: string;
+    datetime_of_use: string;
+    amount: number;
+    where_to_use: string;
+  } {
+    console.log("三井住友カードのメール本文:", body);
+    
+    // 初期段階では三井住友カードのメールの形式が不明なため、ログ出力のみ行う
+    // 実際のメールの形式を確認した後に正確なパターンを実装する
+    
+    // 汎用的なパターンで試行（三井住友カードのメール形式は実際のメールを見て調整が必要）
+    const cardNameMatch = body.match(/カード(?:名|番号)[　\s]*[：:][　\s]*(.+?)(?=[\s\n]|$)/);
+    const dateMatch = body.match(/(?:利用|ご利用)(?:日|日時)[　\s]*[：:][　\s]*([\d年月日/: ]+)/);
+    const amountMatch = body.match(/(?:金額|ご利用金額)[　\s]*[：:][　\s]*[\¥]?([0-9,.]+)/);
+    const whereToUseMatch = body.match(/(?:ご利用店舗|利用先|店舗名)[　\s]*[：:][　\s]*([^\n]+)/);
+    
+    // データを抽出・整形
+    const datetime_of_use = dateMatch?.[1]?.trim() || new Date().toISOString();
+    const amountStr = amountMatch?.[1]?.replace(/[,\.]/g, '') || '0';
+    const card_name = cardNameMatch?.[1]?.trim() || '三井住友カード';
+    const where_to_use = whereToUseMatch?.[1]?.trim() || '不明';
+    
+    // 抽出結果をログ出力
+    console.log("抽出データ（SMBC仮）:", {
+      card_name,
+      datetime_of_use,
+      amount: parseInt(amountStr, 10),
+      where_to_use,
+    });
+    
+    // 日付文字列をISOフォーマットに変換（三井住友カードの日付形式に合わせて調整が必要）
+    let isoDate;
+    try {
+      // 日付形式を検出して変換を試みる
+      if (datetime_of_use.includes('年')) {
+        isoDate = new Date(datetime_of_use.replace(/年|月/g, '-').replace('日', '')).toISOString();
+      } else if (datetime_of_use.includes('/')) {
+        isoDate = new Date(datetime_of_use.replace(/\//g, '-')).toISOString();
+      } else {
+        isoDate = new Date(datetime_of_use).toISOString();
+      }
+    } catch (error) {
+      console.warn('日付変換に失敗しました。現在時刻を使用します:', error);
+      isoDate = new Date().toISOString();
+    }
+    
+    console.log("変換後日時（SMBC）:", isoDate);
     
     return {
       card_name,
