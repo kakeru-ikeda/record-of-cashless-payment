@@ -350,40 +350,35 @@ export class ImapEmailService {
   } {
     console.log("三井住友カードのメール本文:", body);
     
-    // 初期段階では三井住友カードのメールの形式が不明なため、ログ出力のみ行う
-    // 実際のメールの形式を確認した後に正確なパターンを実装する
+    // 三井住友カードのメール形式に合わせたパターン抽出
+    const cardNameMatch = body.match(/(.+のカード) 様/);
+    const dateMatch = body.match(/ご利用日時：(\d{4}\/\d{2}\/\d{2} \d{2}:\d{2})/);
     
-    // 汎用的なパターンで試行（三井住友カードのメール形式は実際のメールを見て調整が必要）
-    const cardNameMatch = body.match(/カード(?:名|番号)[　\s]*[：:][　\s]*(.+?)(?=[\s\n]|$)/);
-    const dateMatch = body.match(/(?:利用|ご利用)(?:日|日時)[　\s]*[：:][　\s]*([\d年月日/: ]+)/);
-    const amountMatch = body.match(/(?:金額|ご利用金額)[　\s]*[：:][　\s]*[\¥]?([0-9,.]+)/);
-    const whereToUseMatch = body.match(/(?:ご利用店舗|利用先|店舗名)[　\s]*[：:][　\s]*([^\n]+)/);
+    // より正確な利用場所と金額の抽出
+    // カンマを含む金額にも対応（例: 1,500円）
+    const fullUsageMatch = body.match(/ご利用日時：\d{4}\/\d{2}\/\d{2} \d{2}:\d{2} (.*?) ([\d,]+)円/);
     
     // データを抽出・整形
     const datetime_of_use = dateMatch?.[1]?.trim() || new Date().toISOString();
-    const amountStr = amountMatch?.[1]?.replace(/[,\.]/g, '') || '0';
     const card_name = cardNameMatch?.[1]?.trim() || '三井住友カード';
-    const where_to_use = whereToUseMatch?.[1]?.trim() || '不明';
+    const where_to_use = fullUsageMatch?.[1]?.trim() || '不明';
+    
+    // 金額からカンマを削除して整数に変換
+    const amountStr = fullUsageMatch?.[2]?.replace(/,/g, '') || '0';
     
     // 抽出結果をログ出力
-    console.log("抽出データ（SMBC仮）:", {
+    console.log("抽出データ（SMBC）:", {
       card_name,
       datetime_of_use,
       amount: parseInt(amountStr, 10),
       where_to_use,
     });
     
-    // 日付文字列をISOフォーマットに変換（三井住友カードの日付形式に合わせて調整が必要）
+    // 日付文字列をISOフォーマットに変換
     let isoDate;
     try {
-      // 日付形式を検出して変換を試みる
-      if (datetime_of_use.includes('年')) {
-        isoDate = new Date(datetime_of_use.replace(/年|月/g, '-').replace('日', '')).toISOString();
-      } else if (datetime_of_use.includes('/')) {
-        isoDate = new Date(datetime_of_use.replace(/\//g, '-')).toISOString();
-      } else {
-        isoDate = new Date(datetime_of_use).toISOString();
-      }
+      // SMBCの日付形式（YYYY/MM/DD HH:MM）をISOフォーマットに変換
+      isoDate = new Date(datetime_of_use.replace(/\//g, '-')).toISOString();
     } catch (error) {
       console.warn('日付変換に失敗しました。現在時刻を使用します:', error);
       isoDate = new Date().toISOString();
