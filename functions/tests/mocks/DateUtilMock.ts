@@ -9,6 +9,10 @@ const mockDateUtil = {
   getTermDateRange: jest.fn(),
   formatMonth: jest.fn(),
   getMonthDateRange: jest.fn(),
+  getJSTDate: jest.fn(),
+  getDateInfo: jest.fn(),
+  getLastTermInfo: jest.fn(),
+  getLastMonthInfo: jest.fn(),
 };
 
 // DateUtilクラスの静的メソッドをモックで上書き
@@ -21,6 +25,10 @@ jest.mock('../../../shared/utils/DateUtil', () => ({
     getTermDateRange: mockDateUtil.getTermDateRange,
     formatMonth: mockDateUtil.formatMonth,
     getMonthDateRange: mockDateUtil.getMonthDateRange,
+    getJSTDate: mockDateUtil.getJSTDate,
+    getDateInfo: mockDateUtil.getDateInfo,
+    getLastTermInfo: mockDateUtil.getLastTermInfo,
+    getLastMonthInfo: mockDateUtil.getLastMonthInfo,
   }
 }));
 
