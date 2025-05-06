@@ -1,13 +1,6 @@
-import { ParsedEmail, ImapEmailService } from '../../infrastructure/email/ImapEmailService';
+import { ParsedEmail, ImapEmailService, CardCompany } from '../../infrastructure/email/ImapEmailService';
 import { ProcessEmailUseCase } from '../../usecases/ProcessEmailUseCase';
-
-/**
- * カード会社の種類
- */
-enum CardCompany {
-  MUFG = 'MUFG',        // 三菱UFJ銀行
-  SMBC = 'SMBC'         // 三井住友カード
-}
+import { Environment } from '../../infrastructure/config/environment';
 
 /**
  * メール処理のコントローラー
@@ -15,9 +8,12 @@ enum CardCompany {
 export class EmailController {
   // メールボックス設定
   private readonly mailboxes = {
-    [CardCompany.MUFG]: '&TgmD8WdxTqw-UFJ&koCITA-',   // 三菱UFJ銀行のメールボックス
-    [CardCompany.SMBC]: '&TglOlU9PU8swqzD8MMk-'       // 三井住友カードのメールボックス
+    [CardCompany.MUFG]: '三菱東京UFJ銀行',   // 三菱UFJ銀行のメールボックス
+    [CardCompany.SMBC]: '三井住友カード'    // 三井住友カードのメールボックス
   };
+
+  // メールサービスのインスタンス
+  private emailServices: Record<string, ImapEmailService> = {};
 
   /**
    * コンストラクタ
@@ -27,7 +23,10 @@ export class EmailController {
   constructor(
     private readonly emailService: ImapEmailService,
     private readonly processEmailUseCase: ProcessEmailUseCase
-  ) {}
+  ) {
+    // デフォルトのメールサービスをセット
+    this.emailServices['default'] = emailService;
+  }
   
   /**
    * すべてのメールボックスの監視を開始
@@ -35,15 +34,61 @@ export class EmailController {
   async startAllMonitoring(): Promise<void> {
     console.log('📧 全メールボックスの監視を開始します...');
     
-    // 三菱UFJ銀行のメールボックスを監視
-    await this.startMonitoring(this.mailboxes[CardCompany.MUFG]);
-    
-    // 三井住友カードのメールボックスを監視
-    await this.startMonitoring(this.mailboxes[CardCompany.SMBC]);
+    // カード会社ごとに別々のインスタンスを作成して監視
+    for (const [cardCompany, mailboxName] of Object.entries(this.mailboxes)) {
+      // 各メールボックス用のImapEmailServiceインスタンスを作成
+      const mailboxService = new ImapEmailService(
+        Environment.IMAP_SERVER,
+        Environment.IMAP_USER,
+        Environment.IMAP_PASSWORD
+      );
+      
+      // インスタンスを保存
+      this.emailServices[cardCompany] = mailboxService;
+      
+      // 監視を開始
+      await this.startMonitoringForMailbox(mailboxName, cardCompany as CardCompany, mailboxService);
+    }
   }
   
   /**
-   * メール監視を開始
+   * 特定のメールボックスの監視を開始
+   * @param mailboxName 監視対象のメールボックス名
+   * @param cardCompany カード会社の種類
+   * @param emailService 使用するメールサービスインスタンス
+   */
+  private async startMonitoringForMailbox(
+    mailboxName: string,
+    cardCompany: CardCompany,
+    emailService: ImapEmailService
+  ): Promise<void> {
+    console.log(`📧 ${cardCompany}のメールボックス "${mailboxName}" の監視を開始します`);
+    
+    await emailService.connect(mailboxName, async (email: ParsedEmail) => {
+      try {
+        console.log(`📬 新しいメールを受信しました: ${email.subject}`);
+        console.log(`📧 送信者: ${email.from}`);
+        console.log(`📜 本文サンプル: ${email.body}`);
+
+        // 受信したメールのカード会社を判定
+        const detectedCardCompany = this.detectCardCompany(email);
+        
+        if (detectedCardCompany) {
+          console.log(`🏦 ${detectedCardCompany}のメールを検出しました`);
+          
+          // メール本文からカード利用情報を抽出して保存
+          await this.processEmailUseCase.execute(email.body, detectedCardCompany);
+        } else {
+          console.log(`⚠️ カード会社を特定できませんでした`);
+        }
+      } catch (error) {
+        console.error('❌ メール処理中にエラーが発生しました:', error);
+      }
+    });
+  }
+  
+  /**
+   * メール監視を開始 (後方互換性のために残しています)
    * @param mailboxName 監視対象のメールボックス名
    */
   async startMonitoring(mailboxName?: string): Promise<void> {
@@ -114,9 +159,18 @@ export class EmailController {
   /**
    * メール監視を停止
    */
-  stopMonitoring(): void {
-    this.emailService.close();
-    console.log('📧 メール監視を停止しました');
+  async stopMonitoring(): Promise<void> {
+    console.log('📧 すべてのメールボックスの監視を停止します');
+    
+    // 全てのメールサービスインスタンスの接続を閉じる
+    for (const [key, service] of Object.entries(this.emailServices)) {
+      try {
+        await service.close();
+        console.log(`📧 ${key}のメール監視を停止しました`);
+      } catch (error) {
+        console.error(`❌ ${key}のメール監視停止中にエラーが発生しました:`, error);
+      }
+    }
   }
 }
 

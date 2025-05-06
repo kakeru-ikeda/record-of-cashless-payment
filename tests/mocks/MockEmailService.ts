@@ -1,4 +1,5 @@
-import { ImapEmailService, ParsedEmail } from '../../src/infrastructure/email/ImapEmailService';
+import { ImapEmailService, ParsedEmail, CardCompany } from '../../src/infrastructure/email/ImapEmailService';
+import { ImapFlow } from 'imapflow';
 
 /**
  * メールサービスのモック
@@ -36,7 +37,7 @@ export class MockEmailService extends ImapEmailService {
   async connect(
     mailboxName: string = 'INBOX',
     callback: (email: ParsedEmail) => Promise<void>
-  ): Promise<any> {
+  ): Promise<ImapFlow> {
     console.log('🧪 モックメールサービスが接続しました');
 
     // キューにあるメールを順次処理
@@ -44,20 +45,25 @@ export class MockEmailService extends ImapEmailService {
       await callback(email);
     }
 
-    return {};
+    // ImapFlowのダミーオブジェクトを返す
+    return {} as ImapFlow;
   }
 
   /**
    * メール処理をモック
    * @param body メール本文
+   * @param cardCompany カード会社の種類
    */
-  async parseCardUsageFromEmail(body: string): Promise<{
+  async parseCardUsageFromEmail(
+    body: string,
+    cardCompany: CardCompany = CardCompany.MUFG
+  ): Promise<{
     card_name: string;
     datetime_of_use: string;
     amount: number;
     where_to_use: string;
   }> {
-    console.log('🧪 モックメールサービスがメールを解析しました');
+    console.log(`🧪 モックメールサービスが${cardCompany}のメールを解析しました`);
     return this.parseResult;
   }
 
@@ -85,7 +91,7 @@ export class MockEmailService extends ImapEmailService {
   /**
    * 接続をクローズ
    */
-  close(): void {
+  async close(): Promise<void> {
     console.log('🧪 モックメールサービスが切断されました');
   }
 }
