@@ -154,37 +154,12 @@ export class ImapEmailService {
     if (!this.client || this.isMonitoring) return;
     
     this.isMonitoring = true;
+    console.log("📬 メールポーリング監視を開始します（IDLEモードなし）");
     
-    // IDLEモードを使用した監視
-    (async () => {
-      try {
-        while (this.isMonitoring && this.client && this.isConnected) {
-          try {
-            console.log("👀 新規メッセージの監視を開始します");
-            const updates = await this.client.idle();
-            
-            // updatesがtrueの場合は新しいメッセージがある可能性がある
-            if (updates) {
-              console.log(`📩 新しいメールを検出しました`);
-              // 未読メッセージを検索して処理
-              await this.fetchUnseenMessages(callback);
-            }
-          } catch (error) {
-            console.error('❌ 監視中にエラーが発生しました:', error);
-            if (!this.isConnected) break;
-            // 短い待機時間の後に再開
-            await new Promise(resolve => setTimeout(resolve, 5000));
-          }
-        }
-      } catch (error) {
-        console.error('❌ 監視ループでエラーが発生しました:', error);
-        this.isMonitoring = false;
-        // 接続が切れた場合は再接続
-        if (this.isConnected) {
-          this.scheduleReconnect(mailboxName, callback);
-        }
-      }
-    })();
+    // 初回は即時実行
+    this.fetchUnseenMessages(callback).catch(error => {
+      console.error('❌ 初回メール確認中にエラーが発生しました:', error);
+    });
   }
   
   /**
@@ -290,11 +265,12 @@ export class ImapEmailService {
   }
 
   /**
-   * ポーリングによる未読メール取得 (3分間隔)
+   * ポーリングによる未読メール取得 (1分間隔)
    */
   private setupPolling(mailboxName: string, callback: (email: ParsedEmail) => Promise<void>): void {
     if (this.pollingTimer) clearInterval(this.pollingTimer);
     
+    // 1分間隔で未読メッセージをチェック
     this.pollingTimer = setInterval(async () => {
       if (this.client && this.isConnected) {
         try {
@@ -313,7 +289,7 @@ export class ImapEmailService {
         console.log('🔌 接続が切れています。再接続を試みます');
         this.scheduleReconnect(mailboxName, callback);
       }
-    }, 3 * 60 * 1000); // 3分ごと
+    }, 1 * 60 * 1000); // 1分ごと
   }
 
   /**
