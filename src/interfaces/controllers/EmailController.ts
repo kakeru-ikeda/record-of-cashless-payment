@@ -51,6 +51,10 @@ export class EmailController {
     
     await this.emailService.connect(mailboxName, async (email: ParsedEmail) => {
       try {
+        console.log(`📬 新しいメールを受信しました: ${email.subject}`);
+        console.log(`📧 送信者: ${email.from}`);
+        console.log(`📜 本文: ${email.body}`);
+
         // カード会社判定
         const cardCompany = this.detectCardCompany(email);
         
@@ -99,7 +103,7 @@ export class EmailController {
    * @returns 三井住友カードのメールならtrue
    */
   private isSmbcEmail(email: ParsedEmail): boolean {
-    const fromCheck = email.from.includes('statement@vpass.ne.jp') ||email.from.includes('smbc-card.com') || email.from.includes('smbc.co.jp');
+    const fromCheck = email.from.includes('vpass.ne.jp') ||email.from.includes('smbc-card.com') || email.from.includes('smbc.co.jp');
     const subjectCheck = email.subject.includes('三井住友') || email.subject.includes('利用');
     const bodyCheck = email.body.includes('三井住友') || email.body.includes('SMBC') || email.body.includes('クレジット');
     
