@@ -206,9 +206,16 @@ export class ImapEmailService {
           // メッセージをフェッチ
           const parsedEmail = await this.processEmail(key);
           if (parsedEmail) {
+            // コールバックで処理を実行
             await callback(parsedEmail);
+            
+            // 処理済みとしてマーク
             this.processedUids.add(key);
-            console.log(`✅ メール処理完了 UID=${key}`);
+            
+            // メッセージを既読にマーク
+            await this.markAsSeen(key);
+            
+            console.log(`✅ メール処理完了 UID=${key} (既読にマークしました)`);
           }
         } catch (error) {
           console.error(`❌ メール処理失敗 UID=${key}:`, error);
@@ -216,6 +223,21 @@ export class ImapEmailService {
       }
     } catch (error) {
       console.error('❌ 未読メール取得中にエラーが発生しました:', error);
+    }
+  }
+
+  /**
+   * メッセージを既読にマークする
+   * @param uid メッセージのUID
+   */
+  private async markAsSeen(uid: string): Promise<void> {
+    if (!this.client || !this.isConnected) return;
+    
+    try {
+      // メッセージに既読フラグを設定
+      await this.client.messageFlagsAdd(uid, ['\\Seen']);
+    } catch (error) {
+      console.error(`❌ メッセージ ${uid} を既読にマークできませんでした:`, error);
     }
   }
   
