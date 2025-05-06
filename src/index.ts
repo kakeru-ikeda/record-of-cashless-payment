@@ -2,7 +2,7 @@ import * as dotenv from 'dotenv';
 import * as path from 'path';
 import express from 'express';
 import { Environment } from './infrastructure/config/environment';
-import { ImapEmailService } from './infrastructure/email/ImapEmailService';
+import { ImapEmailService, CardCompany } from './infrastructure/email/ImapEmailService';
 import { FirestoreCardUsageRepository } from './infrastructure/firebase/FirestoreCardUsageRepository';
 import { DiscordWebhookNotifier } from '../shared/discord/DiscordNotifier'; // パスを更新
 import { ProcessEmailUseCase } from './usecases/ProcessEmailUseCase';
@@ -70,7 +70,12 @@ async function bootstrap() {
             try {
                 // サンプルメールファイルを読み込む
                 const sampleMailPath = path.resolve(__dirname, '../samplemail.txt');
-                const result = await testWithSampleMail(sampleMailPath, processEmailUseCase);
+                
+                // テスト対象のカード会社を特定
+                const testCardCompany = args.includes('--smbc') ? CardCompany.SMBC : CardCompany.MUFG;
+                console.log(`🧪 ${testCardCompany}のサンプルメールでテスト実行します...`);
+                
+                const result = await testWithSampleMail(sampleMailPath, processEmailUseCase, testCardCompany);
                 console.log('✅ テスト結果:', result);
             } catch (error) {
                 console.error('❌ テスト実行中にエラーが発生しました:', error);
@@ -78,7 +83,8 @@ async function bootstrap() {
         } else {
             // 通常モード：メール監視の開始
             console.log('📧 メール監視モードで実行しています...');
-            await emailController.startMonitoring('&TgmD8WdxTqw-UFJ&koCITA-'); // 三菱東京UFJ銀行のメールボックス
+            // すべてのメールボックス（三菱UFJ銀行、三井住友カード）を監視
+            await emailController.startAllMonitoring();
 
             // プロセス終了時のクリーンアップ
             process.on('SIGINT', () => {
@@ -105,7 +111,8 @@ async function bootstrap() {
  */
 async function testWithSampleMail(
     sampleMailPath: string,
-    processEmailUseCase: ProcessEmailUseCase
+    processEmailUseCase: ProcessEmailUseCase,
+    cardCompany: CardCompany = CardCompany.MUFG
 ): Promise<any> {
     const fs = require('fs');
 
@@ -114,7 +121,7 @@ async function testWithSampleMail(
     const sampleMailContent = fs.readFileSync(sampleMailPath, 'utf8');
 
     // テスト実行
-    return processEmailUseCase.executeTest(sampleMailContent);
+    return processEmailUseCase.executeTest(sampleMailContent, cardCompany);
 }
 
 // アプリケーションの起動
