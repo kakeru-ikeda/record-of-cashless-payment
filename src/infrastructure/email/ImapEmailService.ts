@@ -1,8 +1,9 @@
-import inbox from 'inbox';
+import { ImapFlow } from 'imapflow';
 import * as quotedPrintable from 'quoted-printable';
 import * as Encoding from 'encoding-japanese';
 import { htmlToText } from 'html-to-text';
 import { Environment } from '../config/environment';
+import { simpleParser } from 'mailparser';
 
 /**
  * メールのパース結果の型定義
@@ -24,14 +25,16 @@ export enum CardCompany {
 }
 
 /**
- * IMAP接続とメール処理のサービス
+ * IMAP接続とメール処理のサービス (imapflow実装)
  */
 export class ImapEmailService {
-  private client: any = null;
+  private client: ImapFlow | null = null;
   private keepAliveTimer: NodeJS.Timeout | null = null;
   private pollingTimer: NodeJS.Timeout | null = null;                       // ポーリング用タイマー
   private processedUids = new Set<string>();                               // 既処理UID管理
   private reconnectAttempts = 0;                                            // 再接続試行回数
+  private isConnected = false;
+  private isMonitoring = false;
   
   /**
    * インスタンスを初期化
@@ -52,81 +55,168 @@ export class ImapEmailService {
    * @returns 接続したクライアント
    */
   async connect(
-    mailboxName: string = '&TgmD8WdxTqw-UFJ&koCITA-', // 三菱東京UFJ銀行
+    mailboxName: string = 'INBOX', // デフォルトでINBOXを使用
     callback: (email: ParsedEmail) => Promise<void>
-  ): Promise<any> {
+  ): Promise<ImapFlow> {
     console.log("IMAPサーバーに接続しています...");
     
-    this.client = inbox.createConnection(993, this.server, {
-      secureConnection: true,
-      auth: {
-        user: this.user,
-        pass: this.password
-      },
-    });
+    try {
+      // クライアントの初期化
+      this.client = new ImapFlow({
+        host: this.server,
+        port: 993,
+        secure: true,
+        auth: {
+          user: this.user,
+          pass: this.password
+        },
+        logger: false,
+        emitLogs: false
+      });
+      
+      // サーバーに接続
+      await this.client.connect();
+      console.log("✅ IMAPサーバーに接続しました");
+      
+      // 利用可能なメールボックスの一覧を取得
+      console.log("📬 利用可能なメールボックスを確認しています...");
+      const mailboxes = await this.client.list();
+      
+      // 指定されたメールボックス名が存在するか確認
+      const validMailboxPath = this.findMailboxPath(mailboxes, mailboxName);
+      
+      // 有効なメールボックスパスがあればそれを使用、なければ指定されたものをそのまま使用
+      const targetMailbox = validMailboxPath || mailboxName;
+      
+      // メールボックスを開く
+      await this.client.mailboxOpen(targetMailbox);
+      console.log(`✅ メールボックス "${targetMailbox}" に接続しました`);
+      
+      this.isConnected = true;
+      this.reconnectAttempts = 0; // 成功したらリセット
+      
+      // キープアライブとポーリングを設定
+      this.setupKeepAlive();
+      this.setupPolling(targetMailbox, callback);
+      
+      // 新規メッセージの監視を開始
+      this.startMonitoring(targetMailbox, callback);
+      
+      return this.client;
+    } catch (error) {
+      console.error('❌ IMAP接続中にエラーが発生しました:', error);
+      this.isConnected = false;
+      this.scheduleReconnect(mailboxName, callback);
+      throw error;
+    }
+  }
+  
+  /**
+   * 指定された名前のメールボックスが利用可能かどうか確認し、パスを返す
+   * @param mailboxes メールボックスの一覧
+   * @param searchName 検索するメールボックス名
+   * @param exactMatch 完全一致で検索するか
+   * @returns 見つかった場合はメールボックスのパス、見つからなければnull
+   */
+  private findMailboxPath(mailboxes: any[], searchName: string, exactMatch: boolean = false): string | null {
+    if (!mailboxes || !mailboxes.length || !searchName) return null;
     
-    // 接続を開始
-    this.client.connect();
+    // 検索条件に応じた比較関数
+    const matchFunc = exactMatch 
+      ? (name: string, search: string) => name === search
+      : (name: string, search: string) => name.toLowerCase().includes(search.toLowerCase());
     
-    // キープアライブタイマーを設定
-    this.setupKeepAlive();
-    this.setupPolling(callback);                         // ポーリング開始
-    
-    // 接続イベント
-    this.client.on("connect", () => {
-      this.reconnectAttempts = 0;                        // 成功時にリセット
-      this.client.listMailboxes((err: any, mailboxes: string[]) => {
-        if (err) {
-          console.error("❌ メールボックスの一覧取得に失敗しました:", err);
-        } else {
-          // console.log("📬 利用可能なメールボックス:", mailboxes);
+    for (const mailbox of mailboxes) {
+      // パス名または表示名で一致するか確認
+      if (matchFunc(mailbox.path, searchName) || matchFunc(mailbox.name, searchName)) {
+        console.log(`✅ メールボックス "${searchName}" が見つかりました: ${mailbox.path}`);
+        return mailbox.path;
+      }
+      
+      // 子メールボックスを再帰的に確認
+      if (mailbox.children && mailbox.children.length) {
+        const childResult = this.findMailboxPath(mailbox.children, searchName, exactMatch);
+        if (childResult) {
+          return childResult;
         }
-      });
-      
-      this.client.openMailbox(mailboxName, (err: any) => {
-        if (err) console.log(err);
-        console.log(`✅ メールボックスに接続しました: ${mailboxName}`);
-      });
-    });
+      }
+    }
     
-    // 新着メールイベント
-    this.client.on('new', async (message: any) => {
-      console.log("📩 新しいメールを受信しました");
-      
+    // 見つからなかった場合
+    console.log(`⚠️ メールボックス "${searchName}" は見つかりませんでした`);
+    return null;
+  }
+  
+  /**
+   * 新規メッセージの監視を開始
+   */
+  private startMonitoring(mailboxName: string, callback: (email: ParsedEmail) => Promise<void>): void {
+    if (!this.client || this.isMonitoring) return;
+    
+    this.isMonitoring = true;
+    
+    // IDLEモードを使用した監視
+    (async () => {
       try {
-        const parsedEmail = await this.processEmail(message);
-        
-        if (parsedEmail) {
-          await callback(parsedEmail);
+        while (this.isMonitoring && this.client && this.isConnected) {
+          try {
+            console.log("👀 新規メッセージの監視を開始します");
+            const updates = await this.client.idle();
+            
+            // updatesがtrueの場合は新しいメッセージがある可能性がある
+            if (updates) {
+              console.log(`📩 新しいメールを検出しました`);
+              // 未読メッセージを検索して処理
+              await this.fetchUnseenMessages(callback);
+            }
+          } catch (error) {
+            console.error('❌ 監視中にエラーが発生しました:', error);
+            if (!this.isConnected) break;
+            // 短い待機時間の後に再開
+            await new Promise(resolve => setTimeout(resolve, 5000));
+          }
         }
       } catch (error) {
-        console.error('❌ メール処理中にエラーが発生しました:', error);
+        console.error('❌ 監視ループでエラーが発生しました:', error);
+        this.isMonitoring = false;
+        // 接続が切れた場合は再接続
+        if (this.isConnected) {
+          this.scheduleReconnect(mailboxName, callback);
+        }
       }
-    });
+    })();
+  }
+  
+  /**
+   * 未読メッセージを取得して処理する
+   */
+  private async fetchUnseenMessages(callback: (email: ParsedEmail) => Promise<void>): Promise<void> {
+    if (!this.client || !this.isConnected) return;
     
-    // エラーイベント
-    this.client.on("error", (error: any) => {
-      console.error("❌ IMAPエラー:", error);
-      if (error.code === 'ETIMEDOUT') {
-        this.scheduleReconnect(mailboxName, callback);
+    try {
+      // 未読メールを検索 (UNSEEN検索フラグを使用)
+      const messages = await this.client.search({ seen: false });
+      console.log(`🔎 未読メール検索結果: ${messages.length} 件`);
+      
+      for (const seq of messages) {
+        const key = seq.toString();
+        if (this.processedUids.has(key)) continue;
+        
+        try {
+          // メッセージをフェッチ
+          const parsedEmail = await this.processEmail(key);
+          if (parsedEmail) {
+            await callback(parsedEmail);
+            this.processedUids.add(key);
+            console.log(`✅ メール処理完了 UID=${key}`);
+          }
+        } catch (error) {
+          console.error(`❌ メール処理失敗 UID=${key}:`, error);
+        }
       }
-    });
-    
-    // 切断イベント
-    this.client.on("close", () => {
-      console.log("🔒 IMAP接続が閉じられました");
-      if (this.keepAliveTimer) {
-        clearInterval(this.keepAliveTimer);
-        this.keepAliveTimer = null;
-      }
-      if (this.pollingTimer) {
-        clearInterval(this.pollingTimer);
-        this.pollingTimer = null;
-      }
-      this.scheduleReconnect(mailboxName, callback);
-    });
-    
-    return this.client;
+    } catch (error) {
+      console.error('❌ 未読メール取得中にエラーが発生しました:', error);
+    }
   }
   
   /**
@@ -134,69 +224,74 @@ export class ImapEmailService {
    */
   private async reconnect(mailboxName: string, callback: (email: ParsedEmail) => Promise<void>): Promise<void> {
     console.log(`🔌 reconnect(): 前回接続をクローズして再接続準備`);
+    this.isMonitoring = false;
+    
     if (this.client) {
       try {
-        this.client.close();
+        await this.client.logout();
         console.log('🔌 既存クライアントをクローズしました');
       } catch (error) {
         console.warn('⚠️ クライアントクローズ中に警告:', error);
       }
       this.client = null;
     }
-    await this.connect(mailboxName, callback);
-    console.log('🔌 reconnect(): connect() 完了');
+    
+    try {
+      await this.connect(mailboxName, callback);
+      console.log('🔌 reconnect(): connect() 完了');
+    } catch (error) {
+      console.error('❌ 再接続に失敗しました:', error);
+      // 再接続に失敗した場合はスケジュール
+      this.scheduleReconnect(mailboxName, callback);
+    }
   }
   
   /**
-   * キープアライブタイマーを設定 (1分間隔)
+   * キープアライブタイマーを設定 (3分間隔)
    */
   private setupKeepAlive(): void {
     if (this.keepAliveTimer) {
       clearInterval(this.keepAliveTimer);
     }
     
-    this.keepAliveTimer = setInterval(() => {
-      if (this.client && this.client._state === 'logged in') {
-        console.log('🔔 KeepAlive ping送信');
-        this.client.listMailboxes(() => {});
+    this.keepAliveTimer = setInterval(async () => {
+      if (this.client && this.isConnected) {
+        try {
+          console.log('🔔 KeepAlive ping送信');
+          await this.client.noop();
+        } catch (error) {
+          console.error('❌ KeepAlive中にエラーが発生しました:', error);
+          this.isConnected = false;
+        }
       }
-    }, 1 * 60 * 1000); // 1分ごと
+    }, 3 * 60 * 1000); // 3分ごと
   }
 
   /**
    * ポーリングによる未読メール取得 (3分間隔)
    */
-  private setupPolling(callback: (email: ParsedEmail) => Promise<void>): void {
+  private setupPolling(mailboxName: string, callback: (email: ParsedEmail) => Promise<void>): void {
     if (this.pollingTimer) clearInterval(this.pollingTimer);
-    this.pollingTimer = setInterval(() => {
-      if (this.client && this.client._state === 'logged in') {
-        console.log('🔎 ポーリング実行: UNSEEN 検索開始');
-        this.client.search(['UNSEEN'], async (err: any, uids: number[]) => {
-          if (err) {
-            console.error('❌ Polling search error:', err);
-            return;
+    
+    this.pollingTimer = setInterval(async () => {
+      if (this.client && this.isConnected) {
+        try {
+          console.log('🔎 ポーリング: 未読メールを確認しています');
+          await this.fetchUnseenMessages(callback);
+        } catch (error) {
+          console.error('❌ ポーリング実行エラー:', error);
+          
+          // 接続エラーの場合は再接続を試みる
+          if (error.code === 'ECONNRESET' || error.message.includes('connection')) {
+            this.isConnected = false;
+            this.scheduleReconnect(mailboxName, callback);
           }
-          console.log(`🔎 Polling search: 見つかった未読数=${uids.length}`, uids);
-          if (!uids.length) return;
-          for (const uid of uids) {
-            const key = uid.toString();
-            if (this.processedUids.has(key)) continue;
-            console.log(`⚙️ PollingでUID=${key}を処理開始`);
-            try {
-              const parsed = await this.processEmail({ UID: uid, title: '', from: { address: '' }, date: Date.now() });
-              if (parsed) {
-                await callback(parsed);
-                this.processedUids.add(key);
-                console.log(`✅ Polling処理完了 UID=${key}`);
-              }
-            } catch (error) {
-              console.error(`❌ Polling処理失敗 UID=${key}:`, error);
-              // 処理失敗は次回再試行
-            }
-          }
-        });
+        }
+      } else if (!this.isConnected) {
+        console.log('🔌 接続が切れています。再接続を試みます');
+        this.scheduleReconnect(mailboxName, callback);
       }
-    }, 3 * 60 * 1000);
+    }, 3 * 60 * 1000); // 3分ごと
   }
 
   /**
@@ -205,6 +300,7 @@ export class ImapEmailService {
   private scheduleReconnect(mailboxName: string, callback: (email: ParsedEmail) => Promise<void>): void {
     const delay = Math.min(5 * 60 * 1000, 1000 * Math.pow(2, this.reconnectAttempts));
     console.log(`🔄 ${delay/1000}秒後に再接続を試みます (試行回数: ${this.reconnectAttempts})`);
+    
     setTimeout(async () => {
       console.log(`⚙️ 再接続処理開始 mailbox=${mailboxName} attempt=${this.reconnectAttempts}`);
       this.reconnectAttempts++;
@@ -214,49 +310,42 @@ export class ImapEmailService {
   
   /**
    * メールを処理してパースする
-   * @param message メールメッセージ
+   * @param uid メッセージのUID
    * @returns パース済みのメール内容
    */
-  private async processEmail(message: any): Promise<ParsedEmail | null> {
-    return new Promise((resolve, reject) => {
-      const stream = this.client.createMessageStream(message.UID);
-      let body = "";
+  private async processEmail(uid: string): Promise<ParsedEmail | null> {
+    if (!this.client || !this.isConnected) return null;
+    
+    try {
+      // メッセージ全体を取得
+      const message = await this.client.fetchOne(uid, { source: true });
+      if (!message || !message.source) {
+        console.error(`❌ メッセージの取得に失敗しました: ${uid}`);
+        return null;
+      }
       
-      stream.on("data", (chunk: Buffer) => {
-        body += chunk.toString();
-      });
+      // メールのパース
+      const parsed = await simpleParser(message.source);
       
-      stream.on("end", () => {
-        try {
-          // メール本文をデコード
-          const decodedBuffer = quotedPrintable.decode(body);
-          const decodedBody = Encoding.convert(decodedBuffer, {
-            to: 'UNICODE',
-            from: 'JIS',
-            type: 'string'
-          });
-          
-          // HTMLをプレーンテキストに変換
-          const plainTextBody = this.convertHtmlToPlainText(decodedBody);
-          
-          resolve({
-            subject: message.title || '',
-            from: message.from?.address || '',
-            body: plainTextBody,
-            date: new Date(message.date || Date.now()),
-            uid: message.UID
-          });
-        } catch (error) {
-          console.error('❌ メールのデコード中にエラーが発生しました:', error);
-          reject(error);
-        }
-      });
+      // HTMLメールかテキストメールかを確認してボディを抽出
+      let body = parsed.text || '';
       
-      stream.on("error", (error: any) => {
-        console.error('❌ メールのストリーム取得中にエラーが発生しました:', error);
-        reject(error);
-      });
-    });
+      // HTMLからプレーンテキストに変換
+      if (parsed.html) {
+        body = this.convertHtmlToPlainText(parsed.html);
+      }
+      
+      return {
+        subject: parsed.subject || '',
+        from: parsed.from?.text || '',
+        body,
+        date: parsed.date || new Date(),
+        uid: uid
+      };
+    } catch (error) {
+      console.error(`❌ メール処理中にエラーが発生しました (UID=${uid}):`, error);
+      return null;
+    }
   }
   
   /**
@@ -397,22 +486,29 @@ export class ImapEmailService {
   /**
    * 接続を閉じる
    */
-  close(): void {
+  async close(): Promise<void> {
+    this.isMonitoring = false;
+    
     if (this.keepAliveTimer) {
       clearInterval(this.keepAliveTimer);
       this.keepAliveTimer = null;
     }
+    
     if (this.pollingTimer) {
       clearInterval(this.pollingTimer);
       this.pollingTimer = null;
     }
+    
     if (this.client) {
       try {
-        this.client.close();
+        await this.client.logout();
+        console.log('✅ IMAP接続を安全にクローズしました');
       } catch (error) {
         console.error('❌ IMAP接続のクローズ中にエラーが発生しました:', error);
+      } finally {
+        this.client = null;
+        this.isConnected = false;
       }
-      this.client = null;
     }
   }
 }
