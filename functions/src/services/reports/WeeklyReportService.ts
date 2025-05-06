@@ -22,11 +22,10 @@ export class WeeklyReportService extends BaseReportService {
         params: Record<string, string>
     ): Promise<WeeklyReport> {
         try {
-            const { year, month, term } = params;
-            const dateInfo = DateUtil.getCurrentDateInfo();
+            const { year, month, day } = params;
 
-            // DateUtilを使用してパスを取得
-            const dateObj = new Date(parseInt(year), parseInt(month) - 1, 1); // 月の初日を使用
+            // DateUtilを使用してパスを取得 - 実際の日付を使用
+            const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
             const pathInfo = DateUtil.getFirestorePath(dateObj);
             const weeklyReportPath = pathInfo.weeklyReportPath;
 
@@ -46,8 +45,8 @@ export class WeeklyReportService extends BaseReportService {
                     lastUpdated: this.getServerTimestamp(),
                     lastUpdatedBy: 'system',
                     documentIdList: [documentFullPath], // フルパスを使用
-                    termStartDate: this.getTimestampFromDate(dateInfo.weekStartDate),
-                    termEndDate: this.getTimestampFromDate(dateInfo.weekEndDate),
+                    termStartDate: this.getTimestampFromDate(pathInfo.weekStartDate),
+                    termEndDate: this.getTimestampFromDate(pathInfo.weekEndDate),
                     hasNotifiedLevel1: false,
                     hasNotifiedLevel2: false,
                     hasNotifiedLevel3: false,
@@ -72,8 +71,13 @@ export class WeeklyReportService extends BaseReportService {
             }
 
             // アラート条件チェック（しきい値超過時のアラート）
+            // 正しいtermからweekNumberを取得
+            const pathParts = weeklyReportPath.split('/');
+            const correctTerm = pathParts[pathParts.length - 1];
+            const weekNumber = parseInt(correctTerm.replace('term', ''));
+
             const { updated, alertLevel, updatedReport } =
-                await this.checkAndSendAlert(weeklyReport, Number(term.replace('term', '')), year, month);
+                await this.checkAndSendAlert(weeklyReport, weekNumber, year, month);
 
             // 通知フラグ更新
             if (updated) {
@@ -433,10 +437,8 @@ export class WeeklyReportService extends BaseReportService {
                 };
             }
 
-            // DateUtilを使用してパスを取得
-            const dateObj = new Date(parseInt(year), parseInt(month) - 1, 1); // 月の初日を使用
-            const pathInfo = DateUtil.getFirestorePath(dateObj);
-            const weeklyReportPath = pathInfo.weeklyReportPath;
+            // 週のパスを直接使用する
+            const weeklyReportPath = `reports/weekly/${year}-${month.padStart(2, '0')}/${term}`;
 
             // レポートデータを取得
             const reportData = await this.firestoreService.getDocument<WeeklyReport>(weeklyReportPath);
