@@ -416,11 +416,11 @@ export class ImapEmailService {
     amount: number;
     where_to_use: string;
   } {
-    // 正規表現パターン
-    const cardNameMatch = body.match(/カード名称[　\s]+：[　\s]+(.+?)(?=[\s\n]いつも|$)/);
-    const dateMatch = body.match(/【ご利用日時\(日本時間\)】[　\s]+([\d年月日 :]+)/);
-    const amountMatch = body.match(/【ご利用金額】[　\s]+([\d,]+)円/);
-    const whereToUseMatch = body.match(/【ご利用先】[　\s]+([^。\n]+?)(?=[\s\n]ご利用先名等|$)/);
+    // 正規表現パターン - 新しいメール形式に対応
+    const cardNameMatch = body.match(/カード名称\s*：\s*(.+?)(?=\s*\n)/);
+    const dateMatch = body.match(/【ご利用日時\(日本時間\)】\s*([\d年月日 :]+)/);
+    const amountMatch = body.match(/【ご利用金額】\s*([\d,]+)円/);
+    const whereToUseMatch = body.match(/【ご利用先】\s*([^\n]+)/);
     
     // データを抽出・整形
     const datetime_of_use = dateMatch?.[1]?.trim() || '';
