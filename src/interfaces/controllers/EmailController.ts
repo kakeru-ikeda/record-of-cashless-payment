@@ -68,7 +68,7 @@ export class EmailController {
       try {
         console.log(`📬 新しいメールを受信しました: ${email.subject}`);
         console.log(`📧 送信者: ${email.from}`);
-        console.log(`📜 本文サンプル: ${email.body.substring(0, 100)}...`);
+        console.log(`📜 本文サンプル: ${email.body}`);
 
         // 受信したメールのカード会社を判定
         const detectedCardCompany = this.detectCardCompany(email);
