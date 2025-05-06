@@ -87,9 +87,9 @@ async function bootstrap() {
             await emailController.startAllMonitoring();
 
             // プロセス終了時のクリーンアップ
-            process.on('SIGINT', () => {
+            process.on('SIGINT', async () => {
                 console.log('👋 アプリケーションを終了しています...');
-                emailController.stopMonitoring();
+                await emailController.stopMonitoring();
                 if (server) {
                     server.close(() => {
                         console.log('🔒 HTTPサーバーを停止しました');
