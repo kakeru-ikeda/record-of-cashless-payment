@@ -8,6 +8,7 @@ import { DiscordWebhookNotifier } from '../shared/discord/DiscordNotifier';
 import { ProcessEmailUseCase } from './usecases/ProcessEmailUseCase';
 import { EmailController } from './interfaces/controllers/EmailController';
 import { logger, LogLevel } from '../shared/utils/Logger';
+import { MonitoringRoutes } from './infrastructure/monitoring/routes/monitoringRoutes';
 
 // 環境変数の読み込み
 dotenv.config();
@@ -41,10 +42,10 @@ async function bootstrap() {
         const app = express();
         const port = process.env.PORT || 3000;
 
-        // ヘルスチェックエンドポイント
-        app.get('/health', (req, res) => {
-            res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
-        });
+        // モニタリングルートの設定
+        const monitoringRoutes = new MonitoringRoutes();
+        app.use('/monitoring', monitoringRoutes.getRouter());
+        logger.updateServiceStatus('Monitoring', 'online', 'モニタリングAPI有効');
 
         // サーバーの起動
         const server = app.listen(port, () => {
