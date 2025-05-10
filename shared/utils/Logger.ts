@@ -431,18 +431,26 @@ export class Logger {
     
     this.dashboardRendered = true;
     
-    // コンソール出力をバッファしないようにする
-    console.clear(); // 完全にコンソールをクリア
+    // コンソール出力をクリアするための特殊な対応
+    // Docker環境でconsole.clearが機能しない問題に対処
+    if (process.stdout.isTTY) {
+      // 通常のターミナルの場合はコンソールクリア
+      console.clear();
+    } else {
+      // Dockerなどの非TTYターミナルではセパレータを出力するだけ
+      console.log('\n\n\n');
+    }
     
+    // ダッシュボードのヘッダー
     console.log(chalk.bold.cyan('==== サービスステータスダッシュボード ===='));
     console.log(`${chalk.gray('最終更新:')} ${new Date().toLocaleString('ja-JP')}`);
     console.log('');
     
-    const statusColors = {
-      'online': chalk.green('●'),
-      'offline': chalk.gray('●'),
-      'error': chalk.red('●'),
-      'warning': chalk.yellow('●')
+    const statusIcons = {
+      'online': '🟢', // オンライン：緑の丸
+      'offline': '⚪', // オフライン：白い丸
+      'error': '🔴',   // エラー：赤い丸
+      'warning': '🟡'  // 警告：黄色い丸
     };
     
     // サービスをステータスでソート
@@ -454,7 +462,7 @@ export class Logger {
       });
     
     sortedServices.forEach(service => {
-      const statusIcon = statusColors[service.status];
+      const statusIcon = statusIcons[service.status];
       let line = `${statusIcon} ${chalk.bold(service.name)}: ${this.getStatusText(service.status)}`;
       
       if (service.message) {
