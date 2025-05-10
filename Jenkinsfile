@@ -18,7 +18,24 @@ pipeline {
         timeout(time: 30, unit: 'MINUTES')
     }
     
-    stages {       
+    stages {   
+        stage('Notification') {
+            steps {
+                echo 'パイプラインの実行を開始しました'
+                withCredentials([string(credentialsId: 'DISCORD_WEBHOOK_JENKINS_LOG_URL', variable: 'DISCORD_WEBHOOK_JENKINS_LOG_URL')]) {
+                    sh '''
+                        # JSONをエスケープして正しく構築
+                        JOB_NAME_ESC=$(echo "${JOB_NAME}" | sed 's/"/\\\\"/g')
+                        
+                        # Discord通知をcurlで送信（ビルド開始）
+                        curl -X POST -H "Content-Type: application/json" \\
+                             -d "{\\\"content\\\":\\\"**Jenkinsがビルドを受け付けました** 🚀\\nジョブ: ${JOB_NAME_ESC}\\nビルド番号: #${BUILD_NUMBER}\\\"}" \\
+                             "${DISCORD_WEBHOOK_JENKINS_LOG_URL}"
+                    '''
+                }
+            }
+        }
+
         stage('Workspace Debug') {
             steps {
                 echo "ワークスペース情報をデバッグ中..."
