@@ -1,6 +1,7 @@
 import { ParsedEmail, ImapEmailService, CardCompany } from '../../infrastructure/email/ImapEmailService';
 import { ProcessEmailUseCase } from '../../usecases/ProcessEmailUseCase';
 import { Environment } from '../../infrastructure/config/environment';
+import { logger } from '../../../shared/utils/Logger';
 
 /**
  * メール処理のコントローラー
@@ -14,6 +15,7 @@ export class EmailController {
 
   // メールサービスのインスタンス
   private emailServices: Record<string, ImapEmailService> = {};
+  private readonly serviceContext = 'EmailController';
 
   /**
    * コンストラクタ
@@ -26,13 +28,14 @@ export class EmailController {
   ) {
     // デフォルトのメールサービスをセット
     this.emailServices['default'] = emailService;
+    logger.updateServiceStatus(this.serviceContext, 'offline', '初期化済み');
   }
   
   /**
    * すべてのメールボックスの監視を開始
    */
   async startAllMonitoring(): Promise<void> {
-    console.log('📧 全メールボックスの監視を開始します...');
+    logger.info('全メールボックスの監視を開始します...', this.serviceContext);
     
     // カード会社ごとに別々のインスタンスを作成して監視
     for (const [cardCompany, mailboxName] of Object.entries(this.mailboxes)) {
@@ -49,6 +52,8 @@ export class EmailController {
       // 監視を開始
       await this.startMonitoringForMailbox(mailboxName, cardCompany as CardCompany, mailboxService);
     }
+    
+    logger.updateServiceStatus(this.serviceContext, 'online', '全メールボックスの監視中');
   }
   
   /**
@@ -62,29 +67,35 @@ export class EmailController {
     cardCompany: CardCompany,
     emailService: ImapEmailService
   ): Promise<void> {
-    console.log(`📧 ${cardCompany}のメールボックス "${mailboxName}" の監視を開始します`);
+    const context = `${this.serviceContext}:${cardCompany}`;
+    logger.info(`${cardCompany}のメールボックス "${mailboxName}" の監視を開始します`, context);
     
-    await emailService.connect(mailboxName, async (email: ParsedEmail) => {
-      try {
-        console.log(`📬 新しいメールを受信しました: ${email.subject}`);
-        console.log(`📧 送信者: ${email.from}`);
-        console.log(`📜 本文サンプル: ${email.body}`);
+    try {
+      await emailService.connect(mailboxName, async (email: ParsedEmail) => {
+        try {
+          logger.info(`新しいメールを受信しました: ${email.subject}`, context);
+          logger.debug(`送信者: ${email.from}`, context);
+          logger.debug(`本文サンプル: ${email.body.substring(0, 100)}...`, context);
 
-        // 受信したメールのカード会社を判定
-        const detectedCardCompany = this.detectCardCompany(email);
-        
-        if (detectedCardCompany) {
-          console.log(`🏦 ${detectedCardCompany}のメールを検出しました`);
+          // 受信したメールのカード会社を判定
+          const detectedCardCompany = this.detectCardCompany(email);
           
-          // メール本文からカード利用情報を抽出して保存
-          await this.processEmailUseCase.execute(email.body, detectedCardCompany);
-        } else {
-          console.log(`⚠️ カード会社を特定できませんでした`);
+          if (detectedCardCompany) {
+            logger.info(`${detectedCardCompany}のメールを検出しました`, context);
+            
+            // メール本文からカード利用情報を抽出して保存
+            await this.processEmailUseCase.execute(email.body, detectedCardCompany);
+          } else {
+            logger.warn(`カード会社を特定できませんでした`, context);
+          }
+        } catch (error) {
+          logger.error('メール処理中にエラーが発生しました', error, context);
         }
-      } catch (error) {
-        console.error('❌ メール処理中にエラーが発生しました:', error);
-      }
-    });
+      });
+    } catch (error) {
+      logger.error(`メールボックス "${mailboxName}" への接続に失敗しました`, error, context);
+      logger.updateServiceStatus(context, 'error', '接続に失敗しました');
+    }
   }
   
   /**
@@ -92,27 +103,34 @@ export class EmailController {
    * @param mailboxName 監視対象のメールボックス名
    */
   async startMonitoring(mailboxName?: string): Promise<void> {
-    console.log(`📧 メール監視を開始します: ${mailboxName || 'デフォルトボックス'}`);
+    const context = `${this.serviceContext}:Legacy`;
+    logger.info(`メール監視を開始します: ${mailboxName || 'デフォルトボックス'}`, context);
     
-    await this.emailService.connect(mailboxName, async (email: ParsedEmail) => {
-      try {
-        console.log(`📬 新しいメールを受信しました: ${email.subject}`);
-        console.log(`📧 送信者: ${email.from}`);
-        console.log(`📜 本文: ${email.body}`);
+    try {
+      await this.emailService.connect(mailboxName, async (email: ParsedEmail) => {
+        try {
+          logger.info(`新しいメールを受信しました: ${email.subject}`, context);
+          logger.debug(`送信者: ${email.from}`, context);
+          logger.debug(`本文サンプル: ${email.body.substring(0, 100)}...`, context);
 
-        // カード会社判定
-        const cardCompany = this.detectCardCompany(email);
-        
-        if (cardCompany) {
-          console.log(`🏦 ${cardCompany}のメールを検出しました`);
+          // カード会社判定
+          const cardCompany = this.detectCardCompany(email);
           
-          // メール本文からカード利用情報を抽出して保存
-          await this.processEmailUseCase.execute(email.body, cardCompany);
+          if (cardCompany) {
+            logger.info(`${cardCompany}のメールを検出しました`, context);
+            
+            // メール本文からカード利用情報を抽出して保存
+            await this.processEmailUseCase.execute(email.body, cardCompany);
+          } else {
+            logger.warn('カード会社を特定できませんでした', context);
+          }
+        } catch (error) {
+          logger.error('メール処理中にエラーが発生しました', error, context);
         }
-      } catch (error) {
-        console.error('❌ メール処理中にエラーが発生しました:', error);
-      }
-    });
+      });
+    } catch (error) {
+      logger.error(`メールボックス "${mailboxName}" への接続に失敗しました`, error, context);
+    }
   }
   
   /**
@@ -160,17 +178,20 @@ export class EmailController {
    * メール監視を停止
    */
   async stopMonitoring(): Promise<void> {
-    console.log('📧 すべてのメールボックスの監視を停止します');
+    logger.info('すべてのメールボックスの監視を停止します', this.serviceContext);
     
     // 全てのメールサービスインスタンスの接続を閉じる
     for (const [key, service] of Object.entries(this.emailServices)) {
+      const context = `${this.serviceContext}:${key}`;
       try {
         await service.close();
-        console.log(`📧 ${key}のメール監視を停止しました`);
+        logger.info(`${key}のメール監視を停止しました`, context);
       } catch (error) {
-        console.error(`❌ ${key}のメール監視停止中にエラーが発生しました:`, error);
+        logger.error(`${key}のメール監視停止中にエラーが発生しました`, error, context);
       }
     }
+    
+    logger.updateServiceStatus(this.serviceContext, 'offline', '監視停止');
   }
 }
 

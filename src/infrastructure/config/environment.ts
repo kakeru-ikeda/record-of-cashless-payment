@@ -1,4 +1,3 @@
-
 import * as dotenv from 'dotenv';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -20,6 +19,12 @@ export class Environment {
   
   // Firebase関連の設定
   static readonly FIREBASE_ADMIN_KEY_PATH = process.env.GOOGLE_APPLICATION_CREDENTIALS || path.resolve(process.cwd(), 'firebase-admin-key.json');
+  
+  // ログ関連の設定
+  static readonly LOG_LEVEL = process.env.LOG_LEVEL || 'INFO';
+  static readonly COMPACT_LOGS = process.env.COMPACT_LOGS === 'true';
+  static readonly SUPPRESS_POLLING_LOGS = process.env.SUPPRESS_POLLING_LOGS === 'true';
+  static readonly STATUS_REFRESH_INTERVAL = parseInt(process.env.STATUS_REFRESH_INTERVAL || '30000', 10);
   
   /**
    * 環境変数のバリデーションを行う
