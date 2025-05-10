@@ -1,10 +1,9 @@
-
 /** @type {import('ts-jest').JestConfigWithTsJest} */
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   roots: ['<rootDir>/src/', '<rootDir>/tests/'],
-  testMatch: ['**/*.test.ts'],
+  testMatch: ['**/tests/**/*.test.ts'],
   verbose: true,
   collectCoverageFrom: [
     'src/**/*.ts',
@@ -17,7 +16,8 @@ module.exports = {
     }]
   },
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/src/$1'
+    '^@/(.*)$': '<rootDir>/src/$1',
+    '^chalk$': '<rootDir>/tests/mocks/chalkMock.js'
   },
-  setupFilesAfterEnv: ['<rootDir>/tests/jest.setup.js'],
+  setupFilesAfterEnv: ['./tests/jest.setup.js'],
 };
