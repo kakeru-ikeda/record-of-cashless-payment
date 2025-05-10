@@ -3,7 +3,12 @@ import { MockEmailService } from '../../mocks/MockEmailService';
 import { MockCardUsageRepository } from '../../mocks/MockCardUsageRepository';
 import { MockDiscordNotifier } from '../../mocks/MockDiscordNotifier';
 import { TestHelper } from '../../helpers/TestHelper';
+import { mockLogger } from '../../mocks/MockLogger';
+import { AppError, ErrorType } from '../../../shared/errors/AppError';
 import * as admin from 'firebase-admin';
+
+// Loggerをモック化
+jest.mock('../../../shared/utils/Logger', () => require('../../mocks/Logger'));
 
 describe('ProcessEmailUseCase', () => {
     // テスト用のモックオブジェクト
@@ -19,6 +24,9 @@ describe('ProcessEmailUseCase', () => {
 
     // 各テスト前の準備
     beforeEach(() => {
+        // モックロガーをクリア
+        mockLogger.clear();
+        
         // モックオブジェクトを初期化
         emailService = new MockEmailService();
         repository = new MockCardUsageRepository();
@@ -77,12 +85,18 @@ describe('ProcessEmailUseCase', () => {
         expect(notification).toBeDefined();
         expect(notification?.amount).toBe(390);
         expect(notification?.where_to_use).toBe('マツヤ');
+        
+        // ログ出力を検証 - 特定のメッセージが含まれているか確認
+        const infoMessages = mockLogger.messages.filter(m => m.level === 'info');
+        expect(infoMessages.some(m => m.message.includes('カード利用情報を保存しました'))).toBe(true);
+        expect(infoMessages.some(m => m.message.includes('Discord通知を送信しました'))).toBe(true);
     });
 
     test('異常系: メールのパースに失敗した場合', async () => {
         // パースエラーを発生させる
+        const parseError = new Error('パースエラー');
         jest.spyOn(emailService, 'parseCardUsageFromEmail')
-            .mockRejectedValueOnce(new Error('パースエラー'));
+            .mockRejectedValueOnce(parseError);
         
         // エラーがスローされることを検証
         await expect(useCase.execute('invalid email'))
@@ -93,12 +107,21 @@ describe('ProcessEmailUseCase', () => {
         
         // 通知が送信されていないことを検証
         expect(notifier.getNotifications().length).toBe(0);
+        
+        // エラーログを検証 - AppErrorが記録されていることを確認
+        expect(mockLogger.appErrors.length).toBeGreaterThan(0);
+        expect(mockLogger.appErrors[0].error.message).toContain('メール処理中にエラーが発生しました');
     });
 
     test('異常系: データ保存に失敗した場合', async () => {
         // 保存エラーを発生させる
+        const saveError = new AppError(
+            'データ保存エラー',
+            ErrorType.DATA_ACCESS,
+            { test: true }
+        );
         jest.spyOn(repository, 'save')
-            .mockRejectedValueOnce(new Error('データ保存エラー'));
+            .mockRejectedValueOnce(saveError);
         
         // エラーがスローされることを検証
         await expect(useCase.execute(sampleEmail))
@@ -106,6 +129,10 @@ describe('ProcessEmailUseCase', () => {
         
         // 通知が送信されていないことを検証
         expect(notifier.getNotifications().length).toBe(0);
+        
+        // AppErrorが記録されていることを検証
+        expect(mockLogger.appErrors.length).toBeGreaterThan(0);
+        expect(mockLogger.appErrors[0].error.type).toBe(ErrorType.DATA_ACCESS);
     });
 
     test('異常系: Discord通知に失敗した場合でもデータは保存されること', async () => {
@@ -118,5 +145,9 @@ describe('ProcessEmailUseCase', () => {
         
         // データは保存されているはず
         expect(repository.getItemCount()).toBe(1);
+        
+        // エラーログが出力されていることを検証
+        expect(mockLogger.appErrors.length).toBeGreaterThan(0);
+        expect(mockLogger.appErrors[0].error.message).toContain('Discord通知の送信に失敗しました');
     });
 });
