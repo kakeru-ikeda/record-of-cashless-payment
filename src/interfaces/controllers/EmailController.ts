@@ -16,6 +16,8 @@ export class EmailController {
   // メールサービスのインスタンス
   private emailServices: Record<string, ImapEmailService> = {};
   private readonly serviceContext = 'EmailController';
+  // 監視状態を管理するフラグ
+  private isMonitoringActive: boolean = false;
 
   /**
    * コンストラクタ
@@ -29,6 +31,14 @@ export class EmailController {
     // デフォルトのメールサービスをセット
     this.emailServices['default'] = emailService;
     logger.updateServiceStatus(this.serviceContext, 'offline', '初期化済み');
+  }
+  
+  /**
+   * メール監視が有効かどうかを返す
+   * @returns 監視中ならtrue、そうでなければfalse
+   */
+  public isMonitoring(): boolean {
+    return this.isMonitoringActive;
   }
   
   /**
@@ -53,6 +63,7 @@ export class EmailController {
       await this.startMonitoringForMailbox(mailboxName, cardCompany as CardCompany, mailboxService);
     }
     
+    this.isMonitoringActive = true;
     logger.updateServiceStatus(this.serviceContext, 'online', '全メールボックスの監視中');
   }
   
@@ -191,6 +202,7 @@ export class EmailController {
       }
     }
     
+    this.isMonitoringActive = false;
     logger.updateServiceStatus(this.serviceContext, 'offline', '監視停止');
   }
 }
