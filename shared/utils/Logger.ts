@@ -563,6 +563,22 @@ export class Logger {
       }
     }
   }
+
+  /**
+   * サービスステータスの一覧を取得
+   * モニタリングAPIから利用するためのパブリックメソッド
+   */
+  public getServiceStatuses(): ServiceStatus[] {
+    return Array.from(this.services.values());
+  }
+  
+  /**
+   * エラー履歴を取得
+   * モニタリングAPIから利用するためのパブリックメソッド
+   */
+  public getErrorHistory(): ErrorRecord[] {
+    return [...this.errorHistory];
+  }
 }
 
 // 使いやすいようにエクスポート
