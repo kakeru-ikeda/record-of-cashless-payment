@@ -1,7 +1,5 @@
 import { Request, Response } from 'express';
 import { logger, LogLevel } from '../../../../shared/utils/Logger';
-import path from 'path';
-import fs from 'fs';
 
 /**
  * モニタリングコントローラー - サーバー状態の監視用エンドポイント実装

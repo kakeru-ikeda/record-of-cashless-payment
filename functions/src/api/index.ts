@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { cardUsageRouter } from './routes/cardUsageRoutes';
 import reportsRouter from './routes/reportsRoutes';
-import { authMiddleware } from './middlewares/authMiddleware';
+import { authMiddleware } from '../../../shared/firebase/AuthMiddleware';
 
 const app = express();
 
