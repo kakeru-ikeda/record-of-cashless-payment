@@ -30,6 +30,7 @@
 
 - **バックエンド**: このリポジトリ
 - **フロントエンド**: [record-of-cashless-payment-webfront](https://github.com/kakeru-ikeda/record-of-cashless-payment-webfront)
+- **Discord BOT**: [record-of-cashless-payment-bot](https://github.com/kakeru-ikeda/record-of-cashless-payment-bot)
 
 ## アーキテクチャ
 
@@ -89,11 +90,16 @@ DISCORD_REPORT_MONTHLY_WEBHOOK_URL=https://discord.com/api/webhooks/マンスリ
 
 ## 機能詳細
 
-### メインプログラム
+### メインシステム
 - メール受信の自動検知
 - カード利用情報の抽出と構造化
 - Firestoreへのデータ保存
 - リアルタイム通知の送信
+
+#### メインシステムAPI
+サーバーが提供するサービスへダイレクトにアクセスするためのAPI実装
+- **モニタリングAPI**: サービス状態確認、ヘルスチェック（`/monitoring/*`）
+- **サービス管理API**: メール監視の制御、強制実行（`/api/services/*`）
 
 ### Firebase Functions
 - **onFirestoreWrite**: 新しいカード利用情報が追加された時に実行
@@ -103,11 +109,33 @@ DISCORD_REPORT_MONTHLY_WEBHOOK_URL=https://discord.com/api/webhooks/マンスリ
   - 前日のデイリーレポート送信
   - 週初めの場合は先週のウィークリーレポート送信
   - 月初めの場合は先月のマンスリーレポート送信
-- **api**: フロントエンドとの情報疎通のため
+- **api**: フロントエンドとの情報疎通のためにサーバーレスで実装
   - カード利用情報のCRUD操作
   - 日次/週次/月次レポートの取得
   - ヘルスチェック
   - 詳細な仕様についてはドキュメントを参照してください：[API仕様書](/functions/src/api/readme.md)
+
+APIセットは共通の認証基盤（Firebase Authentication）を使用しており、一元化された権限管理を実現しています。
+
+## 運用
+
+### 対応金融機関
+現在、以下の金融機関からのカード利用通知メールに対応しています：
+- 三菱UFJ銀行（デビットカード）
+- 三井住友カード（クレジットカード）
+
+カード会社ごとに専用のパーサーが実装されており、メール形式の違いに対応しています。新しいカード会社の追加は、対応するパーサーを実装することで容易に行えます。
+
+### メール処理パイプライン
+
+1. **メール検出**: IMAP接続で未読メールを監視
+2. **カード会社判別**: メールヘッダーとコンテンツから送信元カード会社を特定
+3. **データ抽出**: カード会社専用のパーサーでメール本文から情報を抽出
+4. **データ変換**: 抽出データを標準形式に変換（CardUsageエンティティ）
+5. **データ検証**: 金額、日時、店舗名などの必須データの存在確認
+6. **重複チェック**: 同一取引の重複登録防止
+7. **データ保存**: Firestoreの年/月/日付構造に従って保存
+8. **通知生成**: Discordへの通知メッセージ作成と送信
 
 ## 使い方
 
