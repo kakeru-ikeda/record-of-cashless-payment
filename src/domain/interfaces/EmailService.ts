@@ -1,4 +1,4 @@
-import { CardUsageNotification } from '../entities/CardUsage';
+import { CardUsageNotification } from '../../../shared/types/CardUsageNotification';
 
 /**
  * メールサービスのインターフェース
