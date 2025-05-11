@@ -148,6 +148,6 @@ describe('ProcessEmailUseCase', () => {
         
         // エラーログが出力されていることを検証
         expect(mockLogger.appErrors.length).toBeGreaterThan(0);
-        expect(mockLogger.appErrors[0].error.message).toContain('Discord通知の送信に失敗しました');
+        expect(mockLogger.appErrors[0].error.message).toContain('カード利用通知の送信に失敗しました');
     });
 });
