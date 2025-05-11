@@ -5,7 +5,10 @@ import { ImapClientAdapter, ImapConnectionConfig } from './ImapClientAdapter';
 import { EmailParser, ParsedEmail } from './EmailParser';
 import { CardUsageExtractor, CardCompany, CardUsageInfo } from './CardUsageExtractor';
 import { EmailService } from '../../domain/interfaces/EmailService';
-import { CardUsageNotification } from '../../domain/entities/CardUsage';
+import { CardUsage } from '../../domain/entities/CardUsage';
+import { CardUsageNotification } from '../../../shared/types/CardUsageNotification';
+import { CardUsageMapper } from '../../domain/mappers/CardUsageMapper';
+import { Timestamp } from 'firebase-admin/firestore';
 
 /**
  * IMAP接続とメール処理のサービス
@@ -188,13 +191,15 @@ export class ImapEmailService implements EmailService {
       // カード利用情報の抽出
       const cardUsageInfo = this.cardUsageExtractor.extractFromEmailBody(emailContent, cardCompany);
       
-      // ドメインモデルに変換して返す
-      return {
-        card_name: cardUsageInfo.card_name,
-        datetime_of_use: cardUsageInfo.datetime_of_use,
-        amount: cardUsageInfo.amount,
-        where_to_use: cardUsageInfo.where_to_use
+      // 一時的なCardUsageエンティティを作成
+      const cardUsage: CardUsage = {
+        ...cardUsageInfo,
+        datetime_of_use: Timestamp.fromDate(new Date(cardUsageInfo.datetime_of_use)),
+        created_at: Timestamp.now()
       };
+      
+      // マッパーを使ってドメインモデルから通知用DTOに変換
+      return CardUsageMapper.toNotification(cardUsage);
     } catch (error) {
       const appError = new AppError(
         'カード利用情報の抽出に失敗しました',
