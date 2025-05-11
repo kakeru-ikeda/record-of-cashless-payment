@@ -9,6 +9,8 @@ import { DailyReportService } from '../../services/reports/DailyReportService';
 import { WeeklyReportService } from '../../services/reports/WeeklyReportService';
 import { MonthlyReportService } from '../../services/reports/MonthlyReportService';
 import { DiscordWebhookNotifier } from '../../../../shared/discord/DiscordNotifier';
+import { AppError, ErrorType } from '../../../../shared/errors/AppError';
+import { ErrorHandler } from '../../../../shared/errors/ErrorHandler';
 
 /**
  * カード利用データを操作するためのコントローラークラス
@@ -150,9 +152,7 @@ export class CardUsageController {
             const month = req.query.month as string;
 
             if (!year || !month) {
-                const response = ResponseHelper.validationError('年と月のパラメータが必要です');
-                res.status(response.status).json(response);
-                return;
+                throw new AppError('年と月のパラメータが必要です', ErrorType.VALIDATION);
             }
 
             // 指定された年月のデータを取得するロジックを実装
@@ -196,15 +196,13 @@ export class CardUsageController {
                     }
                 }
             } catch (error) {
-                console.error('データ取得中にエラーが発生しました:', error);
+                throw new AppError('データ取得中にエラーが発生しました', ErrorType.DATA_ACCESS, error);
             }
 
             const response = ResponseHelper.success('カード利用情報の取得に成功しました', usages);
             res.status(response.status).json(response);
         } catch (error) {
-            console.error('カード利用情報の取得中にエラーが発生しました:', error);
-            const errorMessage = error instanceof Error ? error.message : '不明なエラー';
-            const response = ResponseHelper.error(500, 'カード利用情報の取得中にエラーが発生しました', { error: errorMessage });
+            const response = ErrorHandler.handle(error, 'CardUsageController.getAllCardUsages');
             res.status(response.status).json(response);
         }
     }
@@ -217,9 +215,7 @@ export class CardUsageController {
             const { id } = req.params;
 
             if (!id) {
-                const response = ResponseHelper.validationError('IDが必要です');
-                res.status(response.status).json(response);
-                return;
+                throw new AppError('IDが必要です', ErrorType.VALIDATION);
             }
 
             // データを検索するために年月のリストを取得
@@ -273,16 +269,13 @@ export class CardUsageController {
                 }
 
                 // 見つからなかった場合
-                const response = ResponseHelper.notFound('指定されたIDのカード利用情報が見つかりません');
-                res.status(response.status).json(response);
+                throw new AppError('指定されたIDのカード利用情報が見つかりません', ErrorType.NOT_FOUND);
             } catch (error) {
-                console.error('データ検索中にエラーが発生しました:', error);
-                throw error;
+                if (error instanceof AppError) throw error;
+                throw new AppError('データ検索中にエラーが発生しました', ErrorType.DATA_ACCESS, error);
             }
         } catch (error) {
-            console.error('カード利用情報の取得中にエラーが発生しました:', error);
-            const errorMessage = error instanceof Error ? error.message : '不明なエラー';
-            const response = ResponseHelper.error(500, 'カード利用情報の取得中にエラーが発生しました', { error: errorMessage });
+            const response = ErrorHandler.handle(error, 'CardUsageController.getCardUsageById');
             res.status(response.status).json(response);
         }
     }
@@ -295,9 +288,7 @@ export class CardUsageController {
             const cardUsageData = req.body;
 
             if (!cardUsageData || !cardUsageData.datetime_of_use || !cardUsageData.amount || !cardUsageData.card_name) {
-                const response = ResponseHelper.validationError('必須フィールドが不足しています');
-                res.status(response.status).json(response);
-                return;
+                throw new AppError('必須フィールドが不足しています', ErrorType.VALIDATION);
             }
 
             // 日付文字列をタイムスタンプに変換
@@ -316,13 +307,11 @@ export class CardUsageController {
                         cardUsageData.datetime_of_use._nanoseconds || cardUsageData.datetime_of_use.nanoseconds
                     );
                 } else {
-                    throw new Error('日付形式が無効です');
+                    throw new AppError('日付形式が無効です', ErrorType.VALIDATION);
                 }
             } catch (error) {
-                const errorMessage = error instanceof Error ? error.message : '不明なエラー';
-                const response = ResponseHelper.validationError('日付形式が無効です', { error: errorMessage });
-                res.status(response.status).json(response);
-                return;
+                if (error instanceof AppError) throw error;
+                throw new AppError('日付形式が無効です', ErrorType.VALIDATION, error);
             }
 
             // 作成日時として現在のタイムスタンプを設定
@@ -357,9 +346,7 @@ export class CardUsageController {
             const response = ResponseHelper.createResponse(201, true, 'カード利用情報の作成に成功しました', responseData);
             res.status(response.status).json(response);
         } catch (error) {
-            console.error('カード利用情報の作成中にエラーが発生しました:', error);
-            const errorMessage = error instanceof Error ? error.message : '不明なエラー';
-            const response = ResponseHelper.error(500, 'カード利用情報の作成中にエラーが発生しました', { error: errorMessage });
+            const response = ErrorHandler.handle(error, 'CardUsageController.createCardUsage');
             res.status(response.status).json(response);
         }
     }
@@ -373,9 +360,7 @@ export class CardUsageController {
             const updateData = req.body;
 
             if (!id) {
-                const response = ResponseHelper.validationError('IDが必要です');
-                res.status(response.status).json(response);
-                return;
+                throw new AppError('IDが必要です', ErrorType.VALIDATION);
             }
 
             // データを検索するためにDBインスタンスを取得
@@ -430,9 +415,7 @@ export class CardUsageController {
 
             // データが見つからない場合
             if (!existingData || !docPath) {
-                const response = ResponseHelper.notFound('指定されたIDのカード利用情報が見つかりません');
-                res.status(response.status).json(response);
-                return;
+                throw new AppError('指定されたIDのカード利用情報が見つかりません', ErrorType.NOT_FOUND);
             }
 
             // 更新用のデータを構築
@@ -512,9 +495,7 @@ export class CardUsageController {
             const response = ResponseHelper.success('カード利用情報の更新に成功しました', responseData);
             res.status(response.status).json(response);
         } catch (error) {
-            console.error('カード利用情報の更新中にエラーが発生しました:', error);
-            const errorMessage = error instanceof Error ? error.message : '不明なエラー';
-            const response = ResponseHelper.error(500, 'カード利用情報の更新中にエラーが発生しました', { error: errorMessage });
+            const response = ErrorHandler.handle(error, 'CardUsageController.updateCardUsage');
             res.status(response.status).json(response);
         }
     }
@@ -527,9 +508,7 @@ export class CardUsageController {
             const { id } = req.params;
 
             if (!id) {
-                const response = ResponseHelper.validationError('IDが必要です');
-                res.status(response.status).json(response);
-                return;
+                throw new AppError('IDが必要です', ErrorType.VALIDATION);
             }
 
             // データを検索するためにDBインスタンスを取得
@@ -584,9 +563,7 @@ export class CardUsageController {
 
             // データが見つからない場合
             if (!existingData || !docPath) {
-                const response = ResponseHelper.notFound('指定されたIDのカード利用情報が見つかりません');
-                res.status(response.status).json(response);
-                return;
+                throw new AppError('指定されたIDのカード利用情報が見つかりません', ErrorType.NOT_FOUND);
             }
 
             // 論理削除（is_activeをfalseに設定）
@@ -599,9 +576,7 @@ export class CardUsageController {
             const response = ResponseHelper.success('カード利用情報の削除に成功しました', responseData);
             res.status(response.status).json(response);
         } catch (error) {
-            console.error('カード利用情報の削除中にエラーが発生しました:', error);
-            const errorMessage = error instanceof Error ? error.message : '不明なエラー';
-            const response = ResponseHelper.error(500, 'カード利用情報の削除中にエラーが発生しました', { error: errorMessage });
+            const response = ErrorHandler.handle(error, 'CardUsageController.deleteCardUsage');
             res.status(response.status).json(response);
         }
     }

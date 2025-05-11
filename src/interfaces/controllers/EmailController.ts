@@ -2,6 +2,7 @@ import { ParsedEmail, ImapEmailService, CardCompany } from '../../infrastructure
 import { ProcessEmailUseCase } from '../../usecases/ProcessEmailUseCase';
 import { Environment } from '../../infrastructure/config/environment';
 import { logger } from '../../../shared/utils/Logger';
+import { AppError, ErrorType } from '../../../shared/errors/AppError';
 
 /**
  * メール処理のコントローラー
@@ -45,26 +46,53 @@ export class EmailController {
    * すべてのメールボックスの監視を開始
    */
   async startAllMonitoring(): Promise<void> {
-    logger.info('全メールボックスの監視を開始します...', this.serviceContext);
-    
-    // カード会社ごとに別々のインスタンスを作成して監視
-    for (const [cardCompany, mailboxName] of Object.entries(this.mailboxes)) {
-      // 各メールボックス用のImapEmailServiceインスタンスを作成
-      const mailboxService = new ImapEmailService(
-        Environment.IMAP_SERVER,
-        Environment.IMAP_USER,
-        Environment.IMAP_PASSWORD
-      );
+    try {
+      logger.info('全メールボックスの監視を開始します...', this.serviceContext);
       
-      // インスタンスを保存
-      this.emailServices[cardCompany] = mailboxService;
+      // カード会社ごとに別々のインスタンスを作成して監視
+      for (const [cardCompany, mailboxName] of Object.entries(this.mailboxes)) {
+        try {
+          // 各メールボックス用のImapEmailServiceインスタンスを作成
+          const mailboxService = new ImapEmailService(
+            Environment.IMAP_SERVER,
+            Environment.IMAP_USER,
+            Environment.IMAP_PASSWORD
+          );
+          
+          // インスタンスを保存
+          this.emailServices[cardCompany] = mailboxService;
+          
+          // 監視を開始
+          await this.startMonitoringForMailbox(mailboxName, cardCompany as CardCompany, mailboxService);
+        } catch (error) {
+          // 個別のメールボックス監視失敗をハンドリング
+          const appError = error instanceof AppError 
+            ? error 
+            : new AppError(
+                `${cardCompany}のメールボックス監視の開始に失敗しました`, 
+                ErrorType.EMAIL, 
+                { cardCompany, mailboxName }, 
+                error instanceof Error ? error : undefined
+              );
+          
+          logger.logAppError(appError, this.serviceContext);
+          // 個々のエラーは全体の処理を止めない（他のメールボックスは監視継続）
+        }
+      }
       
-      // 監視を開始
-      await this.startMonitoringForMailbox(mailboxName, cardCompany as CardCompany, mailboxService);
+      this.isMonitoringActive = true;
+      logger.updateServiceStatus(this.serviceContext, 'online', '全メールボックスの監視中');
+    } catch (error) {
+      const appError = error instanceof AppError
+        ? error
+        : new AppError('メールボックス監視の開始に失敗しました', ErrorType.EMAIL, undefined, error instanceof Error ? error : undefined);
+      
+      logger.logAppError(appError, this.serviceContext);
+      logger.updateServiceStatus(this.serviceContext, 'error', '監視開始に失敗しました');
+      
+      // エラーを再スロー
+      throw appError;
     }
-    
-    this.isMonitoringActive = true;
-    logger.updateServiceStatus(this.serviceContext, 'online', '全メールボックスの監視中');
   }
   
   /**
@@ -97,15 +125,42 @@ export class EmailController {
             // メール本文からカード利用情報を抽出して保存
             await this.processEmailUseCase.execute(email.body, detectedCardCompany);
           } else {
-            logger.warn(`カード会社を特定できませんでした`, context);
+            const warnAppError = new AppError(
+              'カード会社を特定できませんでした', 
+              ErrorType.EMAIL, 
+              { subject: email.subject, from: email.from }
+            );
+            logger.logAppError(warnAppError, context);
           }
         } catch (error) {
-          logger.error('メール処理中にエラーが発生しました', error, context);
+          // メール処理エラーをAppErrorに変換してログ出力
+          const appError = error instanceof AppError
+            ? error
+            : new AppError(
+                'メール処理中にエラーが発生しました',
+                ErrorType.EMAIL,
+                { subject: email.subject, from: email.from },
+                error instanceof Error ? error : undefined
+              );
+          
+          logger.logAppError(appError, context);
         }
       });
     } catch (error) {
-      logger.error(`メールボックス "${mailboxName}" への接続に失敗しました`, error, context);
+      const appError = error instanceof AppError
+        ? error
+        : new AppError(
+            `メールボックス "${mailboxName}" への接続に失敗しました`,
+            ErrorType.EMAIL,
+            { mailboxName, cardCompany },
+            error instanceof Error ? error : undefined
+          );
+      
+      logger.logAppError(appError, context);
       logger.updateServiceStatus(context, 'error', '接続に失敗しました');
+      
+      // エラーを再スロー
+      throw appError;
     }
   }
   
@@ -133,14 +188,42 @@ export class EmailController {
             // メール本文からカード利用情報を抽出して保存
             await this.processEmailUseCase.execute(email.body, cardCompany);
           } else {
-            logger.warn('カード会社を特定できませんでした', context);
+            const warnAppError = new AppError(
+              'カード会社を特定できませんでした', 
+              ErrorType.EMAIL, 
+              { subject: email.subject, from: email.from }
+            );
+            logger.logAppError(warnAppError, context);
           }
         } catch (error) {
-          logger.error('メール処理中にエラーが発生しました', error, context);
+          // メール処理エラーをAppErrorに変換してログ出力
+          const appError = error instanceof AppError
+            ? error
+            : new AppError(
+                'メール処理中にエラーが発生しました',
+                ErrorType.EMAIL,
+                { subject: email.subject, from: email.from },
+                error instanceof Error ? error : undefined
+              );
+          
+          logger.logAppError(appError, context);
         }
       });
     } catch (error) {
-      logger.error(`メールボックス "${mailboxName}" への接続に失敗しました`, error, context);
+      const appError = error instanceof AppError
+        ? error
+        : new AppError(
+            `メールボックス "${mailboxName}" への接続に失敗しました`,
+            ErrorType.EMAIL,
+            { mailboxName },
+            error instanceof Error ? error : undefined
+          );
+      
+      logger.logAppError(appError, context);
+      logger.updateServiceStatus(context, 'error', '接続に失敗しました');
+      
+      // エラーを再スロー
+      throw appError;
     }
   }
   
@@ -198,7 +281,16 @@ export class EmailController {
         await service.close();
         logger.info(`${key}のメール監視を停止しました`, context);
       } catch (error) {
-        logger.error(`${key}のメール監視停止中にエラーが発生しました`, error, context);
+        const appError = error instanceof AppError
+          ? error
+          : new AppError(
+              `${key}のメール監視停止中にエラーが発生しました`,
+              ErrorType.EMAIL,
+              { serviceKey: key },
+              error instanceof Error ? error : undefined
+            );
+        
+        logger.logAppError(appError, context);
       }
     }
     
