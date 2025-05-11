@@ -2,8 +2,7 @@ import { ImapEmailService } from '../../../../src/infrastructure/email/ImapEmail
 import { ImapClientAdapter } from '../../../../src/infrastructure/email/ImapClientAdapter';
 import { EmailParser, ParsedEmail } from '../../../../src/infrastructure/email/EmailParser';
 import { CardUsageExtractor, CardCompany } from '../../../../src/infrastructure/email/CardUsageExtractor';
-import { CardUsageNotification } from '../../../../src/domain/entities/CardUsage';
-import { EventEmitter } from 'events';
+import { CardUsageNotification } from '../../../../shared/types/CardUsageNotification';
 
 // 依存コンポーネントをモック
 jest.mock('../../../../src/infrastructure/email/ImapClientAdapter');
@@ -37,11 +36,11 @@ describe('ImapEmailService', () => {
     subject: 'テスト件名',
     from: 'test@example.com',
     body: sampleEmailContent,
-    date: new Date('2025-05-10T10:00:00Z')
+    date: new Date('2025-05-10T10:00:00.000Z')
   };
   const sampleCardUsageInfo = {
     card_name: 'テストカード',
-    datetime_of_use: '2025-05-10T10:00:00Z',
+    datetime_of_use: '2025-05-10T10:00:00.000Z',
     amount: 1000,
     where_to_use: 'テスト店舗'
   };
