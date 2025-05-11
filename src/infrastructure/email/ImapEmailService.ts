@@ -1,10 +1,8 @@
 import { ImapFlow } from 'imapflow';
-import * as quotedPrintable from 'quoted-printable';
-import * as Encoding from 'encoding-japanese';
 import { htmlToText } from 'html-to-text';
-import { Environment } from '../config/environment';
 import { simpleParser } from 'mailparser';
 import { logger } from '../../../shared/utils/Logger';
+import { Environment } from '../../../shared/config/Environment';
 import { AppError, ErrorType } from '../../../shared/errors/AppError';
 
 /**

@@ -1,7 +1,7 @@
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 import express from 'express';
-import { Environment } from './infrastructure/config/environment';
+import { Environment } from '../shared/config/Environment';
 import { ImapEmailService, CardCompany } from './infrastructure/email/ImapEmailService';
 import { FirestoreCardUsageRepository } from './infrastructure/firebase/FirestoreCardUsageRepository';
 import { DiscordWebhookNotifier } from '../shared/discord/DiscordNotifier';
