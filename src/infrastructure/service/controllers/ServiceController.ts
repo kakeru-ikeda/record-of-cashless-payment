@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import { logger } from '../../../../shared/utils/Logger';
 import { EmailController } from '../../../interfaces/controllers/EmailController';
+import { AppError, ErrorType } from '../../../../shared/errors/AppError';
+import { ErrorHandler } from '../../../../shared/errors/ErrorHandler';
 
 /**
  * サービス管理コントローラー
@@ -39,12 +41,19 @@ export class ServiceController {
                 data: services
             });
         } catch (error) {
-            logger.error('サービス一覧の取得中にエラーが発生しました', error, 'ServiceController');
-            res.status(500).json({
-                success: false,
-                message: 'サービス一覧の取得に失敗しました',
-                error: error instanceof Error ? error.message : String(error)
-            });
+            const appError = error instanceof AppError
+                ? error
+                : new AppError(
+                    'サービス一覧の取得中にエラーが発生しました',
+                    ErrorType.GENERAL,
+                    { endpoint: 'getServices' },
+                    error instanceof Error ? error : undefined
+                );
+            
+            logger.logAppError(appError, 'ServiceController');
+            
+            const errorResponse = ErrorHandler.handle(error, 'ServiceController.getServices');
+            res.status(errorResponse.status).json(errorResponse);
         }
     };
 
@@ -57,28 +66,18 @@ export class ServiceController {
             const action = req.body.action;
 
             if (!['start', 'stop', 'restart'].includes(action)) {
-                res.status(400).json({
-                    success: false,
-                    message: '無効なアクション',
-                    data: null
-                });
-                return;
+                throw new AppError('無効なアクション', ErrorType.VALIDATION, { action });
             }
 
             if (serviceId === 'email-monitoring') {
                 if (!this.emailController) {
-                    throw new Error('EmailControllerが初期化されていません');
+                    throw new AppError('EmailControllerが初期化されていません', ErrorType.CONFIGURATION);
                 }
 
                 switch (action) {
                     case 'start':
                         if (this.emailController.isMonitoring()) {
-                            res.status(400).json({
-                                success: false,
-                                message: 'メール監視サービスは既に起動しています',
-                                data: null
-                            });
-                            return;
+                            throw new AppError('メール監視サービスは既に起動しています', ErrorType.VALIDATION, { serviceId });
                         }
                         await this.emailController.startAllMonitoring();
                         logger.info('メール監視サービスを開始しました', 'ServiceController');
@@ -86,12 +85,7 @@ export class ServiceController {
                     
                     case 'stop':
                         if (!this.emailController.isMonitoring()) {
-                            res.status(400).json({
-                                success: false,
-                                message: 'メール監視サービスは既に停止しています',
-                                data: null
-                            });
-                            return;
+                            throw new AppError('メール監視サービスは既に停止しています', ErrorType.VALIDATION, { serviceId });
                         }
                         await this.emailController.stopMonitoring();
                         logger.info('メール監視サービスを停止しました', 'ServiceController');
@@ -114,19 +108,25 @@ export class ServiceController {
                     }
                 });
             } else {
-                res.status(404).json({
-                    success: false,
-                    message: '指定されたサービスが見つかりません',
-                    data: null
-                });
+                throw new AppError('指定されたサービスが見つかりません', ErrorType.NOT_FOUND, { serviceId });
             }
         } catch (error) {
-            logger.error('サービス制御中にエラーが発生しました', error, 'ServiceController');
-            res.status(500).json({
-                success: false,
-                message: 'サービス制御に失敗しました',
-                error: error instanceof Error ? error.message : String(error)
-            });
+            const appError = error instanceof AppError
+                ? error
+                : new AppError(
+                    'サービス制御中にエラーが発生しました',
+                    ErrorType.GENERAL,
+                    { 
+                        serviceId: req.params.id,
+                        action: req.body.action 
+                    },
+                    error instanceof Error ? error : undefined
+                );
+            
+            logger.logAppError(appError, 'ServiceController');
+            
+            const errorResponse = ErrorHandler.handle(error, 'ServiceController.controlService');
+            res.status(errorResponse.status).json(errorResponse);
         }
     };
 }

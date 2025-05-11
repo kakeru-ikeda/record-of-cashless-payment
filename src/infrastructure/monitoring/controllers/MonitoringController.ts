@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import { logger, LogLevel } from '../../../../shared/utils/Logger';
+import { AppError, ErrorType } from '../../../../shared/errors/AppError';
+import { ErrorHandler } from '../../../../shared/errors/ErrorHandler';
 
 /**
  * モニタリングコントローラー - サーバー状態の監視用エンドポイント実装
@@ -39,12 +41,19 @@ export class MonitoringController {
       
       res.status(200).json(response);
     } catch (error) {
-      logger.error('サービスステータス取得中にエラーが発生しました', error, 'MonitoringController');
-      res.status(500).json({
-        status: 'error',
-        message: 'Failed to retrieve service status',
-        timestamp: new Date().toISOString()
-      });
+      const appError = error instanceof AppError
+        ? error
+        : new AppError(
+            'サービスステータス取得中にエラーが発生しました',
+            ErrorType.GENERAL,
+            { endpoint: 'getServiceStatus' },
+            error instanceof Error ? error : undefined
+          );
+      
+      logger.logAppError(appError, 'MonitoringController');
+      
+      const errorResponse = ErrorHandler.handle(error, 'MonitoringController.getServiceStatus');
+      res.status(errorResponse.status).json(errorResponse);
     }
   };
 
@@ -69,12 +78,19 @@ export class MonitoringController {
       
       res.status(200).json(response);
     } catch (error) {
-      logger.error('エラーログ取得中にエラーが発生しました', error, 'MonitoringController');
-      res.status(500).json({
-        status: 'error',
-        message: 'Failed to retrieve error logs',
-        timestamp: new Date().toISOString()
-      });
+      const appError = error instanceof AppError
+        ? error
+        : new AppError(
+            'エラーログ取得中にエラーが発生しました',
+            ErrorType.GENERAL,
+            { endpoint: 'getErrorLogs' },
+            error instanceof Error ? error : undefined
+          );
+      
+      logger.logAppError(appError, 'MonitoringController');
+      
+      const errorResponse = ErrorHandler.handle(error, 'MonitoringController.getErrorLogs');
+      res.status(errorResponse.status).json(errorResponse);
     }
   };
 
@@ -118,7 +134,16 @@ export class MonitoringController {
       res.setHeader('Content-Type', 'text/html');
       res.send(rendered);
     } catch (error) {
-      logger.error('ダッシュボードレンダリング中にエラーが発生しました', error, 'MonitoringController');
+      const appError = error instanceof AppError
+        ? error
+        : new AppError(
+            'ダッシュボードレンダリング中にエラーが発生しました',
+            ErrorType.GENERAL,
+            { endpoint: 'renderDashboard' },
+            error instanceof Error ? error : undefined
+          );
+      
+      logger.logAppError(appError, 'MonitoringController');
       res.status(500).send('Error rendering dashboard');
     }
   };

@@ -3,6 +3,8 @@ import { Request, Response } from 'express';
 import { FirestoreService } from '../../../../shared/firebase/FirestoreService';
 import { DateUtil } from '../../../../shared/utils/DateUtil';
 import { ResponseHelper } from '../../../../shared/utils/ResponseHelper';
+import { AppError, ErrorType } from '../../../../shared/errors/AppError';
+import { ErrorHandler } from '../../../../shared/errors/ErrorHandler';
 
 /**
  * レポートデータを操作するためのコントローラークラス
@@ -22,9 +24,9 @@ export class ReportController {
      * 日次レポート取得（特定の日）
      */
     async getDailyReport(req: Request, res: Response): Promise<void> {
-        const { year, month, day } = req.params;
-
         try {
+            const { year, month, day } = req.params;
+
             // DateUtilを使用してパスを取得
             const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
             const pathInfo = DateUtil.getFirestorePath(dateObj);
@@ -34,18 +36,13 @@ export class ReportController {
             const reportData = await this.firestoreService.getDocument(dailyReportPath);
 
             if (!reportData) {
-                res.status(404).json(
-                    ResponseHelper.notFound(`${year}年${month}月${day}日のレポートが見つかりません`)
-                );
-                return;
+                throw new AppError(`${year}年${month}月${day}日のレポートが見つかりません`, ErrorType.NOT_FOUND);
             }
 
             res.json(ResponseHelper.success('日次レポートを取得しました', reportData));
         } catch (error) {
-            console.error('日次レポート取得エラー:', error);
-            res.status(500).json(
-                ResponseHelper.error(500, '日次レポートの取得に失敗しました', { error: (error as Error).message })
-            );
+            const response = ErrorHandler.handle(error, 'ReportController.getDailyReport');
+            res.status(response.status).json(response);
         }
     }
 
@@ -53,9 +50,9 @@ export class ReportController {
      * 日次レポート取得（月内の全日）
      */
     async getMonthlyDailyReports(req: Request, res: Response): Promise<void> {
-        const { year, month } = req.params;
-
         try {
+            const { year, month } = req.params;
+
             const endDate = new Date(parseInt(year), parseInt(month), 0); // 月の最終日
             const reports: { [key: string]: any } = {};
 
@@ -75,10 +72,8 @@ export class ReportController {
 
             res.json(ResponseHelper.success(`${year}年${month}月の日次レポートを取得しました`, reports));
         } catch (error) {
-            console.error('月間日次レポート取得エラー:', error);
-            res.status(500).json(
-                ResponseHelper.error(500, '月間日次レポートの取得に失敗しました', { error: (error as Error).message })
-            );
+            const response = ErrorHandler.handle(error, 'ReportController.getMonthlyDailyReports');
+            res.status(response.status).json(response);
         }
     }
 
@@ -86,27 +81,22 @@ export class ReportController {
      * 週次レポート取得（特定の週）
      */
     async getWeeklyReport(req: Request, res: Response): Promise<void> {
-        const { year, month, term } = req.params;
-
         try {
+            const { year, month, term } = req.params;
+
             const weeklyReportPath = `reports/weekly/${year}-${month}/${term}`;
 
             // レポートデータを取得
             const reportData = await this.firestoreService.getDocument(weeklyReportPath);
 
             if (!reportData) {
-                res.status(404).json(
-                    ResponseHelper.notFound(`${year}年${month}月 第${term.replace('term', '')}週のレポートが見つかりません`)
-                );
-                return;
+                throw new AppError(`${year}年${month}月 第${term.replace('term', '')}週のレポートが見つかりません`, ErrorType.NOT_FOUND);
             }
 
             res.json(ResponseHelper.success('週次レポートを取得しました', reportData));
         } catch (error) {
-            console.error('週次レポート取得エラー:', error);
-            res.status(500).json(
-                ResponseHelper.error(500, '週次レポートの取得に失敗しました', { error: (error as Error).message })
-            );
+            const response = ErrorHandler.handle(error, 'ReportController.getWeeklyReport');
+            res.status(response.status).json(response);
         }
     }
 
@@ -114,9 +104,9 @@ export class ReportController {
      * 週次レポート取得（月内の全週）
      */
     async getMonthlyWeeklyReports(req: Request, res: Response): Promise<void> {
-        const { year, month } = req.params;
-
         try {
+            const { year, month } = req.params;
+
             const reports: { [key: string]: any } = {};
 
             // 月内の週のレポートを取得（最大5週）
@@ -135,10 +125,8 @@ export class ReportController {
 
             res.json(ResponseHelper.success(`${year}年${month}月の週次レポートを取得しました`, reports));
         } catch (error) {
-            console.error('月間週次レポート取得エラー:', error);
-            res.status(500).json(
-                ResponseHelper.error(500, '月間週次レポートの取得に失敗しました', { error: (error as Error).message })
-            );
+            const response = ErrorHandler.handle(error, 'ReportController.getMonthlyWeeklyReports');
+            res.status(response.status).json(response);
         }
     }
 
@@ -146,9 +134,9 @@ export class ReportController {
      * 月次レポート取得
      */
     async getMonthlyReport(req: Request, res: Response): Promise<void> {
-        const { year, month } = req.params;
-
         try {
+            const { year, month } = req.params;
+
             // DateUtilを使用してパスを取得
             const dateObj = new Date(parseInt(year), parseInt(month) - 1, 1);
             const pathInfo = DateUtil.getFirestorePath(dateObj);
@@ -158,18 +146,13 @@ export class ReportController {
             const reportData = await this.firestoreService.getDocument(monthlyReportPath);
 
             if (!reportData) {
-                res.status(404).json(
-                    ResponseHelper.notFound(`${year}年${month}月のレポートが見つかりません`)
-                );
-                return;
+                throw new AppError(`${year}年${month}月のレポートが見つかりません`, ErrorType.NOT_FOUND);
             }
 
             res.json(ResponseHelper.success('月次レポートを取得しました', reportData));
         } catch (error) {
-            console.error('月次レポート取得エラー:', error);
-            res.status(500).json(
-                ResponseHelper.error(500, '月次レポートの取得に失敗しました', { error: (error as Error).message })
-            );
+            const response = ErrorHandler.handle(error, 'ReportController.getMonthlyReport');
+            res.status(response.status).json(response);
         }
     }
 }
