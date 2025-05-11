@@ -1,6 +1,8 @@
 import * as admin from 'firebase-admin';
 import { Firestore } from 'firebase-admin/firestore';
 import { CardUsage } from '../../domain/entities/CardUsage';
+import { CardUsageNotification } from '../../../shared/types/CardUsageNotification';
+import { CardUsageMapper } from '../../domain/mappers/CardUsageMapper';
 import { ICardUsageRepository } from '../../domain/repositories/ICardUsageRepository';
 import { Environment } from '../../../shared/config/Environment';
 import { DateUtil } from '../../../shared/utils/DateUtil';
@@ -119,6 +121,15 @@ export class FirestoreCardUsageRepository implements ICardUsageRepository {
         error instanceof Error ? error : undefined
       );
     }
+  }
+
+  /**
+   * カード利用通知オブジェクトに変換する
+   * @param cardUsage カード利用情報
+   * @returns 通知用オブジェクト
+   */
+  toNotification(cardUsage: CardUsage): CardUsageNotification {
+    return CardUsageMapper.toNotification(cardUsage);
   }
 }
 

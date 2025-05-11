@@ -1,8 +1,9 @@
-import { ParsedEmail, ImapEmailService, CardCompany } from '../../infrastructure/email/ImapEmailService';
+import { ImapEmailService, CardCompany } from '../../infrastructure/email/ImapEmailService';
 import { ProcessEmailUseCase } from '../../usecases/ProcessEmailUseCase';
 import { Environment } from '../../../shared/config/Environment';
 import { logger } from '../../../shared/utils/Logger';
 import { AppError, ErrorType } from '../../../shared/errors/AppError';
+import { ParsedEmail } from 'src/infrastructure/email/EmailParser';
 
 /**
  * メール処理のコントローラー

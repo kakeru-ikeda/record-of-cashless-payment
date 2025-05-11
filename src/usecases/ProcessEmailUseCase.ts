@@ -1,6 +1,7 @@
 import * as admin from 'firebase-admin';
 import { CardUsage } from '../domain/entities/CardUsage';
 import { CardUsageNotification } from '../../shared/types/CardUsageNotification';
+import { CardUsageMapper } from '../domain/mappers/CardUsageMapper';
 import { ICardUsageRepository } from '../domain/repositories/ICardUsageRepository';
 import { ImapEmailService, CardCompany } from '../infrastructure/email/ImapEmailService';
 import { DiscordNotifier } from '../../shared/discord/DiscordNotifier';
@@ -37,7 +38,7 @@ export class ProcessEmailUseCase {
     try {
       logger.info(`${cardCompany}のメール本文の解析を開始します...`, this.serviceContext);
 
-      // メール本文からカード利用情報を抽出
+      // メール本文からカード利用情報を抽出（既にCardUsageMapperを使用）
       const usage = await this.emailService.parseCardUsageFromEmail(emailBody, cardCompany);
       
       logger.debug(`パース結果: ${JSON.stringify(usage)}`, this.serviceContext);
@@ -51,6 +52,8 @@ export class ProcessEmailUseCase {
         datetime_of_use: firestoreTimestamp,
         amount: usage.amount,
         where_to_use: usage.where_to_use,
+        memo: usage.memo,
+        is_active: usage.is_active,
         created_at: admin.firestore.FieldValue.serverTimestamp() as admin.firestore.Timestamp
       };
 
@@ -60,12 +63,7 @@ export class ProcessEmailUseCase {
 
       try {
         // Discord通知を送信
-        await this.discordNotifier.notify({
-          card_name: usage.card_name,
-          datetime_of_use: usage.datetime_of_use,
-          amount: usage.amount,
-          where_to_use: usage.where_to_use
-        });
+        await this.discordNotifier.notify(usage);
         logger.info('Discord通知を送信しました', this.serviceContext);
       } catch (notifyError) {
         // 通知エラーはログに記録するが処理は続行
@@ -124,6 +122,8 @@ export class ProcessEmailUseCase {
         datetime_of_use: firestoreTimestamp,
         amount: usage.amount,
         where_to_use: usage.where_to_use,
+        memo: usage.memo,
+        is_active: usage.is_active,
         created_at: admin.firestore.FieldValue.serverTimestamp() as admin.firestore.Timestamp
       };
 
@@ -132,12 +132,7 @@ export class ProcessEmailUseCase {
       logger.info('カード利用情報を保存しました: ' + savedPath, this.serviceContext);
 
       // Discord通知を送信
-      const notificationSent = await this.discordNotifier.notify({
-        card_name: usage.card_name,
-        datetime_of_use: usage.datetime_of_use,
-        amount: usage.amount,
-        where_to_use: usage.where_to_use
-      });
+      const notificationSent = await this.discordNotifier.notify(usage);
       logger.info('Discord通知を送信しました', this.serviceContext);
 
       return {
