@@ -1,10 +1,32 @@
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions';
 import { BaseReportService } from './BaseReportService';
-import { WeeklyReport, THRESHOLD } from '../../../../shared/types/reports/ReportTypes';
 import { DateUtil } from '../../../../shared/utils/DateUtil';
 import { AppError, ErrorType } from '../../../../shared/errors/AppError';
 import { WeeklyReportNotification } from '../../../../shared/types/reports/ReportNotifications';
+
+/**
+ * ウィークリーレポートデータ
+ */
+interface WeeklyReport {
+    totalAmount: number;
+    totalCount: number;
+    lastUpdated: admin.firestore.FieldValue;
+    lastUpdatedBy: string;
+    documentIdList: string[];
+    termStartDate: admin.firestore.Timestamp;
+    termEndDate: admin.firestore.Timestamp;
+    hasNotifiedLevel1: boolean;
+    hasNotifiedLevel2: boolean;
+    hasNotifiedLevel3: boolean;
+    hasReportSent?: boolean; // 定期レポートとして送信済みかどうか
+}
+
+export const THRESHOLD = {
+    LEVEL1: 1000,
+    LEVEL2: 5000,
+    LEVEL3: 10000,
+};
 
 /**
  * ウィークリーレポート処理サービス

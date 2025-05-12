@@ -1,10 +1,23 @@
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions';
 import { BaseReportService } from './BaseReportService';
-import { DailyReport } from '../../../../shared/types/reports/ReportTypes';
 import { AppError, ErrorType } from '../../../../shared/errors/AppError';
 import { DateUtil } from '../../../../shared/utils/DateUtil';
 import { DailyReportNotification } from '../../../../shared/types/reports/ReportNotifications';
+
+
+/**
+ * デイリーレポートデータ
+ */
+interface DailyReport {
+    totalAmount: number;
+    totalCount: number;
+    lastUpdated: admin.firestore.FieldValue;
+    lastUpdatedBy: string;
+    documentIdList: string[];
+    date: admin.firestore.Timestamp;
+    hasNotified: boolean;
+}
 
 /**
  * デイリーレポート処理サービス
