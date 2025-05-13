@@ -184,7 +184,7 @@ describe('DateUtil', () => {
             const testDate = new Date(2025, 3, 30);
             const pathInfo = DateUtil.getFirestorePath(testDate);
 
-            expect(pathInfo.weekReportPath).toContain('term5');
+            expect(pathInfo.weeklyReportPath).toContain('term5');
             expect(pathInfo.path).toContain('/term5/');
         });
     });
