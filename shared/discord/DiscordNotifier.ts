@@ -1,10 +1,10 @@
 import axios from 'axios';
-import { CardUsageNotification } from '../types/CardUsageNotification';
+import { CardUsageNotification } from '../domain/entities/CardUsageNotification';
 import {
     WeeklyReportNotification,
     DailyReportNotification,
     MonthlyReportNotification,
-} from '../types/reports/ReportNotifications';
+} from '../domain/entities/ReportNotifications';
 import { logger } from '../utils/Logger';
 import { AppError, ErrorType } from '../errors/AppError';
 

@@ -11,6 +11,7 @@ import { MonthlyReportService } from '../../services/reports/MonthlyReportServic
 import { DiscordWebhookNotifier } from '../../../../shared/discord/DiscordNotifier';
 import { AppError, ErrorType } from '../../../../shared/errors/AppError';
 import { ErrorHandler } from '../../../../shared/errors/ErrorHandler';
+import { CardUsageMapper } from 'shared/domain/mappers/CardUsageMapper';
 
 /**
  * カード利用データを操作するためのコントローラークラス
@@ -342,6 +343,10 @@ export class CardUsageController {
                 id: id,
                 path: pathInfo.path,
             };
+
+            // Discord通知
+            await this.discordNotifier.notify(CardUsageMapper.toNotification(cardUsage));
+            console.log('✅ カード利用情報が正常に作成されました:', responseData);
 
             const response = ResponseHelper.createResponse(201, true, 'カード利用情報の作成に成功しました', responseData);
             res.status(response.status).json(response);

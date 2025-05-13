@@ -2,7 +2,6 @@ import { EmailController } from '../../../../src/interfaces/controllers/EmailCon
 import { ImapEmailService, CardCompany } from '../../../../src/infrastructure/email/ImapEmailService';
 import { ProcessEmailUseCase } from '../../../../src/usecases/ProcessEmailUseCase';
 import { ParsedEmail } from '../../../../src/infrastructure/email/EmailParser';
-import { Environment } from '../../../../shared/config/Environment';
 
 // 依存コンポーネントをモック
 jest.mock('../../../../src/infrastructure/email/ImapEmailService');
@@ -119,20 +118,20 @@ describe('EmailController', () => {
 
       // connectメソッドが各メールボックスで呼ばれることを確認
       const emailServiceInstances = (ImapEmailService as jest.Mock).mock.results;
-      
+
       // 実装内で新しく作られるインスタンスのconnectが正しく呼ばれることを確認
       const connectCalls = emailServiceInstances
         .map(result => result.value.connect)
         .filter(connect => typeof connect === 'function')
         .map(connect => connect.mock.calls)
         .flat();
-      
+
       expect(connectCalls.length).toBe(2);
-      
+
       // MUFGのコールバックが登録されていること
       expect(emailCallbacks['MUFG']).toBeDefined();
       expect(typeof emailCallbacks['MUFG']).toBe('function');
-      
+
       // SMBCのコールバックが登録されていること
       expect(emailCallbacks['SMBC']).toBeDefined();
       expect(typeof emailCallbacks['SMBC']).toBe('function');
@@ -158,7 +157,7 @@ describe('EmailController', () => {
       // SMBCのコールバックは登録されていること
       expect(emailCallbacks['SMBC']).toBeDefined();
       expect(typeof emailCallbacks['SMBC']).toBe('function');
-      
+
       expect(emailController.isMonitoring()).toBe(true);
     });
   });
@@ -178,7 +177,7 @@ describe('EmailController', () => {
         .filter(close => typeof close === 'function')
         .map(close => close.mock.calls)
         .flat();
-        
+
       expect(closeMethodCalls.length).toBeGreaterThan(0);
       expect(emailController.isMonitoring()).toBe(false);
     });
@@ -186,7 +185,7 @@ describe('EmailController', () => {
     test('異常系: 停止中にエラーが発生しても処理が継続される', async () => {
       // まず監視開始
       await emailController.startAllMonitoring();
-      
+
       // 1つのインスタンスのcloseでエラーを発生させる
       const instances = (ImapEmailService as jest.Mock).mock.results;
       if (instances.length > 0 && instances[0].value) {
@@ -209,7 +208,7 @@ describe('EmailController', () => {
       // MUFGのコールバックを取得して手動で実行
       const callback = emailCallbacks['MUFG'];
       expect(callback).toBeDefined();
-      
+
       await callback(sampleParsedEmail);
 
       // ProcessEmailUseCaseのexecuteが呼ばれることを検証
@@ -226,7 +225,7 @@ describe('EmailController', () => {
       // SMBCのコールバックを取得して手動で実行
       const callback = emailCallbacks['SMBC'];
       expect(callback).toBeDefined();
-      
+
       await callback(smbcSampleParsedEmail);
 
       // ProcessEmailUseCaseのexecuteが呼ばれることを検証
@@ -251,7 +250,7 @@ describe('EmailController', () => {
       // MUFGのコールバックを取得して手動で実行
       const callback = emailCallbacks['MUFG'];
       expect(callback).toBeDefined();
-      
+
       await callback(unknownEmail);
 
       // ProcessEmailUseCaseは呼ばれないことを確認
@@ -268,7 +267,7 @@ describe('EmailController', () => {
       // MUFGのコールバックを取得して手動で実行
       const callback = emailCallbacks['MUFG'];
       expect(callback).toBeDefined();
-      
+
       await callback(sampleParsedEmail);
 
       // executeは呼ばれるがエラーはキャッチされる

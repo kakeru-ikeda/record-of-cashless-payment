@@ -6,8 +6,8 @@ import { EmailParser, ParsedEmail } from './EmailParser';
 import { CardUsageExtractor, CardCompany, CardUsageInfo } from './CardUsageExtractor';
 import { EmailService } from '../../domain/interfaces/EmailService';
 import { CardUsage } from '../../domain/entities/CardUsage';
-import { CardUsageNotification } from '../../../shared/types/CardUsageNotification';
-import { CardUsageMapper } from '../../domain/mappers/CardUsageMapper';
+import { CardUsageNotification } from '../../../shared/domain/entities/CardUsageNotification';
+import { CardUsageMapper } from '../../../shared/domain/mappers/CardUsageMapper';
 import { Timestamp } from 'firebase-admin/firestore';
 
 /**
@@ -22,7 +22,7 @@ export class ImapEmailService implements EmailService {
   private processedUids = new Set<string>();
   private isMonitoring = false;
   private readonly serviceContext: string;
-  
+
   /**
    * インスタンスを初期化
    * @param server IMAPサーバー
@@ -36,7 +36,7 @@ export class ImapEmailService implements EmailService {
   ) {
     this.serviceContext = 'ImapEmailService';
     logger.updateServiceStatus(this.serviceContext, 'offline', '初期化済み');
-    
+
     // 依存オブジェクトの初期化
     const config: ImapConnectionConfig = {
       host: this.server,
@@ -47,21 +47,21 @@ export class ImapEmailService implements EmailService {
         pass: this.password
       }
     };
-    
+
     this.imapClient = new ImapClientAdapter(config);
     this.emailParser = new EmailParser();
     this.cardUsageExtractor = new CardUsageExtractor();
-    
+
     // 接続イベントの監視
     this.imapClient.on('connectionLost', (mailboxName) => {
       logger.warn(`接続が切断されました: ${mailboxName}`, this.serviceContext);
     });
-    
+
     this.imapClient.on('reconnected', (mailboxName) => {
       logger.info(`再接続に成功しました: ${mailboxName}`, this.serviceContext);
     });
   }
-  
+
   /**
    * IMAPサーバーに接続し、メールの監視を開始
    * @param mailboxName 接続するメールボックス名
@@ -73,11 +73,11 @@ export class ImapEmailService implements EmailService {
   ): Promise<void> {
     // コンテキストをメールボックス固有に設定
     const context = `${this.serviceContext}:${mailboxName}`;
-    
+
     try {
       // IMAPクライアントで接続
       await this.imapClient.connect(mailboxName);
-      
+
       // メール監視を開始
       this.startMonitoring(callback, context);
     } catch (error) {
@@ -91,37 +91,37 @@ export class ImapEmailService implements EmailService {
       throw appError;
     }
   }
-  
+
   /**
    * 新規メッセージの監視を開始
    */
   private startMonitoring(callback: (email: ParsedEmail) => Promise<void>, context: string): void {
     if (this.isMonitoring) return;
-    
+
     this.isMonitoring = true;
     logger.info("メールポーリング監視を開始します（IDLEモードなし）", context);
-    
+
     // 初回は即時実行
     this.pollForNewMessages(callback, context).catch(error => {
       const appError = new AppError(
         '初回メール確認中にエラーが発生しました',
         ErrorType.EMAIL,
-        { },
+        {},
         error instanceof Error ? error : new Error(String(error))
       );
       logger.logAppError(appError, context);
     });
-    
+
     // ポーリングタイマーの設定
     this.setupPolling(callback, context);
   }
-  
+
   /**
    * ポーリングによる未読メール取得 (1分間隔)
    */
   private setupPolling(callback: (email: ParsedEmail) => Promise<void>, context: string): void {
     if (this.pollingTimer) clearInterval(this.pollingTimer);
-    
+
     // 1分間隔で未読メッセージをチェック
     this.pollingTimer = setInterval(async () => {
       if (this.imapClient.isActive()) {
@@ -132,7 +132,7 @@ export class ImapEmailService implements EmailService {
           const appError = new AppError(
             'ポーリング実行エラー',
             ErrorType.EMAIL,
-            { },
+            {},
             error instanceof Error ? error : new Error(String(error))
           );
           logger.logAppError(appError, context);
@@ -140,31 +140,31 @@ export class ImapEmailService implements EmailService {
       }
     }, 1 * 60 * 1000); // 1分ごと
   }
-  
+
   /**
    * 未読メッセージを取得して処理する
    */
   private async pollForNewMessages(callback: (email: ParsedEmail) => Promise<void>, context: string): Promise<void> {
     // 未読メールのUID一覧を取得
     const messageUids = await this.imapClient.fetchUnseenMessages();
-    
+
     for (const uid of messageUids) {
       if (this.processedUids.has(uid)) continue;
-      
+
       try {
         // メッセージ本文を取得
         const rawMessage = await this.imapClient.fetchMessage(uid);
         if (!rawMessage) continue;
-        
+
         // メールのパース
         const parsedEmail = await this.emailParser.parseEmail(rawMessage);
         if (parsedEmail) {
           // コールバックで処理を実行
           await callback(parsedEmail);
-          
+
           // 処理済みとしてマーク
           this.processedUids.add(uid);
-          
+
           // メッセージを既読にマーク
           await this.imapClient.markAsSeen(uid);
         }
@@ -179,7 +179,7 @@ export class ImapEmailService implements EmailService {
       }
     }
   }
-  
+
   /**
    * メールからカード利用情報を抽出
    * @param emailContent メール本文
@@ -190,14 +190,14 @@ export class ImapEmailService implements EmailService {
     try {
       // カード利用情報の抽出
       const cardUsageInfo = this.cardUsageExtractor.extractFromEmailBody(emailContent, cardCompany);
-      
+
       // 一時的なCardUsageエンティティを作成
       const cardUsage: CardUsage = {
         ...cardUsageInfo,
         datetime_of_use: Timestamp.fromDate(new Date(cardUsageInfo.datetime_of_use)),
         created_at: Timestamp.now()
       };
-      
+
       // マッパーを使ってドメインモデルから通知用DTOに変換
       return CardUsageMapper.toNotification(cardUsage);
     } catch (error) {
@@ -208,7 +208,7 @@ export class ImapEmailService implements EmailService {
         error instanceof Error ? error : new Error(String(error))
       );
       logger.logAppError(appError, this.serviceContext);
-      
+
       // エラー時は空のオブジェクトを返す
       return {
         card_name: '',
@@ -218,7 +218,7 @@ export class ImapEmailService implements EmailService {
       };
     }
   }
-  
+
   /**
    * テスト用：カード利用情報の抽出
    * @param emailBody メール本文
@@ -228,21 +228,21 @@ export class ImapEmailService implements EmailService {
   async executeTest(emailBody: string, cardCompany: CardCompany): Promise<CardUsageInfo> {
     const context = `${this.serviceContext}:Test`;
     logger.info(`${cardCompany}のカード利用情報をテスト抽出します`, context);
-    
+
     return this.cardUsageExtractor.extractFromEmailBody(emailBody, cardCompany);
   }
-  
+
   /**
    * 接続を閉じる
    */
   async close(): Promise<void> {
     this.isMonitoring = false;
-    
+
     if (this.pollingTimer) {
       clearInterval(this.pollingTimer);
       this.pollingTimer = null;
     }
-    
+
     await this.imapClient.close();
     logger.updateServiceStatus(this.serviceContext, 'offline', '接続を閉じました');
   }
