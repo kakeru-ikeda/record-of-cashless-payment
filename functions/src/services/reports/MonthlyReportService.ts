@@ -8,7 +8,7 @@ import { MonthlyReportNotification } from '../../../../shared/domain/entities/Re
 /**
  * マンスリーレポートデータ
  */
-interface MonthlyReport {
+export interface MonthlyReport {
     totalAmount: number;
     totalCount: number;
     lastUpdated: admin.firestore.FieldValue;

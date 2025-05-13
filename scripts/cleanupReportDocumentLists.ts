@@ -11,7 +11,9 @@
 import { Firestore, FieldValue } from 'firebase-admin/firestore';
 import { FirestoreService } from '../shared/firebase/FirestoreService';
 import { Environment } from '../shared/config/Environment';
-import { DailyReport, WeeklyReport, MonthlyReport } from '../shared/types/reports/ReportTypes';
+import { DailyReport } from '../functions/src/services/reports/DailyReportService';
+import { WeeklyReport } from '../functions/src/services/reports/WeeklyReportService';
+import { MonthlyReport } from '../functions/src/services/reports/MonthlyReportService';
 import * as readline from 'readline';
 
 interface YearMonthRecord {
@@ -108,7 +110,7 @@ class ReportDocumentListCleaner {
             for (const dayDoc of dayDocs) {
                 const dayId = dayDoc.id; // '01'のような形式
                 const docPath = `reports/daily/${yearMonthId}/${dayId}`;
-                
+
                 const reportData = await this.firestoreService.getDocument<DailyReport>(docPath);
                 if (reportData && reportData.documentIdList && reportData.documentIdList.length > 0) {
                     dailyReports.push({
@@ -143,7 +145,7 @@ class ReportDocumentListCleaner {
             for (const termDoc of termDocs) {
                 const termId = termDoc.id; // 'term1'のような形式
                 const docPath = `reports/weekly/${yearMonthId}/${termId}`;
-                
+
                 const reportData = await this.firestoreService.getDocument<WeeklyReport>(docPath);
                 if (reportData && reportData.documentIdList && reportData.documentIdList.length > 0) {
                     weeklyReports.push({
@@ -178,7 +180,7 @@ class ReportDocumentListCleaner {
             for (const monthDoc of monthDocs) {
                 const monthId = monthDoc.id; // '05'のような形式
                 const docPath = `reports/monthly/${yearId}/${monthId}`;
-                
+
                 const reportData = await this.firestoreService.getDocument<MonthlyReport>(docPath);
                 if (reportData && reportData.documentIdList && reportData.documentIdList.length > 0) {
                     monthlyReports.push({
@@ -220,7 +222,7 @@ class ReportDocumentListCleaner {
             try {
                 // 各ドキュメントの存在チェック
                 const nonExistentDocuments: string[] = [];
-                
+
                 for (const docId of report.documentIdList) {
                     const exists = await this.documentExists(docId);
                     if (!exists) {
