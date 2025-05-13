@@ -9,7 +9,7 @@ import { DailyReportNotification } from '../../../../shared/domain/entities/Repo
 /**
  * デイリーレポートデータ
  */
-interface DailyReport {
+export interface DailyReport {
     totalAmount: number;
     totalCount: number;
     lastUpdated: admin.firestore.FieldValue;

@@ -12,7 +12,9 @@ import { Firestore, FieldValue } from 'firebase-admin/firestore';
 import { FirestoreService } from '../shared/firebase/FirestoreService';
 import { Environment } from '../shared/config/Environment';
 import { CardUsage } from '../src/domain/entities/CardUsage';
-import { DailyReport, WeeklyReport, MonthlyReport } from '../shared/types/reports/ReportTypes';
+import { DailyReport } from '../functions/src/services/reports/DailyReportService';
+import { WeeklyReport } from '../functions/src/services/reports/WeeklyReportService';
+import { MonthlyReport } from '../functions/src/services/reports/MonthlyReportService';
 import * as readline from 'readline';
 
 interface YearMonthRecord {
@@ -238,12 +240,12 @@ class InactiveCardUsageDeleter {
         // 月と日を2桁でフォーマット
         const paddedMonth = month.padStart(2, '0');
         const paddedDay = day.padStart(2, '0');
-        
+
         // 正しいパス形式を使用
         const dailyReportPath = `reports/daily/${year}-${paddedMonth}/${paddedDay}`;
         const weeklyReportPath = `reports/weekly/${year}-${paddedMonth}/${term}`;
         const monthlyReportPath = `reports/monthly/${year}/${paddedMonth}`;
-        
+
         return {
             dailyReportPath,
             weeklyReportPath,

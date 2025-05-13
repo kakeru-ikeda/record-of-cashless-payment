@@ -8,7 +8,7 @@ import { WeeklyReportNotification } from '../../../../shared/domain/entities/Rep
 /**
  * ウィークリーレポートデータ
  */
-interface WeeklyReport {
+export interface WeeklyReport {
     totalAmount: number;
     totalCount: number;
     lastUpdated: admin.firestore.FieldValue;
