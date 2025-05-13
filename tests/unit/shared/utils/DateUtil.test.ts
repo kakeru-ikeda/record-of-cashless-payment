@@ -9,6 +9,56 @@ describe('DateUtil', () => {
         global.Date = originalDate;
     });
 
+    describe('getDateInfo', () => {
+        test('2025年4月1日の詳細情報を取得できる', () => {
+            const testDate = new Date(2025, 3, 1); // 2025年4月1日
+            const dateInfo = DateUtil.getDateInfo(testDate);
+
+            expect(dateInfo.year).toBe(2025);
+            expect(dateInfo.month).toBe(4);
+            expect(dateInfo.day).toBe(1);
+            expect(dateInfo.term).toBe(1);
+            expect(dateInfo.weekStartDate).toEqual(new Date(Date.UTC(2025, 3, 1, -9, 0, 0))); // 4月1日（火曜日）（月初）
+            expect(dateInfo.weekEndDate).toEqual(new Date(Date.UTC(2025, 3, 5, 14, 59, 59))); // 4月5日（土曜日）
+        });
+
+        test('2025年4月5日の詳細情報を取得できる', () => {
+            const testDate = new Date(2025, 3, 5); // 2025年4月5日
+            const dateInfo = DateUtil.getDateInfo(testDate);
+
+            expect(dateInfo.year).toBe(2025);
+            expect(dateInfo.month).toBe(4);
+            expect(dateInfo.day).toBe(5);
+            expect(dateInfo.term).toBe(1);
+            expect(dateInfo.weekStartDate).toEqual(new Date(Date.UTC(2025, 3, 1, -9, 0, 0))); // 4月1日（火曜日）
+            expect(dateInfo.weekEndDate).toEqual(new Date(Date.UTC(2025, 3, 5, 14, 59, 59))); // 4月5日（土曜日）
+        });
+
+        test('2025年4月6日の詳細情報を取得できる', () => {
+            const testDate = new Date(2025, 3, 6); // 2025年4月6日
+            const dateInfo = DateUtil.getDateInfo(testDate);
+
+            expect(dateInfo.year).toBe(2025);
+            expect(dateInfo.month).toBe(4);
+            expect(dateInfo.day).toBe(6);
+            expect(dateInfo.term).toBe(2);
+            expect(dateInfo.weekStartDate).toEqual(new Date(Date.UTC(2025, 3, 6, -9, 0, 0))); // 4月6日（日曜日）
+            expect(dateInfo.weekEndDate).toEqual(new Date(Date.UTC(2025, 3, 12, 14, 59, 59))); // 4月12日（土曜日）
+        });
+
+        test('2025年4月30日の詳細情報を取得できる', () => {
+            const testDate = new Date(2025, 3, 30); // 2025年4月30日
+            const dateInfo = DateUtil.getDateInfo(testDate);
+
+            expect(dateInfo.year).toBe(2025);
+            expect(dateInfo.month).toBe(4);
+            expect(dateInfo.day).toBe(30);
+            expect(dateInfo.term).toBe(5);
+            expect(dateInfo.weekStartDate).toEqual(new Date(Date.UTC(2025, 3, 27, -9, 0, 0))); // 4月27日（日曜日）
+            expect(dateInfo.weekEndDate).toEqual(new Date(Date.UTC(2025, 3, 30, 14, 59, 59))); // 4月30日（水曜日）（月の最終日）
+        });
+    });
+
     describe('週番号（term）の計算', () => {
         test('4月1日は第1週（term1）として認識される', () => {
             // 2025年4月1日
@@ -18,72 +68,40 @@ describe('DateUtil', () => {
             expect(dateInfo.term).toBe(1);
         });
 
-        test('4月7日は第2週（term2）として認識される', () => {
-            // 2025年4月7日 - 計算ロジックに基づくと第2週
-            const testDate = new Date(2025, 3, 7);
+        test('4月5日は第1週（term1）として認識される', () => {
+            // 2025年4月5日
+            const testDate = new Date(2025, 3, 5);
+            const dateInfo = DateUtil.getDateInfo(testDate);
+
+            expect(dateInfo.term).toBe(1);
+        });
+
+        test('4月6日は第2週（term2）として認識される', () => {
+            // 2025年4月6日
+            const testDate = new Date(2025, 3, 6);
             const dateInfo = DateUtil.getDateInfo(testDate);
 
             expect(dateInfo.term).toBe(2);
         });
 
-        test('4月8日は第2週（term2）として認識される', () => {
-            // 2025年4月8日
-            const testDate = new Date(2025, 3, 8);
+        test('4月12日は第2週（term2）として認識される', () => {
+            // 2025年4月12日
+            const testDate = new Date(2025, 3, 12);
             const dateInfo = DateUtil.getDateInfo(testDate);
 
             expect(dateInfo.term).toBe(2);
         });
 
-        test('4月14日は第3週（term3）として認識される', () => {
-            // 2025年4月14日 - 計算ロジックに基づくと第3週
-            const testDate = new Date(2025, 3, 14);
-            const dateInfo = DateUtil.getDateInfo(testDate);
-
-            expect(dateInfo.term).toBe(3);
-        });
-
-        test('4月15日は第3週（term3）として認識される', () => {
-            // 2025年4月15日
-            const testDate = new Date(2025, 3, 15);
-            const dateInfo = DateUtil.getDateInfo(testDate);
-
-            expect(dateInfo.term).toBe(3);
-        });
-
-        test('4月21日は第4週（term4）として認識される', () => {
-            // 2025年4月21日 - 計算ロジックに基づくと第4週
-            const testDate = new Date(2025, 3, 21);
-            const dateInfo = DateUtil.getDateInfo(testDate);
-
-            expect(dateInfo.term).toBe(4);
-        });
-
-        test('4月22日は第4週（term4）として認識される', () => {
-            // 2025年4月22日
-            const testDate = new Date(2025, 3, 22);
-            const dateInfo = DateUtil.getDateInfo(testDate);
-
-            expect(dateInfo.term).toBe(4);
-        });
-
-        test('4月28日は第5週（term5）として認識される', () => {
-            // 2025年4月28日 - 計算ロジックに基づくと第5週
-            const testDate = new Date(2025, 3, 28);
+        test('4月27日は第5週（term5）として認識される', () => {
+            // 2025年4月27日
+            const testDate = new Date(2025, 3, 27);
             const dateInfo = DateUtil.getDateInfo(testDate);
 
             expect(dateInfo.term).toBe(5);
         });
 
-        test('4月29日は第5週（term5）として認識される', () => {
-            // 2025年4月29日
-            const testDate = new Date(2025, 3, 29);
-            const dateInfo = DateUtil.getDateInfo(testDate);
-
-            expect(dateInfo.term).toBe(5);
-        });
-
-        test('4月30日は第5週（term5）として認識される（バグ修正確認）', () => {
-            // 2025年4月30日 - バグ修正の対象となった日付
+        test('4月30日は第5週（term5）として認識される', () => {
+            // 2025年4月30日
             const testDate = new Date(2025, 3, 30);
             const dateInfo = DateUtil.getDateInfo(testDate);
 
@@ -96,6 +114,48 @@ describe('DateUtil', () => {
             const dateInfo = DateUtil.getDateInfo(testDate);
 
             expect(dateInfo.term).toBe(1);
+        });
+    });
+
+    describe('term期間の計算', () => {
+        test('4月第1週(term1)は4月1日から4月5日までである', () => {
+            const testDate = new Date(2025, 3, 1); // 2025年4月1日
+            const dateInfo = DateUtil.getDateInfo(testDate);
+
+            expect(dateInfo.weekStartDate).toEqual(new Date(Date.UTC(2025, 3, 1, -9, 0, 0))); // 4月1日（火曜日）
+            expect(dateInfo.weekEndDate).toEqual(new Date(Date.UTC(2025, 3, 5, 14, 59, 59))); // 4月5日（土曜日）
+        });
+
+        test('4月第2週(term2)は4月6日から4月12日までである', () => {
+            const testDate = new Date(2025, 3, 7); // 2025年4月6日
+            const dateInfo = DateUtil.getDateInfo(testDate);
+
+            expect(dateInfo.weekStartDate).toEqual(new Date(Date.UTC(2025, 3, 6, -9, 0, 0))); // 4月6日（日曜日）
+            expect(dateInfo.weekEndDate).toEqual(new Date(Date.UTC(2025, 3, 12, 14, 59, 59))); // 4月12日（土曜日）
+        });
+
+        test('4月第5週(term5)は4月27日から4月30日までである', () => {
+            const testDate = new Date(2025, 3, 27); // 2025年4月27日
+            const dateInfo = DateUtil.getDateInfo(testDate);
+
+            expect(dateInfo.weekStartDate).toEqual(new Date(Date.UTC(2025, 3, 27, -9, 0, 0))); // 4月27日（日曜日）
+            expect(dateInfo.weekEndDate).toEqual(new Date(Date.UTC(2025, 3, 30, 14, 59, 59))); // 4月30日
+        });
+
+        test('5月第1週(term1)は5月1日から5月3日までである', () => {
+            const testDate = new Date(2025, 4, 1); // 2025年5月1日
+            const dateInfo = DateUtil.getDateInfo(testDate);
+
+            expect(dateInfo.weekStartDate).toEqual(new Date(Date.UTC(2025, 4, 1, -9, 0, 0))); // 5月1日（木曜日）- 月が変わるので日曜日からではなく月初から
+            expect(dateInfo.weekEndDate).toEqual(new Date(Date.UTC(2025, 4, 3, 14, 59, 59))); // 5月3日（土曜日）
+        });
+
+        test('5月第5週(term5)は5月25日から5月31日までである', () => {
+            const testDate = new Date(2025, 4, 25); // 2025年5月25日
+            const dateInfo = DateUtil.getDateInfo(testDate);
+
+            expect(dateInfo.weekStartDate).toEqual(new Date(Date.UTC(2025, 4, 25, -9, 0, 0))); // 5月25日（日曜日）
+            expect(dateInfo.weekEndDate).toEqual(new Date(Date.UTC(2025, 4, 31, 14, 59, 59))); // 5月31日（土曜日）
         });
     });
 
@@ -129,6 +189,45 @@ describe('DateUtil', () => {
         });
     });
 
+    describe('週末の判定', () => {
+        test('土曜日は週の最終日として認識される', () => {
+            const testDate = new Date(2025, 3, 26); // 2025年4月26日（土曜日）
+            const isLastDay = DateUtil.isLastDayOfTerm(testDate);
+
+            expect(isLastDay).toBe(true);
+        });
+
+        test('日曜日は週の最終日として認識されない', () => {
+            const testDate = new Date(2025, 3, 27); // 2025年4月27日（日曜日）
+            const isLastDay = DateUtil.isLastDayOfTerm(testDate);
+
+            expect(isLastDay).toBe(false);
+        });
+    });
+
+    describe('月末の判定', () => {
+        test('4月30日は月の最終日として認識される', () => {
+            const testDate = new Date(2025, 3, 30);
+            const isLastDay = DateUtil.isLastDayOfMonth(testDate);
+
+            expect(isLastDay).toBe(true);
+        });
+
+        test('5月31日は月の最終日として認識される', () => {
+            const testDate = new Date(2025, 4, 31);
+            const isLastDay = DateUtil.isLastDayOfMonth(testDate);
+
+            expect(isLastDay).toBe(true);
+        });
+
+        test('6月1日は月の最終日ではない', () => {
+            const testDate = new Date(2025, 5, 1);
+            const isLastDay = DateUtil.isLastDayOfMonth(testDate);
+
+            expect(isLastDay).toBe(false);
+        });
+    });
+
     describe('isLastDayOfTerm', () => {
         test('月の最終日は週の最終日として認識される', () => {
             // 2025年4月30日（月の最終日）
@@ -136,17 +235,6 @@ describe('DateUtil', () => {
             const isLastDay = DateUtil.isLastDayOfTerm(testDate);
 
             expect(isLastDay).toBe(true);
-        });
-
-        // このテストは実装によって結果が異なるため、現在の実装に合わせて修正
-        test('土曜日でも必ずしも週の最終日とは認識されない（実装に依存）', () => {
-            // 2025年4月26日（土曜日）
-            const testDate = new Date(2025, 3, 26);
-            const isLastDay = DateUtil.isLastDayOfTerm(testDate);
-
-            // 現在の実装では、土曜日でも週の境界と月の週番号の境界が一致しない場合がある
-            // 4月26日は土曜日だが、27日も同じ週番号に属するため、26日は週の最終日ではない
-            expect(isLastDay).toBe(false);
         });
 
         test('週の途中の日は週の最終日として認識されない', () => {
@@ -165,40 +253,6 @@ describe('DateUtil', () => {
 
             expect(isLastDay).toBe(true);
             expect(isLastDayOfMonth).toBe(true);
-        });
-    });
-
-    describe('月跨ぎのレポート処理', () => {
-        test('4月30日の処理では4月のマンスリーレポート参照', () => {
-            const testDate = new Date(2025, 3, 30);
-            const dateInfo = DateUtil.getDateInfo(testDate);
-
-            expect(dateInfo.isLastDayOfMonth).toBe(true);
-            expect(dateInfo.month).toBe(4); // 当月（4月）のデータ
-        });
-
-        test('5月1日の処理では4月のマンスリーレポート参照', () => {
-            const testDate = new Date(2025, 4, 1);
-            const lastMonthInfo = DateUtil.getLastMonthInfo(testDate);
-
-            expect(lastMonthInfo.month).toBe(4); // 前月（4月）のデータ
-            expect(lastMonthInfo.year).toBe(2025);
-        });
-
-        test('5月31日の処理では5月のマンスリーレポート参照', () => {
-            const testDate = new Date(2025, 4, 31);
-            const dateInfo = DateUtil.getDateInfo(testDate);
-
-            expect(dateInfo.isLastDayOfMonth).toBe(true);
-            expect(dateInfo.month).toBe(5); // 当月（5月）のデータ
-        });
-
-        test('6月1日の処理では5月のマンスリーレポート参照', () => {
-            const testDate = new Date(2025, 5, 1);
-            const lastMonthInfo = DateUtil.getLastMonthInfo(testDate);
-
-            expect(lastMonthInfo.month).toBe(5); // 前月（5月）のデータ
-            expect(lastMonthInfo.year).toBe(2025);
         });
     });
 });

@@ -1,10 +1,35 @@
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions';
 import { BaseReportService } from './BaseReportService';
-import { MonthlyReport, THRESHOLD } from '../../../../shared/types/reports/ReportTypes';
 import { DateUtil } from '../../../../shared/utils/DateUtil';
 import { AppError, ErrorType } from '../../../../shared/errors/AppError';
 import { MonthlyReportNotification } from '../../../../shared/types/reports/ReportNotifications';
+
+/**
+ * マンスリーレポートデータ
+ */
+interface MonthlyReport {
+    totalAmount: number;
+    totalCount: number;
+    lastUpdated: admin.firestore.FieldValue;
+    lastUpdatedBy: string;
+    documentIdList: string[];
+    monthStartDate: admin.firestore.Timestamp;
+    monthEndDate: admin.firestore.Timestamp;
+    hasNotifiedLevel1: boolean;
+    hasNotifiedLevel2: boolean;
+    hasNotifiedLevel3: boolean;
+    hasReportSent?: boolean; // 定期レポートとして送信済みかどうか
+}
+
+/**
+ * レポートの通知しきい値
+ */
+export const THRESHOLD = {
+    LEVEL1: 5000,
+    LEVEL2: 10000,
+    LEVEL3: 15000,
+};
 
 /**
  * マンスリーレポート処理サービス
@@ -322,22 +347,15 @@ export class MonthlyReportService extends BaseReportService {
         const updatedReport = { ...monthlyReport };
 
         try {
-            // しきい値チェック - 月額は週よりも大きな金額で設定
-            const MONTHLY_THRESHOLD = {
-                LEVEL1: THRESHOLD.LEVEL1 * 4, // 週の4倍
-                LEVEL2: THRESHOLD.LEVEL2 * 4,
-                LEVEL3: THRESHOLD.LEVEL3 * 4,
-            };
-
-            if (monthlyReport.totalAmount >= MONTHLY_THRESHOLD.LEVEL3 && !monthlyReport.hasNotifiedLevel3) {
+            if (monthlyReport.totalAmount >= THRESHOLD.LEVEL3 && !monthlyReport.hasNotifiedLevel3) {
                 alertLevel = 3;
                 updatedReport.hasNotifiedLevel3 = true;
                 updated = true;
-            } else if (monthlyReport.totalAmount >= MONTHLY_THRESHOLD.LEVEL2 && !monthlyReport.hasNotifiedLevel2) {
+            } else if (monthlyReport.totalAmount >= THRESHOLD.LEVEL2 && !monthlyReport.hasNotifiedLevel2) {
                 alertLevel = 2;
                 updatedReport.hasNotifiedLevel2 = true;
                 updated = true;
-            } else if (monthlyReport.totalAmount >= MONTHLY_THRESHOLD.LEVEL1 && !monthlyReport.hasNotifiedLevel1) {
+            } else if (monthlyReport.totalAmount >= THRESHOLD.LEVEL1 && !monthlyReport.hasNotifiedLevel1) {
                 alertLevel = 1;
                 updatedReport.hasNotifiedLevel1 = true;
                 updated = true;
@@ -354,11 +372,11 @@ export class MonthlyReportService extends BaseReportService {
                 // アラートメッセージ設定
                 let additionalInfo = '';
                 if (alertLevel === 1) {
-                    additionalInfo = `今月の合計金額が${MONTHLY_THRESHOLD.LEVEL1.toLocaleString()}円を超過。予算管理を見直してください。`;
+                    additionalInfo = `今月の合計金額が${THRESHOLD.LEVEL1.toLocaleString()}円を超過。予算管理を見直してください。`;
                 } else if (alertLevel === 2) {
-                    additionalInfo = `今月の合計金額が${MONTHLY_THRESHOLD.LEVEL2.toLocaleString()}円を超過。出費を抑えましょう！`;
+                    additionalInfo = `今月の合計金額が${THRESHOLD.LEVEL2.toLocaleString()}円を超過。出費を抑えましょう！`;
                 } else if (alertLevel === 3) {
-                    additionalInfo = `今月の合計金額が${MONTHLY_THRESHOLD.LEVEL3.toLocaleString()}円を超過。緊急の予算見直しが必要です！`;
+                    additionalInfo = `今月の合計金額が${THRESHOLD.LEVEL3.toLocaleString()}円を超過。緊急の予算見直しが必要です！`;
                 }
 
                 // 通知データ作成
@@ -446,13 +464,6 @@ export class MonthlyReportService extends BaseReportService {
             const endDate = reportData.monthEndDate.toDate();
             const formattedPeriod = DateUtil.formatDateRange(startDate, endDate, 'yyyy/MM/dd');
 
-            // 月次しきい値を計算
-            const MONTHLY_THRESHOLD = {
-                LEVEL1: THRESHOLD.LEVEL1 * 4,
-                LEVEL2: THRESHOLD.LEVEL2 * 4,
-                LEVEL3: THRESHOLD.LEVEL3 * 4,
-            };
-
             // 追加情報を計算
             let additionalInfo = '';
             if (reportData.totalCount > 0) {
@@ -463,17 +474,17 @@ export class MonthlyReportService extends BaseReportService {
                     ${Math.round(reportData.totalAmount / endDate.getDate()).toLocaleString()}円/日`;
 
                 // しきい値との比較情報を追加
-                if (reportData.totalAmount > MONTHLY_THRESHOLD.LEVEL3) {
-                    additionalInfo += `\n📊 しきい値超過: レベル3 (${MONTHLY_THRESHOLD.LEVEL3.toLocaleString()}円) を 
-                        ${(reportData.totalAmount - MONTHLY_THRESHOLD.LEVEL3).toLocaleString()}円 超過`;
-                } else if (reportData.totalAmount > MONTHLY_THRESHOLD.LEVEL2) {
-                    additionalInfo += `\n📊 しきい値超過: レベル2 (${MONTHLY_THRESHOLD.LEVEL2.toLocaleString()}円) を 
-                        ${(reportData.totalAmount - MONTHLY_THRESHOLD.LEVEL2).toLocaleString()}円 超過`;
-                } else if (reportData.totalAmount > MONTHLY_THRESHOLD.LEVEL1) {
-                    additionalInfo += `\n📊 しきい値超過: レベル1 (${MONTHLY_THRESHOLD.LEVEL1.toLocaleString()}円) を 
-                        ${(reportData.totalAmount - MONTHLY_THRESHOLD.LEVEL1).toLocaleString()}円 超過`;
+                if (reportData.totalAmount > THRESHOLD.LEVEL3) {
+                    additionalInfo += `\n📊 しきい値超過: レベル3 (${THRESHOLD.LEVEL3.toLocaleString()}円) を 
+                        ${(reportData.totalAmount - THRESHOLD.LEVEL3).toLocaleString()}円 超過`;
+                } else if (reportData.totalAmount > THRESHOLD.LEVEL2) {
+                    additionalInfo += `\n📊 しきい値超過: レベル2 (${THRESHOLD.LEVEL2.toLocaleString()}円) を 
+                        ${(reportData.totalAmount - THRESHOLD.LEVEL2).toLocaleString()}円 超過`;
+                } else if (reportData.totalAmount > THRESHOLD.LEVEL1) {
+                    additionalInfo += `\n📊 しきい値超過: レベル1 (${THRESHOLD.LEVEL1.toLocaleString()}円) を 
+                        ${(reportData.totalAmount - THRESHOLD.LEVEL1).toLocaleString()}円 超過`;
                 } else {
-                    additionalInfo += `\n📊 しきい値内: 予算内で収まっています (目標: ${MONTHLY_THRESHOLD.LEVEL1.toLocaleString()}円)`;
+                    additionalInfo += `\n📊 しきい値内: 予算内で収まっています (目標: ${THRESHOLD.LEVEL1.toLocaleString()}円)`;
                 }
             } else {
                 additionalInfo = '対象期間内の利用はありません';

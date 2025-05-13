@@ -38,7 +38,7 @@ export class DateUtil {
 
         // 現在の日の月内週番号を計算 - より堅牢な方法で
         // 日付が月の何日目か + 月初の曜日で、何週目に属するかを計算
-        const dayPosition = date.getDate() + startOfMonthDay - 1;
+        const dayPosition = date.getDate() + startOfMonthDay;
         const weekNumber = Math.ceil(dayPosition / 7);
         const term = weekNumber;
 
@@ -121,7 +121,7 @@ export class DateUtil {
         return {
             ...dateInfo,
             path,
-            weekReportPath: weeklyReportPath,
+            weeklyReportPath,
             dailyReportPath,
             monthlyReportPath
         };
@@ -215,18 +215,6 @@ export class DateUtil {
     }
 
     /**
-     * 指定した日数を加算した日付を取得する
-     * @param date 基準となる日付
-     * @param days 加算する日数（負の値も可）
-     * @returns 計算後の日付
-     */
-    static addDays(date: Date, days: number): Date {
-        const result = new Date(date);
-        result.setDate(result.getDate() + days);
-        return result;
-    }
-
-    /**
      * 日付期間の表示形式を生成する（例: 2025/04/01 〜 2025/04/07）
      * @param startDate 開始日
      * @param endDate 終了日
@@ -240,48 +228,12 @@ export class DateUtil {
     }
 
     /**
-     * 指定した日付が属する月の最初の日を取得する
-     * @param date 日付
-     * @returns 月の最初の日
-     */
-    static getFirstDayOfMonth(date: Date): Date {
-        return new Date(date.getFullYear(), date.getMonth(), 1);
-    }
-
-    /**
      * 指定した日付が属する月の最後の日を取得する
      * @param date 日付
      * @returns 月の最後の日
      */
     static getLastDayOfMonth(date: Date): Date {
         return new Date(date.getFullYear(), date.getMonth() + 1, 0);
-    }
-
-    /**
-     * 指定した日付から前の週（term）の情報を取得する
-     * @param date 基準日
-     * @returns 前週の日付情報
-     */
-    static getLastTermInfo(date: Date) {
-        // 1週間前の日付を計算
-        const lastWeekDate = new Date(date);
-        lastWeekDate.setDate(date.getDate() - 7);
-
-        // 前週の日付情報を取得
-        return this.getDateInfo(lastWeekDate);
-    }
-
-    /**
-     * 指定した日付から前月の情報を取得する
-     * @param date 基準日
-     * @returns 前月の日付情報
-     */
-    static getLastMonthInfo(date: Date) {
-        // 前月の同じ日を計算（月が短い場合は自動調整される）
-        const lastMonthDate = new Date(date.getFullYear(), date.getMonth() - 1, date.getDate());
-
-        // 前月の日付情報を取得
-        return this.getDateInfo(lastMonthDate);
     }
 
     /**

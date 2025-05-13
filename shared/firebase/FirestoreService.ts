@@ -38,6 +38,41 @@ export class FirestoreService {
     }
 
     /**
+     * ログを出力する
+     * @param message ログメッセージ
+     * @param level ログレベル
+     */
+    private log(message: string, level: 'info' | 'error' = 'info'): void {
+        const logMessage = `[${this.serviceContext}] ${message}`;
+
+        if (this.isCloudFunctions) {
+            if (level === 'info') {
+                console.log(logMessage);
+            } else {
+                console.error(logMessage);
+            }
+        } else {
+            if (level === 'info') {
+                logger.info(message, this.serviceContext);
+            } else {
+                logger.error(message, this.serviceContext);
+            }
+        }
+    }
+
+    /**
+     * エラーログを出力する
+     * @param error AppErrorオブジェクト
+     */
+    private logError(error: AppError): void {
+        if (this.isCloudFunctions) {
+            console.error(`[${this.serviceContext}] ${error.message}`, error);
+        } else {
+            logger.logAppError(error, this.serviceContext);
+        }
+    }
+
+    /**
      * Firestoreへの接続を初期化する
      * @param serviceAccountPath サービスアカウントキーのパス（ローカル環境用）
      */
@@ -53,7 +88,7 @@ export class FirestoreService {
                 if (this.isCloudFunctions) {
                     // Cloud Functions環境では自動的に初期化される
                     admin.initializeApp();
-                    logger.info('Cloud Functions環境でFirestoreに接続しました', this.serviceContext);
+                    this.log('Cloud Functions環境でFirestoreに接続しました');
                 } else if (serviceAccountPath) {
                     // ローカル環境では秘密鍵ファイルで初期化
                     try {
@@ -62,7 +97,7 @@ export class FirestoreService {
                                 JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'))
                             )
                         });
-                        logger.info('ローカル環境でFirestoreに接続しました', this.serviceContext);
+                        this.log('ローカル環境でFirestoreに接続しました');
                     } catch (error) {
                         throw new AppError(
                             'サービスアカウントキーでの初期化に失敗しました',
@@ -92,7 +127,7 @@ export class FirestoreService {
                     error instanceof Error ? error : undefined
                 );
 
-            logger.logAppError(appError, this.serviceContext);
+            this.logError(appError);
             throw appError;
         }
     }
@@ -116,14 +151,16 @@ export class FirestoreService {
         try {
             const db = await this.getDb();
             await db.doc(path).set(data);
-            logger.info(`ドキュメントを保存しました: ${path}`, this.serviceContext);
+            this.log(`ドキュメントを保存しました: ${path}`);
         } catch (error) {
-            throw new AppError(
+            const appError = new AppError(
                 `ドキュメント保存エラー (${path})`,
                 ErrorType.FIREBASE,
                 { path, data },
                 error instanceof Error ? error : undefined
             );
+            this.logError(appError);
+            throw appError;
         }
     }
 
@@ -136,14 +173,16 @@ export class FirestoreService {
         try {
             const db = await this.getDb();
             await db.doc(path).update(data);
-            logger.info(`ドキュメントを更新しました: ${path}`, this.serviceContext);
+            this.log(`ドキュメントを更新しました: ${path}`);
         } catch (error) {
-            throw new AppError(
+            const appError = new AppError(
                 `ドキュメント更新エラー (${path})`,
                 ErrorType.FIREBASE,
                 { path, data },
                 error instanceof Error ? error : undefined
             );
+            this.logError(appError);
+            throw appError;
         }
     }
 
@@ -158,16 +197,18 @@ export class FirestoreService {
             if (doc.exists) {
                 return doc.data() as T;
             } else {
-                logger.info(`ドキュメントが見つかりません: ${path}`, this.serviceContext);
+                this.log(`ドキュメントが見つかりません: ${path}`);
                 return null;
             }
         } catch (error) {
-            throw new AppError(
+            const appError = new AppError(
                 `ドキュメント取得エラー (${path})`,
                 ErrorType.FIREBASE,
                 { path },
                 error instanceof Error ? error : undefined
             );
+            this.logError(appError);
+            throw appError;
         }
     }
 
@@ -181,12 +222,14 @@ export class FirestoreService {
             const db = await this.getDb();
             return db.doc(path);
         } catch (error) {
-            throw new AppError(
+            const appError = new AppError(
                 `ドキュメント参照取得エラー (${path})`,
                 ErrorType.FIREBASE,
                 { path },
                 error instanceof Error ? error : undefined
             );
+            this.logError(appError);
+            throw appError;
         }
     }
 
@@ -198,14 +241,16 @@ export class FirestoreService {
         try {
             const db = await this.getDb();
             await db.doc(path).delete();
-            logger.info(`ドキュメントを削除しました: ${path}`, this.serviceContext);
+            this.log(`ドキュメントを削除しました: ${path}`);
         } catch (error) {
-            throw new AppError(
+            const appError = new AppError(
                 `ドキュメント削除エラー (${path})`,
                 ErrorType.FIREBASE,
                 { path },
                 error instanceof Error ? error : undefined
             );
+            this.logError(appError);
+            throw appError;
         }
     }
 
@@ -229,12 +274,14 @@ export class FirestoreService {
                 ...doc.data()
             } as unknown as T));
         } catch (error) {
-            throw new AppError(
+            const appError = new AppError(
                 `クエリ実行エラー (${collectionPath})`,
                 ErrorType.FIREBASE,
                 { collectionPath },
                 error instanceof Error ? error : undefined
             );
+            this.logError(appError);
+            throw appError;
         }
     }
 
