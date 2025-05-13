@@ -121,7 +121,7 @@ export class DateUtil {
         return {
             ...dateInfo,
             path,
-            weekReportPath: weeklyReportPath,
+            weeklyReportPath,
             dailyReportPath,
             monthlyReportPath
         };
