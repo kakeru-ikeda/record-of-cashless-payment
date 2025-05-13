@@ -2,7 +2,7 @@ import { ImapEmailService } from '../../../../src/infrastructure/email/ImapEmail
 import { ImapClientAdapter } from '../../../../src/infrastructure/email/ImapClientAdapter';
 import { EmailParser, ParsedEmail } from '../../../../src/infrastructure/email/EmailParser';
 import { CardUsageExtractor, CardCompany } from '../../../../src/infrastructure/email/CardUsageExtractor';
-import { CardUsageNotification } from '../../../../shared/types/CardUsageNotification';
+import { CardUsageNotification } from '../../../../shared/domain/entities/CardUsageNotification';
 
 // 依存コンポーネントをモック
 jest.mock('../../../../src/infrastructure/email/ImapClientAdapter');
@@ -11,17 +11,17 @@ jest.mock('../../../../src/infrastructure/email/CardUsageExtractor');
 
 // Loggerをモック化
 jest.mock('../../../../shared/utils/Logger', () => {
-    return {
-      logger: {
-        info: jest.fn(),
-        debug: jest.fn(),
-        warn: jest.fn(),
-        error: jest.fn(),
-        logAppError: jest.fn(),
-        updateServiceStatus: jest.fn()
-      }
-    };
-  });
+  return {
+    logger: {
+      info: jest.fn(),
+      debug: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+      logAppError: jest.fn(),
+      updateServiceStatus: jest.fn()
+    }
+  };
+});
 
 describe('ImapEmailService', () => {
   let emailService: ImapEmailService;

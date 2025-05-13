@@ -2,8 +2,7 @@ import { ProcessEmailUseCase } from '../../../src/usecases/ProcessEmailUseCase';
 import { ImapEmailService, CardCompany } from '../../../src/infrastructure/email/ImapEmailService';
 import { ICardUsageRepository } from '../../../src/domain/repositories/ICardUsageRepository';
 import { DiscordNotifier } from '../../../shared/discord/DiscordNotifier';
-import { CardUsageNotification } from '../../../shared/types/CardUsageNotification';
-import { AppError } from '../../../shared/errors/AppError';
+import { CardUsageNotification } from '../../../shared/domain/entities/CardUsageNotification';
 import * as admin from 'firebase-admin';
 
 // 依存コンポーネントをモック化

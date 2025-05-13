@@ -5,14 +5,14 @@ import { CardUsage } from '../../../../src/domain/entities/CardUsage';
 import { FirestoreService } from '../../../../shared/firebase/FirestoreService';
 import { DateUtil } from '../../../../shared/utils/DateUtil';
 import { Environment } from '../../../../shared/config/Environment';
-import { CardUsageMapper } from '../../../../src/domain/mappers/CardUsageMapper';
+import { CardUsageMapper } from '../../../../shared/domain/mappers/CardUsageMapper';
 import { AppError } from '../../../../shared/errors/AppError';
 
 // モック
 jest.mock('../../../../shared/firebase/FirestoreService');
 jest.mock('../../../../shared/config/Environment');
 jest.mock('../../../../shared/utils/DateUtil');
-jest.mock('../../../../src/domain/mappers/CardUsageMapper');
+jest.mock('../../../../shared/domain/mappers/CardUsageMapper');
 jest.mock('firebase-admin/firestore');
 
 // Loggerをモック化
@@ -35,7 +35,7 @@ describe('FirestoreCardUsageRepository', () => {
   // テスト用データ
   const testDate = new Date('2025-05-10T15:30:00');
   const testTimestamp = admin.firestore.Timestamp.fromDate(testDate);
-  
+
   const testCardUsage: CardUsage = {
     card_name: 'テストカード',
     datetime_of_use: testTimestamp,
@@ -115,10 +115,10 @@ describe('FirestoreCardUsageRepository', () => {
   describe('getFirestorePath', () => {
     test('日付からFirestoreパスが生成されること', () => {
       const result = FirestoreCardUsageRepository.getFirestorePath(testDate);
-      
+
       // DateUtilが呼ばれることを確認
       expect(DateUtil.getFirestorePath).toHaveBeenCalledWith(testDate);
-      
+
       // 結果が正しいことを確認
       expect(result).toEqual(testPathInfo);
     });
@@ -195,7 +195,7 @@ describe('FirestoreCardUsageRepository', () => {
 
       // FirestoreServiceのgetDocumentが呼ばれることを確認
       expect(mockFirestoreService.getDocument).toHaveBeenCalledWith(testPathInfo.path);
-      
+
       // 結果が正しいことを確認
       expect(result).toEqual(testCardUsage);
     });
@@ -206,7 +206,7 @@ describe('FirestoreCardUsageRepository', () => {
 
       // タイムスタンプから取得を実行
       const result = await firestoreCardUsageRepository.getByTimestamp('1715350200000');
-      
+
       // 結果がnullであることを確認
       expect(result).toBeNull();
     });
@@ -224,10 +224,10 @@ describe('FirestoreCardUsageRepository', () => {
     test('CardUsageオブジェクトがCardUsageNotificationオブジェクトに変換されること', () => {
       // toNotificationを実行
       const result = firestoreCardUsageRepository.toNotification(testCardUsage);
-      
+
       // CardUsageMapperが呼ばれることを確認
       expect(CardUsageMapper.toNotification).toHaveBeenCalledWith(testCardUsage);
-      
+
       // 結果が正しいことを確認
       expect(result).toEqual({
         card_name: testCardUsage.card_name,
