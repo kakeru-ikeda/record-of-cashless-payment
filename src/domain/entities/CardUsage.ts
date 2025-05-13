@@ -1,1 +1,1 @@
-export { CardUsage } from "shared/types/CardUsage";
+export { CardUsage } from "shared/domain/entities/CardUsage";

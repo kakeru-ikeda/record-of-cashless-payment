@@ -1,8 +1,7 @@
-import * as admin from 'firebase-admin';
 import { Firestore } from 'firebase-admin/firestore';
 import { CardUsage } from '../../domain/entities/CardUsage';
-import { CardUsageNotification } from '../../../shared/types/CardUsageNotification';
-import { CardUsageMapper } from '../../domain/mappers/CardUsageMapper';
+import { CardUsageNotification } from '../../../shared/domain/entities/CardUsageNotification';
+import { CardUsageMapper } from '../../../shared/domain/mappers/CardUsageMapper';
 import { ICardUsageRepository } from '../../domain/repositories/ICardUsageRepository';
 import { Environment } from '../../../shared/config/Environment';
 import { DateUtil } from '../../../shared/utils/DateUtil';

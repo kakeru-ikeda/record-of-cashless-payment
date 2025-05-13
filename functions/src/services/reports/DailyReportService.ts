@@ -3,7 +3,7 @@ import * as functions from 'firebase-functions';
 import { BaseReportService } from './BaseReportService';
 import { AppError, ErrorType } from '../../../../shared/errors/AppError';
 import { DateUtil } from '../../../../shared/utils/DateUtil';
-import { DailyReportNotification } from '../../../../shared/types/reports/ReportNotifications';
+import { DailyReportNotification } from '../../../../shared/domain/entities/ReportNotifications';
 
 
 /**

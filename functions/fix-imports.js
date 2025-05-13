@@ -7,6 +7,7 @@ const path = require('path');
 // 修正対象のファイル
 const targetFile = path.join(__dirname, 'lib', 'index.js');
 const cardUsageControllerFile = path.join(__dirname, 'lib', 'functions', 'src', 'api', 'controllers', 'CardUsageController.js');
+const cardUsageMapperFile = path.join(__dirname, 'lib', 'functions', 'src', 'shared', 'domain', 'mappers', 'CardUsageMapper.js');
 
 console.log('🔧 インポートパスを修正中...');
 
@@ -20,21 +21,15 @@ try {
         'require("./shared/discord/DiscordNotifier")'
     );
 
-    // types関連のインポートパスを修正
-    // 新しいレポート関連のパス
+    // domain関連のインポートパスを修正
     content = content.replace(
-        /require\("\.\.\/\.\.\/shared\/types\/reports\/ReportTypes"\)/g,
-        'require("./shared/types/reports/ReportTypes")'
+        /require\("\.\.\/\.\.\/shared\/domain\/entities\/ReportNotifications"\)/g,
+        'require("./shared/domain/entities/ReportNotifications")'
     );
 
     content = content.replace(
-        /require\("\.\.\/\.\.\/shared\/types\/reports\/ReportNotifications"\)/g,
-        'require("./shared/types/reports/ReportNotifications")'
-    );
-
-    content = content.replace(
-        /require\("\.\.\/\.\.\/shared\/types\/CardUsageNotification"\)/g,
-        'require("./shared/types/CardUsageNotification")'
+        /require\("\.\.\/\.\.\/shared\/domain\/entities\/CardUsageNotification"\)/g,
+        'require("./shared/domain/entities/CardUsageNotification")'
     );
 
     // utils関連のインポートパスを修正
@@ -75,6 +70,12 @@ try {
     content = content.replace(
         /require\("\.\.\/\.\.\/shared\/config\/Environment"\)/g,
         'require("./shared/config/Environment")'
+    );
+
+    // mappers関連のインポートパスを修正
+    content = content.replace(
+        /require\("\.\.\/\.\.\/shared\/domain\/mappers\/CardUsageMapper"\)/g,
+        'require("./shared/domain/mappers/CardUsageMapper")'
     );
 
     // レポートサービス関連のインポートパスを修正 - ビルド後のパスに合わせて変更
@@ -160,13 +161,26 @@ try {
         );
 
         content = content.replace(
-            /require\("shared\/types\/reports\/ReportTypes"\)/g,
-            'require("../../../shared/types/reports/ReportTypes")'
+            /require\("shared\/domain\/entities\/ReportNotifications"\)/g,
+            'require("../../../shared/domain/entities/ReportNotifications")'
         );
 
+        // CardUsageMapperのインポートパス修正（複数のパターンに対応）
         content = content.replace(
-            /require\("shared\/types\/reports\/ReportNotifications"\)/g,
-            'require("../../../shared/types/reports/ReportNotifications")'
+            /require\("shared\/domain\/mappers\/CardUsageMapper"\)/g,
+            'require("../../../shared/domain/mappers/CardUsageMapper")'
+        );
+        
+        // コンパイル後のCardUsageMapperの間違ったパスを修正
+        content = content.replace(
+            /require\("\.\.\/\.\.\/\.\.\/shared\/domain\/mappers\/CardUsageMapper"\)/g,
+            'require("../../../../shared/domain/mappers/CardUsageMapper")'
+        );
+
+        // 既にコンパイルされたJSファイルでも間違ったパスになっていたら修正
+        content = content.replace(
+            /require\("\.\.\/\.\.\/\.\.\/\.\.\/\.\.\/shared\/domain\/mappers\/CardUsageMapper"\)/g,
+            'require("../../../../shared/domain/mappers/CardUsageMapper")'
         );
 
         // 修正内容を書き込む
@@ -177,4 +191,25 @@ try {
     }
 } catch (error) {
     console.error('❌ CardUsageController.jsのインポートパスの修正に失敗しました:', error);
+}
+
+// CardUsageMapper.jsファイルを修正
+try {
+    if (fs.existsSync(cardUsageMapperFile)) {
+        let content = fs.readFileSync(cardUsageMapperFile, 'utf8');
+
+        // CardUsageMapperのインポートパスを修正
+        content = content.replace(
+            /require\("\.\.\/\.\.\/\.\.\/src\/domain\/entities\/CardUsage"\)/g,
+            'require("../entities/CardUsage")'
+        );
+
+        // 修正内容を書き込む
+        fs.writeFileSync(cardUsageMapperFile, content);
+        console.log('✅ CardUsageMapper.jsのインポートパスの修正が完了しました');
+    } else {
+        console.warn('⚠️ CardUsageMapper.jsファイルが見つかりません');
+    }
+} catch (error) {
+    console.error('❌ CardUsageMapper.jsのインポートパスの修正に失敗しました:', error);
 }

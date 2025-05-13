@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin';
 import { CardUsage } from '../domain/entities/CardUsage';
-import { CardUsageNotification } from '../../shared/types/CardUsageNotification';
-import { CardUsageMapper } from '../domain/mappers/CardUsageMapper';
+import { CardUsageNotification } from '../../shared/domain/entities/CardUsageNotification';
+import { CardUsageMapper } from '../../shared/domain/mappers/CardUsageMapper';
 import { ICardUsageRepository } from '../domain/repositories/ICardUsageRepository';
 import { ImapEmailService, CardCompany } from '../infrastructure/email/ImapEmailService';
 import { DiscordNotifier } from '../../shared/discord/DiscordNotifier';
@@ -24,7 +24,7 @@ export class ProcessEmailUseCase {
     private readonly emailService: ImapEmailService,
     private readonly cardUsageRepository: ICardUsageRepository,
     private readonly discordNotifier: DiscordNotifier
-  ) { 
+  ) {
     logger.updateServiceStatus(this.serviceContext, 'online', '初期化完了');
   }
 
@@ -40,7 +40,7 @@ export class ProcessEmailUseCase {
 
       // メール本文からカード利用情報を抽出（既にCardUsageMapperを使用）
       const usage = await this.emailService.parseCardUsageFromEmail(emailBody, cardCompany);
-      
+
       logger.debug(`パース結果: ${JSON.stringify(usage)}`, this.serviceContext);
 
       // Firestoreのタイムスタンプに変換

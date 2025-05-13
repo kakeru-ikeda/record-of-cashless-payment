@@ -1,5 +1,5 @@
 import { CardUsage } from '../entities/CardUsage';
-import { CardUsageNotification } from '../../../shared/types/CardUsageNotification';
+import { CardUsageNotification } from '../entities/CardUsageNotification';
 
 /**
  * CardUsageエンティティと通知用DTOの変換を行うマッパークラス

@@ -3,7 +3,7 @@ import * as functions from 'firebase-functions';
 import { BaseReportService } from './BaseReportService';
 import { DateUtil } from '../../../../shared/utils/DateUtil';
 import { AppError, ErrorType } from '../../../../shared/errors/AppError';
-import { MonthlyReportNotification } from '../../../../shared/types/reports/ReportNotifications';
+import { MonthlyReportNotification } from '../../../../shared/domain/entities/ReportNotifications';
 
 /**
  * マンスリーレポートデータ

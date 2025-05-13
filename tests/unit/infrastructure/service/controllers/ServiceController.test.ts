@@ -1,7 +1,6 @@
 import { ServiceController } from '../../../../../src/infrastructure/service/controllers/ServiceController';
 import { EmailController } from '../../../../../src/interfaces/controllers/EmailController';
 import { Request, Response } from 'express';
-import { AppError } from '../../../../../shared/errors/AppError';
 
 // EmailControllerをモック
 jest.mock('../../../../../src/interfaces/controllers/EmailController');
@@ -39,14 +38,14 @@ describe('ServiceController', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // EmailControllerのモック設定
     mockEmailController = {
       isMonitoring: jest.fn().mockReturnValue(false),
       startAllMonitoring: jest.fn().mockResolvedValue(undefined),
       stopMonitoring: jest.fn().mockResolvedValue(undefined)
     } as unknown as jest.Mocked<EmailController>;
-    
+
     // ServiceControllerのインスタンス作成
     serviceController = new ServiceController();
     serviceController.setEmailController(mockEmailController);
@@ -57,13 +56,13 @@ describe('ServiceController', () => {
       // 新しいインスタンスを作成してEmailControllerを設定
       const controller = new ServiceController();
       controller.setEmailController(mockEmailController);
-      
+
       // getServicesを呼び出してEmailControllerが使用されることを確認
       const req = mockRequest();
       const res = mockResponse();
-      
+
       controller.getServices(req, res);
-      
+
       // EmailControllerのisMonitoringが呼ばれたことを確認
       expect(mockEmailController.isMonitoring).toHaveBeenCalled();
     });
@@ -74,13 +73,13 @@ describe('ServiceController', () => {
       // リクエスト/レスポンスのモック
       const req = mockRequest();
       const res = mockResponse();
-      
+
       // EmailControllerのモック設定
       mockEmailController.isMonitoring.mockReturnValueOnce(true);
-      
+
       // getServicesを実行
       await serviceController.getServices(req, res);
-      
+
       // レスポンスが正しいことを確認
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({
@@ -100,15 +99,15 @@ describe('ServiceController', () => {
       // リクエスト/レスポンスのモック
       const req = mockRequest();
       const res = mockResponse();
-      
+
       // EmailControllerからエラーが発生するように設定
       mockEmailController.isMonitoring.mockImplementationOnce(() => {
         throw new Error('テストエラー');
       });
-      
+
       // getServicesを実行
       await serviceController.getServices(req, res);
-      
+
       // エラーレスポンスが返されることを確認
       expect(res.status).toHaveBeenCalledWith(expect.any(Number));
       expect(res.json).toHaveBeenCalledWith(
@@ -118,7 +117,7 @@ describe('ServiceController', () => {
           status: expect.any(Number)
         })
       );
-      
+
       // エラーがログに記録されることを確認
       expect(require('../../../../../shared/utils/Logger').logger.logAppError).toHaveBeenCalled();
     });
@@ -129,16 +128,16 @@ describe('ServiceController', () => {
       // サービスID: email-monitoring、アクション: start のリクエスト
       const req = mockRequest({ id: 'email-monitoring' }, { action: 'start' });
       const res = mockResponse();
-      
+
       // サービスが停止中であることをモック
       mockEmailController.isMonitoring.mockReturnValue(false);
-      
+
       // controlServiceを実行
       await serviceController.controlService(req, res);
-      
+
       // startAllMonitoringが呼ばれることを確認
       expect(mockEmailController.startAllMonitoring).toHaveBeenCalled();
-      
+
       // 成功レスポンスが返されることを確認
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({
@@ -152,16 +151,16 @@ describe('ServiceController', () => {
       // サービスID: email-monitoring、アクション: stop のリクエスト
       const req = mockRequest({ id: 'email-monitoring' }, { action: 'stop' });
       const res = mockResponse();
-      
+
       // サービスが実行中であることをモック
       mockEmailController.isMonitoring.mockReturnValue(true);
-      
+
       // controlServiceを実行
       await serviceController.controlService(req, res);
-      
+
       // stopMonitoringが呼ばれることを確認
       expect(mockEmailController.stopMonitoring).toHaveBeenCalled();
-      
+
       // 成功レスポンスが返されることを確認
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({
@@ -175,14 +174,14 @@ describe('ServiceController', () => {
       // サービスID: email-monitoring、アクション: restart のリクエスト
       const req = mockRequest({ id: 'email-monitoring' }, { action: 'restart' });
       const res = mockResponse();
-      
+
       // controlServiceを実行
       await serviceController.controlService(req, res);
-      
+
       // stopMonitoringとstartAllMonitoringが呼ばれることを確認
       expect(mockEmailController.stopMonitoring).toHaveBeenCalled();
       expect(mockEmailController.startAllMonitoring).toHaveBeenCalled();
-      
+
       // 成功レスポンスが返されることを確認
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({
@@ -191,15 +190,15 @@ describe('ServiceController', () => {
         data: expect.any(Object)
       });
     });
-    
+
     test('異常系: 無効なアクションの場合、エラーがスローされること', async () => {
       // 不正なアクションを指定
       const req = mockRequest({ id: 'email-monitoring' }, { action: 'invalid' });
       const res = mockResponse();
-      
+
       // controlServiceを実行
       await serviceController.controlService(req, res);
-      
+
       // エラーレスポンスが返されることを確認
       expect(res.status).not.toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith(
@@ -214,10 +213,10 @@ describe('ServiceController', () => {
       // 存在しないサービスIDを指定
       const req = mockRequest({ id: 'non-existent-service' }, { action: 'start' });
       const res = mockResponse();
-      
+
       // controlServiceを実行
       await serviceController.controlService(req, res);
-      
+
       // エラーレスポンスが返されることを確認
       expect(res.status).not.toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith(
@@ -232,13 +231,13 @@ describe('ServiceController', () => {
       // サービスID: email-monitoring、アクション: start のリクエスト
       const req = mockRequest({ id: 'email-monitoring' }, { action: 'start' });
       const res = mockResponse();
-      
+
       // サービスが既に起動中であることをモック
       mockEmailController.isMonitoring.mockReturnValue(true);
-      
+
       // controlServiceを実行
       await serviceController.controlService(req, res);
-      
+
       // エラーレスポンスが返されることを確認
       expect(res.status).not.toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith(
@@ -253,13 +252,13 @@ describe('ServiceController', () => {
       // サービスID: email-monitoring、アクション: stop のリクエスト
       const req = mockRequest({ id: 'email-monitoring' }, { action: 'stop' });
       const res = mockResponse();
-      
+
       // サービスが既に停止中であることをモック
       mockEmailController.isMonitoring.mockReturnValue(false);
-      
+
       // controlServiceを実行
       await serviceController.controlService(req, res);
-      
+
       // エラーレスポンスが返されることを確認
       expect(res.status).not.toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith(
@@ -273,14 +272,14 @@ describe('ServiceController', () => {
     test('異常系: EmailController未設定の場合、エラーとなること', async () => {
       // EmailControllerが設定されていないServiceControllerを作成
       const controllerWithoutEmail = new ServiceController();
-      
+
       // サービスID: email-monitoring、アクション: start のリクエスト
       const req = mockRequest({ id: 'email-monitoring' }, { action: 'start' });
       const res = mockResponse();
-      
+
       // controlServiceを実行
       await controllerWithoutEmail.controlService(req, res);
-      
+
       // エラーレスポンスが返されることを確認
       expect(res.status).not.toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith(
