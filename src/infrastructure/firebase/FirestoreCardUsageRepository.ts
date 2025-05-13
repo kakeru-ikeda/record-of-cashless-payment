@@ -1,19 +1,22 @@
 import * as admin from 'firebase-admin';
 import { Firestore } from 'firebase-admin/firestore';
-import * as fs from 'fs';
 import { CardUsage } from '../../domain/entities/CardUsage';
+import { CardUsageNotification } from '../../../shared/types/CardUsageNotification';
+import { CardUsageMapper } from '../../domain/mappers/CardUsageMapper';
 import { ICardUsageRepository } from '../../domain/repositories/ICardUsageRepository';
 import { Environment } from '../../../shared/config/Environment';
 import { DateUtil } from '../../../shared/utils/DateUtil';
 import { FirestoreService } from '../../../shared/firebase/FirestoreService';
 import { AppError, ErrorType } from '../../../shared/errors/AppError';
 import { ErrorHandler } from '../../../shared/errors/ErrorHandler';
+import { logger } from '../../../shared/utils/Logger';
 
 /**
  * Firestoreを使用したカード利用情報リポジトリの実装
  */
 export class FirestoreCardUsageRepository implements ICardUsageRepository {
   private firestoreService: FirestoreService;
+  private readonly serviceContext = 'FirestoreCardUsageRepository';
 
   constructor() {
     this.firestoreService = FirestoreService.getInstance();
@@ -60,7 +63,7 @@ export class FirestoreCardUsageRepository implements ICardUsageRepository {
 
       // パス情報を取得
       const pathInfo = FirestoreCardUsageRepository.getFirestorePath(dateObj);
-      console.log(`🗂 保存先: ${pathInfo.path}`);
+      logger.info(`保存先: ${pathInfo.path}`, this.serviceContext);
 
       // 新しいフィールドのデフォルト値を設定
       const completeCardUsage: CardUsage = {
@@ -72,7 +75,7 @@ export class FirestoreCardUsageRepository implements ICardUsageRepository {
       // 共通サービスを使用してドキュメントを保存
       await this.firestoreService.saveDocument(pathInfo.path, completeCardUsage);
 
-      console.log('✅ カード利用データをFirestoreに保存しました');
+      logger.info('カード利用データをFirestoreに保存しました', this.serviceContext);
       return pathInfo.path;
     } catch (error) {
       // エラー処理を共通化
@@ -105,7 +108,7 @@ export class FirestoreCardUsageRepository implements ICardUsageRepository {
       const result = await this.firestoreService.getDocument<CardUsage>(pathInfo.path);
 
       if (!result) {
-        console.log(`カード利用情報が見つかりません: ${timestamp}`);
+        logger.info(`カード利用情報が見つかりません: ${timestamp}`, this.serviceContext);
       }
 
       return result;
@@ -118,6 +121,15 @@ export class FirestoreCardUsageRepository implements ICardUsageRepository {
         error instanceof Error ? error : undefined
       );
     }
+  }
+
+  /**
+   * カード利用通知オブジェクトに変換する
+   * @param cardUsage カード利用情報
+   * @returns 通知用オブジェクト
+   */
+  toNotification(cardUsage: CardUsage): CardUsageNotification {
+    return CardUsageMapper.toNotification(cardUsage);
   }
 }
 

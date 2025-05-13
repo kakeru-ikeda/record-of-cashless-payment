@@ -1,9 +1,13 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
+import { logger } from '../utils/Logger';
 
 // .envファイルを読み込む（存在する場合）
 dotenv.config();
+
+// コンテキスト定義
+const CONTEXT = 'Environment';
 
 /**
  * 環境変数の設定
@@ -36,6 +40,12 @@ export class Environment {
     // Cloud Functions関連の設定
     static readonly IS_CLOUD_FUNCTIONS = process.env.FUNCTIONS_EMULATOR === 'true'
         || process.env.FUNCTION_TARGET != null;
+        
+    // ログ関連の設定
+    static readonly LOG_LEVEL = process.env.LOG_LEVEL || 'INFO';
+    static readonly COMPACT_LOGS = process.env.COMPACT_LOGS === 'true';
+    static readonly SUPPRESS_POLLING_LOGS = process.env.SUPPRESS_POLLING_LOGS === 'true';
+    static readonly STATUS_REFRESH_INTERVAL = parseInt(process.env.STATUS_REFRESH_INTERVAL || '30000', 10);
 
     /**
      * 環境変数のバリデーションを行う
@@ -46,7 +56,7 @@ export class Environment {
         const missingVars = requiredVars.filter(varName => !process.env[varName]);
 
         if (missingVars.length > 0) {
-            console.error('❌ 必須環境変数が設定されていません:', missingVars.join(', '));
+            logger.error('必須環境変数が設定されていません: ' + missingVars.join(', '), CONTEXT);
             return false;
         }
 
@@ -54,10 +64,10 @@ export class Environment {
         if (!this.IS_CLOUD_FUNCTIONS) {
             try {
                 if (!fs.existsSync(this.FIREBASE_ADMIN_KEY_PATH)) {
-                    console.warn(`⚠️ Firebase Admin SDKのキーファイルが見つかりません: ${this.FIREBASE_ADMIN_KEY_PATH}`);
+                    logger.warn(`Firebase Admin SDKのキーファイルが見つかりません: ${this.FIREBASE_ADMIN_KEY_PATH}`, CONTEXT);
                 }
             } catch (error) {
-                console.warn('⚠️ Firebase Admin SDK キーファイルの確認中にエラーが発生しました');
+                logger.warn('Firebase Admin SDK キーファイルの確認中にエラーが発生しました', CONTEXT);
             }
         }
 
@@ -69,7 +79,7 @@ export class Environment {
         this.validateDiscordWebhook(this.DISCORD_REPORT_WEEKLY_WEBHOOK_URL, '週次レポート通知用');
         this.validateDiscordWebhook(this.DISCORD_REPORT_MONTHLY_WEBHOOK_URL, '月次レポート通知用');
 
-        console.log('✅ 環境変数の検証が完了しました');
+        logger.info('✅ 環境変数の検証が完了しました', CONTEXT);
         return true;
     }
 
@@ -82,12 +92,12 @@ export class Environment {
     private static validateDiscordWebhook(webhookUrl: string, description: string): boolean {
         if (webhookUrl) {
             if (!webhookUrl.startsWith('https://discord.com/api/webhooks/')) {
-                console.warn(`⚠️ ${description} Discord WebhookのURLが正しくない可能性があります`);
+                logger.warn(`${description} Discord WebhookのURLが正しくない可能性があります`, CONTEXT);
                 return false;
             }
             return true;
         } else {
-            console.info(`ℹ️ ${description} Discord WebhookのURLが設定されていません。この通知は無効です。`);
+            logger.warn(`${description} Discord WebhookのURLが設定されていません。この通知は無効です。`, CONTEXT);
             return false;
         }
     }

@@ -1,12 +1,8 @@
 import * as dotenv from 'dotenv';
-import * as path from 'path';
-import express from 'express';
-import { Environment } from './infrastructure/config/environment';
-import { ImapEmailService, CardCompany } from './infrastructure/email/ImapEmailService';
-import { FirestoreCardUsageRepository } from './infrastructure/firebase/FirestoreCardUsageRepository';
-import { DiscordWebhookNotifier } from '../shared/discord/DiscordNotifier'; // パスを更新
-import { ProcessEmailUseCase } from './usecases/ProcessEmailUseCase';
-import { EmailController } from './interfaces/controllers/EmailController';
+import { Environment } from '../shared/config/Environment';
+import { logger, LogLevel } from '../shared/utils/Logger';
+import { Application } from './infrastructure/app/Application';
+import { CardCompany } from './infrastructure/email/ImapEmailService';
 
 // 環境変数の読み込み
 dotenv.config();
@@ -16,118 +12,61 @@ dotenv.config();
  */
 async function bootstrap() {
     try {
+        // Logger初期化 - 環境変数から設定を読み込む
+        initializeLogger();
+        
+        // 起動メッセージ
+        logger.info('アプリケーションを起動しています...', 'App');
+        
         // 環境変数の検証
         if (!Environment.validate()) {
-            console.error('❌ 環境変数の検証に失敗しました');
+            logger.error('環境変数の検証に失敗しました', null, 'App');
             process.exit(1);
         }
 
-        console.log('🚀 アプリケーションを起動しています...');
-
-        // Express.jsサーバーの初期化
-        const app = express();
-        const port = process.env.PORT || 3000;
-
-        // ヘルスチェックエンドポイント
-        app.get('/health', (req, res) => {
-            res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
-        });
-
-        // サーバーの起動
-        const server = app.listen(port, () => {
-            console.log(`🌐 HTTPサーバーがポート${port}で起動しました`);
-        });
-
-        // インフラストラクチャレイヤーの初期化
-        const emailService = new ImapEmailService(
-            Environment.IMAP_SERVER,
-            Environment.IMAP_USER,
-            Environment.IMAP_PASSWORD
-        );
-
-        const cardUsageRepository = new FirestoreCardUsageRepository();
-        await cardUsageRepository.initialize();
-
-        const discordNotifier = new DiscordWebhookNotifier(Environment.DISCORD_WEBHOOK_URL);
-
-        // ユースケースの初期化
-        const processEmailUseCase = new ProcessEmailUseCase(
-            emailService,
-            cardUsageRepository,
-            discordNotifier
-        );
-
-        // コントローラーの初期化
-        const emailController = new EmailController(emailService, processEmailUseCase);
+        // アプリケーションのインスタンスを作成
+        const app = new Application();
+        
+        // アプリケーションを初期化
+        await app.initialize();
 
         // コマンドライン引数の解析
         const args = process.argv.slice(2);
 
         if (args.includes('--test')) {
             // テストモード：サンプルメールでのテスト実行
-            console.log('🧪 テストモードで実行しています...');
-
-            try {
-                // サンプルメールファイルを読み込む
-                const sampleMailPath = path.resolve(__dirname, '../samplemail.txt');
-                
-                // テスト対象のカード会社を特定
-                const testCardCompany = args.includes('--smbc') ? CardCompany.SMBC : CardCompany.MUFG;
-                console.log(`🧪 ${testCardCompany}のサンプルメールでテスト実行します...`);
-                
-                const result = await testWithSampleMail(sampleMailPath, processEmailUseCase, testCardCompany);
-                console.log('✅ テスト結果:', result);
-            } catch (error) {
-                console.error('❌ テスト実行中にエラーが発生しました:', error);
-            }
+            // テスト対象のカード会社を特定
+            const testCardCompany = args.includes('--smbc') ? CardCompany.SMBC : CardCompany.MUFG;
+            await app.runInTestMode(testCardCompany);
         } else {
             // 通常モード：メール監視の開始
-            console.log('📧 メール監視モードで実行しています...');
-            // すべてのメールボックス（三菱UFJ銀行、三井住友カード）を監視
-            await emailController.startAllMonitoring();
-
-            // プロセス終了時のクリーンアップ
-            process.on('SIGINT', async () => {
-                console.log('👋 アプリケーションを終了しています...');
-                await emailController.stopMonitoring();
-                if (server) {
-                    server.close(() => {
-                        console.log('🔒 HTTPサーバーを停止しました');
-                        process.exit(0);
-                    });
-                } else {
-                    process.exit(0);
-                }
-            });
+            await app.runInNormalMode();
         }
     } catch (error) {
-        console.error('❌ アプリケーションの起動中にエラーが発生しました:', error);
+        logger.error('アプリケーションの起動中にエラーが発生しました', error, 'App');
         process.exit(1);
     }
 }
 
 /**
- * サンプルメールを使ったテスト実行関数
+ * ロガーを初期化する関数
  */
-async function testWithSampleMail(
-    sampleMailPath: string,
-    processEmailUseCase: ProcessEmailUseCase,
-    cardCompany: CardCompany = CardCompany.MUFG
-): Promise<any> {
-    const fs = require('fs');
-
-    // サンプルメールの読み込み
-    console.log('📄 サンプルメールを読み込んでいます:', sampleMailPath);
-    const sampleMailContent = fs.readFileSync(sampleMailPath, 'utf8');
-
-    // テスト実行
-    return processEmailUseCase.executeTest(sampleMailContent, cardCompany);
+function initializeLogger(): void {
+    logger.setConfig({
+        level: Environment.LOG_LEVEL === 'DEBUG' ? LogLevel.DEBUG : 
+              Environment.LOG_LEVEL === 'WARN' ? LogLevel.WARN : 
+              Environment.LOG_LEVEL === 'ERROR' ? LogLevel.ERROR : 
+              Environment.LOG_LEVEL === 'NONE' ? LogLevel.NONE : LogLevel.INFO,
+        suppressPolling: Environment.SUPPRESS_POLLING_LOGS,
+        compactMode: Environment.COMPACT_LOGS,
+        statusRefreshInterval: Environment.STATUS_REFRESH_INTERVAL
+    });
 }
 
 // アプリケーションの起動
 bootstrap()
-    .then(() => console.log('✅ アプリケーションが正常に起動しました'))
+    .then(() => logger.info('アプリケーションが正常に起動しました', 'App'))
     .catch(error => {
-        console.error('❌ 予期せぬエラーが発生しました:', error);
+        logger.error('予期せぬエラーが発生しました', error, 'App');
         process.exit(1);
     });

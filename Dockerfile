@@ -14,6 +14,12 @@ WORKDIR /usr/src/app
 ENV PORT=3000
 ENV TZ=Asia/Tokyo
 
+# ログ関連の環境変数
+ENV LOG_LEVEL=INFO
+ENV COMPACT_LOGS=false
+ENV SUPPRESS_POLLING_LOGS=true
+ENV STATUS_REFRESH_INTERVAL=30000
+
 # パッケージ定義ファイルをコピーして、依存関係をインストール
 COPY package*.json ./
 RUN npm install

@@ -54,6 +54,12 @@ try {
         'require("./shared/firebase/FirestoreService")'
     );
 
+    // 認証ミドルウェアのインポートパスを修正
+    content = content.replace(
+        /require\("\.\.\/\.\.\/shared\/firebase\/AuthMiddleware"\)/g,
+        'require("./shared/firebase/AuthMiddleware")'
+    );
+
     // errors関連のインポートパスを修正
     content = content.replace(
         /require\("\.\.\/\.\.\/shared\/errors\/AppError"\)/g,

@@ -1,11 +1,9 @@
+import { CardUsage } from '../../src/domain/entities/CardUsage';
+
 /**
  * Discord通知用のデータモデル
+ * CardUsageエンティティからcreated_atを除外し、datetime_of_useを文字列型に変更
  */
-export interface CardUsageNotification {
-    card_name: string;
+export type CardUsageNotification = Omit<CardUsage, 'datetime_of_use' | 'created_at'> & {
     datetime_of_use: string;
-    amount: number;
-    where_to_use: string;
-    memo?: string; // メモ（オプション）
-    is_active?: boolean; // 有効かどうか（非表示フラグ）
-}
+};

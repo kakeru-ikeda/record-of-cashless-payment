@@ -26,6 +26,3 @@ export interface CardUsage {
   created_at: Timestamp;
 }
 
-// CardUsageNotificationインターフェースはshared/types/CardUsageNotification.tsに移動しました
-export { CardUsageNotification } from '../../../shared/types/CardUsageNotification';
-

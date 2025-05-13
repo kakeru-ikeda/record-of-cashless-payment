@@ -5,6 +5,8 @@ import {
     DailyReportNotification,
     MonthlyReportNotification,
 } from '../types/reports/ReportNotifications';
+import { logger } from '../utils/Logger';
+import { AppError, ErrorType } from '../errors/AppError';
 
 /**
  * 通知の種類を表す列挙型
@@ -55,6 +57,7 @@ export interface DiscordNotifier {
  * Discordを使用した通知のプレゼンター実装
  */
 export class DiscordWebhookNotifier implements DiscordNotifier {
+    private readonly serviceContext = 'DiscordNotifier';
     // 各種通知用Webhook URL
     private readonly usageWebhookUrl: string;            // 利用明細通知用
     private readonly alertWeeklyWebhookUrl: string;      // 週次アラート通知用
@@ -125,29 +128,40 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
     ): Promise<boolean> {
         try {
             if (!webhookUrl) {
-                console.log(`ℹ️ ${notificationType}用のDiscord WebhookのURLが設定されていないため、通知はスキップされました`);
+                logger.warn(`${notificationType}用のDiscord WebhookのURLが設定されていないため、通知はスキップされました`, this.serviceContext);
                 return false;
             }
 
             // WebhookのURLが有効かチェック
             if (!webhookUrl.startsWith('https://discord.com/api/webhooks/')) {
-                console.error(`❌ ${notificationType}用のDiscord WebhookのURLが無効です`);
+                logger.error(`${notificationType}用のDiscord WebhookのURLが無効です`, null, this.serviceContext);
                 return false;
             }
 
-            console.log(`📤 ${notificationType}の通知を送信しています...`);
+            logger.info(`${notificationType}の通知を送信しています...`, this.serviceContext);
 
             const response = await axios.post(webhookUrl, { embeds });
 
             if (response.status === 204 || response.status === 200) {
-                console.log(`✅ ${notificationType}の通知を送信しました`);
+                logger.info(`${notificationType}の通知を送信しました`, this.serviceContext);
                 return true;
             } else {
-                console.error(`❌ ${notificationType}の通知の送信に失敗しました。ステータスコード:`, response.status);
+                const appError = new AppError(
+                    `${notificationType}の通知の送信に失敗しました`,
+                    ErrorType.DISCORD,
+                    { statusCode: response.status }
+                );
+                logger.logAppError(appError, this.serviceContext);
                 return false;
             }
         } catch (error) {
-            console.error(`❌ ${notificationType}の通知の送信中にエラーが発生しました:`, error);
+            const appError = new AppError(
+                `${notificationType}の通知の送信中にエラーが発生しました`,
+                ErrorType.DISCORD,
+                { notificationType },
+                error instanceof Error ? error : undefined
+            );
+            logger.logAppError(appError, this.serviceContext);
             return false;
         }
     }
@@ -197,7 +211,13 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
 
             return this.sendDiscordNotification(webhookUrl, embeds, 'カード利用');
         } catch (error) {
-            console.error('❌ Discord通知の送信中にエラーが発生しました:', error);
+            const appError = new AppError(
+                'Discord通知の送信中にエラーが発生しました',
+                ErrorType.DISCORD,
+                { notificationType: 'カード利用通知' },
+                error instanceof Error ? error : undefined
+            );
+            logger.logAppError(appError, this.serviceContext);
             return false;
         }
     }
@@ -272,7 +292,13 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
 
             return this.sendDiscordNotification(webhookUrl, embeds, description);
         } catch (error) {
-            console.error('❌ ウィークリーレポートの通知の送信中にエラーが発生しました:', error);
+            const appError = new AppError(
+                'ウィークリーレポートの通知の送信中にエラーが発生しました',
+                ErrorType.DISCORD,
+                { reportType: 'weekly', alertLevel: data.alertLevel },
+                error instanceof Error ? error : undefined
+            );
+            logger.logAppError(appError, this.serviceContext);
             return false;
         }
     }
@@ -319,7 +345,13 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
 
             return this.sendDiscordNotification(webhookUrl, embeds, 'デイリーレポート');
         } catch (error) {
-            console.error('❌ デイリーレポートの通知の送信中にエラーが発生しました:', error);
+            const appError = new AppError(
+                'デイリーレポートの通知の送信中にエラーが発生しました',
+                ErrorType.DISCORD,
+                { reportType: 'daily', date: data.date },
+                error instanceof Error ? error : undefined
+            );
+            logger.logAppError(appError, this.serviceContext);
             return false;
         }
     }
@@ -394,7 +426,13 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
 
             return this.sendDiscordNotification(webhookUrl, embeds, description);
         } catch (error) {
-            console.error('❌ マンスリーレポートの通知の送信中にエラーが発生しました:', error);
+            const appError = new AppError(
+                'マンスリーレポートの通知の送信中にエラーが発生しました',
+                ErrorType.DISCORD,
+                { reportType: 'monthly', alertLevel: data.alertLevel },
+                error instanceof Error ? error : undefined
+            );
+            logger.logAppError(appError, this.serviceContext);
             return false;
         }
     }
