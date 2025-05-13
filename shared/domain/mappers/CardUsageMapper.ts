@@ -1,4 +1,4 @@
-import { CardUsage } from '../../../src/domain/entities/CardUsage';
+import { CardUsage } from '../entities/CardUsage';
 import { CardUsageNotification } from '../entities/CardUsageNotification';
 
 /**
