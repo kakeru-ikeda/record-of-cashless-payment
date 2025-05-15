@@ -23,15 +23,11 @@ export class EmailController {
 
   /**
    * コンストラクタ
-   * @param emailService メールサービス
    * @param processEmailUseCase メール処理ユースケース
    */
   constructor(
-    private readonly emailService: ImapEmailService,
     private readonly processEmailUseCase: ProcessEmailUseCase
   ) {
-    // デフォルトのメールサービスをセット
-    this.emailServices['default'] = emailService;
     logger.updateServiceStatus(this.serviceContext, 'offline', '初期化済み');
   }
   
@@ -154,69 +150,6 @@ export class EmailController {
             `メールボックス "${mailboxName}" への接続に失敗しました`,
             ErrorType.EMAIL,
             { mailboxName, cardCompany },
-            error instanceof Error ? error : undefined
-          );
-      
-      logger.logAppError(appError, context);
-      logger.updateServiceStatus(context, 'error', '接続に失敗しました');
-      
-      // エラーを再スロー
-      throw appError;
-    }
-  }
-  
-  /**
-   * メール監視を開始 (後方互換性のために残しています)
-   * @param mailboxName 監視対象のメールボックス名
-   */
-  async startMonitoring(mailboxName?: string): Promise<void> {
-    const context = `${this.serviceContext}:Legacy`;
-    logger.info(`メール監視を開始します: ${mailboxName || 'デフォルトボックス'}`, context);
-    
-    try {
-      await this.emailService.connect(mailboxName, async (email: ParsedEmail) => {
-        try {
-          logger.info(`新しいメールを受信しました: ${email.subject}`, context);
-          logger.debug(`送信者: ${email.from}`, context);
-          logger.debug(`本文サンプル: ${email.body.substring(0, 100)}...`, context);
-
-          // カード会社判定
-          const cardCompany = this.detectCardCompany(email);
-          
-          if (cardCompany) {
-            logger.info(`${cardCompany}のメールを検出しました`, context);
-            
-            // メール本文からカード利用情報を抽出して保存
-            await this.processEmailUseCase.execute(email.body, cardCompany);
-          } else {
-            const warnAppError = new AppError(
-              'カード会社を特定できませんでした', 
-              ErrorType.EMAIL, 
-              { subject: email.subject, from: email.from }
-            );
-            logger.logAppError(warnAppError, context);
-          }
-        } catch (error) {
-          // メール処理エラーをAppErrorに変換してログ出力
-          const appError = error instanceof AppError
-            ? error
-            : new AppError(
-                'メール処理中にエラーが発生しました',
-                ErrorType.EMAIL,
-                { subject: email.subject, from: email.from },
-                error instanceof Error ? error : undefined
-              );
-          
-          logger.logAppError(appError, context);
-        }
-      });
-    } catch (error) {
-      const appError = error instanceof AppError
-        ? error
-        : new AppError(
-            `メールボックス "${mailboxName}" への接続に失敗しました`,
-            ErrorType.EMAIL,
-            { mailboxName },
             error instanceof Error ? error : undefined
           );
       
