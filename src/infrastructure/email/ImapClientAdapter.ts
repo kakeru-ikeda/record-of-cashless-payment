@@ -68,7 +68,24 @@ export class ImapClientAdapter extends EventEmitter {
         logger: false,
         emitLogs: false
       });
-
+      
+      // エラーイベントをキャッチして、未処理のエラーを防ぐ
+      this.client.on('error', (err) => {
+        const appError = new AppError(
+          'IMAPクライアントでエラーが発生しました',
+          ErrorType.EMAIL,
+          { code: err.code, message: err.message },
+          err
+        );
+        logger.logAppError(appError, context);
+        
+        this.isConnected = false;
+        logger.updateServiceStatus(context, 'error', `接続エラー: ${err.message || err}`);
+        
+        // connectionLostイベントを発生させ、再接続メカニズムをトリガーする
+        this.emit('connectionLost', this.currentMailbox);
+      });
+      
       // サーバーに接続
       await this.client.connect();
       logger.info("IMAPサーバーに接続しました", context);
@@ -365,8 +382,16 @@ export class ImapClientAdapter extends EventEmitter {
     
     if (this.client) {
       try {
-        await this.client.logout();
-        logger.info('IMAP接続を安全にクローズしました', context);
+        // エラーイベントリスナーを削除
+        this.client.removeAllListeners('error');
+        
+        // 接続が既にない場合はlogoutをスキップ
+        if (this.isConnected) {
+          await this.client.logout();
+          logger.info('IMAP接続を安全にクローズしました', context);
+        } else {
+          logger.info('IMAP接続は既に切断されています', context);
+        }
         logger.updateServiceStatus(context, 'offline', '接続を閉じました');
       } catch (error) {
         const appError = new AppError(
