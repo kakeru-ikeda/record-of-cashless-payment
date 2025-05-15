@@ -48,7 +48,7 @@ export class DependencyContainer {
     logger.updateServiceStatus('ProcessEmailUseCase', 'online', '初期化完了');
 
     // コントローラーの初期化
-    this.emailController = new EmailController(this.emailService, this.processEmailUseCase);
+    this.emailController = new EmailController(this.processEmailUseCase);
     logger.updateServiceStatus('EmailController', 'online', '初期化完了');
   }
 

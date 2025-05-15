@@ -95,7 +95,7 @@ describe('EmailController', () => {
     ) as jest.Mocked<ProcessEmailUseCase>;
 
     // EmailControllerのインスタンスを作成
-    emailController = new EmailController(mockEmailService, mockProcessEmailUseCase);
+    emailController = new EmailController(mockProcessEmailUseCase);
   });
 
   describe('isMonitoring', () => {
