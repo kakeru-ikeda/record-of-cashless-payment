@@ -260,7 +260,7 @@ export class MonitoringController {
 <body>
   <div class="container">
     <div class="dashboard-header">
-      <h1>サーバーモニタリングダッシュボード</h1>
+      <h1>RoCP Service Monitoring Dashboard</h1>
       <button class="refresh-button" onclick="refreshData()">更新</button>
     </div>
     
