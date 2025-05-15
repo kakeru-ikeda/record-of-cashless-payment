@@ -1,24 +1,41 @@
 import { ImapClientAdapter, ImapConnectionConfig } from '../../../../src/infrastructure/email/ImapClientAdapter';
 import { AppError, ErrorType } from '../../../../shared/errors/AppError';
+import { EventEmitter } from 'events';
 
 // ImapFlowのモックを作成するファクトリー関数
-const createMockImapFlow = () => ({
-  connect: jest.fn().mockResolvedValue(undefined),
-  logout: jest.fn().mockResolvedValue(undefined),
-  mailboxOpen: jest.fn().mockResolvedValue({ exists: 10, name: 'INBOX' }),
-  list: jest.fn().mockResolvedValue([
-    { path: 'INBOX', name: 'INBOX', children: [] },
-    { path: 'Sent', name: 'Sent', children: [] },
-    { path: 'Archive', name: 'Archive', children: [] }
-  ]),
-  search: jest.fn().mockResolvedValue([100, 101, 102]),
-  fetchOne: jest.fn().mockResolvedValue({ 
-    uid: '12345',
-    source: Buffer.from('テストメール本文') 
-  }),
-  messageFlagsAdd: jest.fn().mockResolvedValue(true),
-  noop: jest.fn().mockResolvedValue(undefined)
-});
+const createMockImapFlow = () => {
+  // EventEmitterを継承したモックオブジェクトを作成
+  const mockEmitter = new EventEmitter();
+  return {
+    connect: jest.fn().mockResolvedValue(undefined),
+    logout: jest.fn().mockResolvedValue(undefined),
+    mailboxOpen: jest.fn().mockResolvedValue({ exists: 10, name: 'INBOX' }),
+    list: jest.fn().mockResolvedValue([
+      { path: 'INBOX', name: 'INBOX', children: [] },
+      { path: 'Sent', name: 'Sent', children: [] },
+      { path: 'Archive', name: 'Archive', children: [] }
+    ]),
+    search: jest.fn().mockResolvedValue([100, 101, 102]),
+    fetchOne: jest.fn().mockResolvedValue({ 
+      uid: '12345',
+      source: Buffer.from('テストメール本文') 
+    }),
+    messageFlagsAdd: jest.fn().mockResolvedValue(true),
+    noop: jest.fn().mockResolvedValue(undefined),
+    // EventEmitterメソッドをモック
+    on: jest.fn((event, handler) => {
+      mockEmitter.on(event, handler);
+      return mockEmitter;
+    }),
+    removeAllListeners: jest.fn((event) => {
+      mockEmitter.removeAllListeners(event);
+      return mockEmitter;
+    }),
+    emit: jest.fn((event, ...args) => {
+      return mockEmitter.emit(event, ...args);
+    })
+  };
+};
 
 // ImapFlowのモックインスタンス
 let mockImapFlowInstance: ReturnType<typeof createMockImapFlow>;
@@ -81,6 +98,9 @@ describe('ImapClientAdapter', () => {
       logger: false,
       emitLogs: false
     });
+    
+    // エラーイベントリスナーが登録されたか確認
+    expect(mockImapFlowInstance.on).toHaveBeenCalledWith('error', expect.any(Function));
     
     // 接続メソッドが呼ばれることを検証
     expect(mockImapFlowInstance.connect).toHaveBeenCalled();
@@ -196,6 +216,9 @@ describe('ImapClientAdapter', () => {
     // 切断
     await adapter.close();
     
+    // イベントリスナーが削除されることを確認
+    expect(mockImapFlowInstance.removeAllListeners).toHaveBeenCalledWith('error');
+    
     // logout メソッドが呼ばれることを確認
     expect(mockImapFlowInstance.logout).toHaveBeenCalled();
   });
@@ -227,5 +250,23 @@ describe('ImapClientAdapter', () => {
     
     // イベントが発行されたことを確認
     expect(connectionLostHandler).toHaveBeenCalledWith('INBOX');
+  });
+  
+  test('正常系: エラーイベント発生時に再接続が試行されること', async () => {
+    // 接続
+    await adapter.connect('INBOX');
+    
+    // connectionLostイベントをスパイ
+    const emitSpy = jest.spyOn(adapter, 'emit');
+    
+    // エラーイベントをシミュレート
+    const mockError = { code: 'ECONNRESET', message: 'Connection reset' };
+    mockImapFlowInstance.emit('error', mockError);
+    
+    // connectionLostイベントが発行されることを確認
+    expect(emitSpy).toHaveBeenCalledWith('connectionLost', expect.any(String));
+    
+    // 接続状態が更新されることを確認
+    expect(adapter.isActive()).toBe(false);
   });
 });
