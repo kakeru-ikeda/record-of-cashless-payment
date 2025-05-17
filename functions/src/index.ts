@@ -9,7 +9,7 @@ import { WeeklyReportService } from './services/reports/WeeklyReportService';
 import { DailyReportService } from './services/reports/DailyReportService';
 import { MonthlyReportService } from './services/reports/MonthlyReportService';
 import { DateUtil } from '../../shared/utils/DateUtil';
-import { app as apiApp } from './api';
+import { app as apiApp } from './api/app';
 
 // Firestoreサービスの初期化
 const firestoreService = FirestoreService.getInstance();
@@ -18,6 +18,7 @@ firestoreService.initialize();
 
 // Discord Webhook URL取得 - 細分化されたWebhook URL対応
 let DISCORD_WEBHOOK_URL = '';
+let DISCORD_LOGGING_WEBHOOK_URL = '';
 let DISCORD_ALERT_WEEKLY_WEBHOOK_URL = '';
 let DISCORD_ALERT_MONTHLY_WEBHOOK_URL = '';
 let DISCORD_REPORT_DAILY_WEBHOOK_URL = '';
@@ -25,8 +26,11 @@ let DISCORD_REPORT_WEEKLY_WEBHOOK_URL = '';
 let DISCORD_REPORT_MONTHLY_WEBHOOK_URL = '';
 
 try {
-    // 各種Webhook URLの取得
+    // 利用明細通知用Webhook URL
     DISCORD_WEBHOOK_URL = Environment.getDiscordWebhookUrl();
+
+    // ロギング用Webhook URL
+    DISCORD_LOGGING_WEBHOOK_URL = Environment.getDiscordLoggingWebhookUrl();
 
     // アラート通知用Webhook URL
     DISCORD_ALERT_WEEKLY_WEBHOOK_URL = Environment.getDiscordAlertWeeklyWebhookUrl();
@@ -40,6 +44,10 @@ try {
     // Webhook URLのログ出力
     if (DISCORD_WEBHOOK_URL) {
         console.log('✅ 環境変数から利用明細通知用のDISCORD_WEBHOOK_URLを取得しました');
+    }
+
+    if (DISCORD_LOGGING_WEBHOOK_URL) {
+        console.log('✅ 環境変数からロギング用のDISCORD_LOGGING_WEBHOOK_URLを取得しました');
     }
 
     if (DISCORD_ALERT_WEEKLY_WEBHOOK_URL) {
@@ -66,14 +74,15 @@ try {
 }
 
 // Discord通知インスタンス - 細分化されたWebhook URLを設定
-const discordNotifier = new DiscordWebhookNotifier(
-    DISCORD_WEBHOOK_URL, // 利用明細通知用
-    DISCORD_ALERT_WEEKLY_WEBHOOK_URL, // 週次アラート通知用
-    DISCORD_ALERT_MONTHLY_WEBHOOK_URL, // 月次アラート通知用
-    DISCORD_REPORT_DAILY_WEBHOOK_URL, // 日次レポート通知用
-    DISCORD_REPORT_WEEKLY_WEBHOOK_URL, // 週次レポート通知用
-    DISCORD_REPORT_MONTHLY_WEBHOOK_URL // 月次レポート通知用
-);
+const discordNotifier = new DiscordWebhookNotifier({
+    usageWebhookUrl: DISCORD_WEBHOOK_URL,
+    loggingWebhookUrl: DISCORD_LOGGING_WEBHOOK_URL,
+    alertWeeklyWebhookUrl: DISCORD_ALERT_WEEKLY_WEBHOOK_URL,
+    alertMonthlyWebhookUrl: DISCORD_ALERT_MONTHLY_WEBHOOK_URL,
+    reportDailyWebhookUrl: DISCORD_REPORT_DAILY_WEBHOOK_URL,
+    reportWeeklyWebhookUrl: DISCORD_REPORT_WEEKLY_WEBHOOK_URL,
+    reportMonthlyWebhookUrl: DISCORD_REPORT_MONTHLY_WEBHOOK_URL,
+});
 
 // 各種レポートサービスの初期化
 const weeklyReportService = new WeeklyReportService(firestoreService, discordNotifier);
