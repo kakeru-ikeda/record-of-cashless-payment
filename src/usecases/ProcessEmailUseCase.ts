@@ -1,10 +1,8 @@
 import * as admin from 'firebase-admin';
 import { CardUsage } from '../domain/entities/CardUsage';
 import { CardUsageNotification } from '../../shared/domain/entities/CardUsageNotification';
-import { CardUsageMapper } from '../../shared/domain/mappers/CardUsageMapper';
 import { ICardUsageRepository } from '../domain/repositories/ICardUsageRepository';
 import { ImapEmailService, CardCompany } from '../infrastructure/email/ImapEmailService';
-import { DiscordNotifier } from '../../shared/discord/DiscordNotifier';
 import { logger } from '../../shared/utils/Logger';
 import { AppError, ErrorType } from '../../shared/errors/AppError';
 
@@ -18,23 +16,21 @@ export class ProcessEmailUseCase {
    * コンストラクタ
    * @param emailService メールサービス
    * @param cardUsageRepository カード利用情報リポジトリ
-   * @param discordNotifier Discord通知
    */
   constructor(
     private readonly emailService: ImapEmailService,
-    private readonly cardUsageRepository: ICardUsageRepository,
-    private readonly discordNotifier: DiscordNotifier
+    private readonly cardUsageRepository: ICardUsageRepository
   ) {
     logger.updateServiceStatus(this.serviceContext, 'online', '初期化完了');
   }
 
   /**
-   * メール本文を処理してカード利用情報を抽出・保存・通知する
+   * メール本文を処理してカード利用情報を抽出・保存する
    * @param emailBody メール本文
    * @param cardCompany カード会社の種類
-   * @returns 保存されたパス
+   * @returns 処理されたカード利用情報と保存パス
    */
-  async execute(emailBody: string, cardCompany: CardCompany = CardCompany.MUFG): Promise<string> {
+  async execute(emailBody: string, cardCompany: CardCompany = CardCompany.MUFG): Promise<{usage: CardUsageNotification, savedPath: string}> {
     try {
       logger.info(`${cardCompany}のメール本文の解析を開始します...`, this.serviceContext);
 
@@ -61,23 +57,8 @@ export class ProcessEmailUseCase {
       const savedPath = await this.cardUsageRepository.save(cardUsageEntity);
       logger.info(`カード利用情報を保存しました: ${savedPath}`, this.serviceContext);
 
-      try {
-        // Discord通知を送信
-        await this.discordNotifier.notify(usage);
-        logger.info('Discord通知を送信しました', this.serviceContext);
-      } catch (notifyError) {
-        // 通知エラーはログに記録するが処理は続行
-        const appError = new AppError(
-          'Discord通知の送信に失敗しました',
-          ErrorType.DISCORD,
-          { usage },
-          notifyError instanceof Error ? notifyError : new Error(String(notifyError))
-        );
-        logger.logAppError(appError, this.serviceContext);
-        throw appError;
-      }
-
-      return savedPath;
+      // 処理したカード利用情報と保存パスを返す
+      return { usage, savedPath };
     } catch (error) {
       // AppErrorかどうかを確認
       if (error instanceof AppError) {
@@ -90,6 +71,7 @@ export class ProcessEmailUseCase {
           error instanceof Error ? error : new Error(String(error))
         );
         logger.logAppError(appError, this.serviceContext);
+        throw appError;
       }
       throw error;
     }
@@ -104,7 +86,6 @@ export class ProcessEmailUseCase {
   async executeTest(emailBody: string, cardCompany: CardCompany = CardCompany.MUFG): Promise<{
     parsedData: CardUsageNotification;
     savedPath: string;
-    notificationSent: boolean;
   }> {
     try {
       logger.info(`テストモードで${cardCompany}のメール処理を実行します`, this.serviceContext);
@@ -131,14 +112,9 @@ export class ProcessEmailUseCase {
       const savedPath = await this.cardUsageRepository.save(cardUsageEntity);
       logger.info('カード利用情報を保存しました: ' + savedPath, this.serviceContext);
 
-      // Discord通知を送信
-      const notificationSent = await this.discordNotifier.notify(usage);
-      logger.info('Discord通知を送信しました', this.serviceContext);
-
       return {
         parsedData: usage,
-        savedPath,
-        notificationSent
+        savedPath
       };
     } catch (error) {
       const appError = new AppError(
@@ -148,7 +124,7 @@ export class ProcessEmailUseCase {
         error instanceof Error ? error : new Error(String(error))
       );
       logger.logAppError(appError, this.serviceContext);
-      throw error;
+      throw appError;
     }
   }
 }

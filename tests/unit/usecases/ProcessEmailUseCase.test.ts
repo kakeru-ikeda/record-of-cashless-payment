@@ -74,11 +74,10 @@ describe('ProcessEmailUseCase', () => {
       notify: jest.fn().mockResolvedValue(true)
     } as unknown as jest.Mocked<DiscordNotifier>;
 
-    // ProcessEmailUseCaseのインスタンスを作成
+    // ProcessEmailUseCaseのインスタンスを作成 (discordNotifierを除去)
     processEmailUseCase = new ProcessEmailUseCase(
       mockEmailService,
-      mockCardUsageRepository,
-      mockDiscordNotifier
+      mockCardUsageRepository
     );
   });
 
@@ -109,11 +108,14 @@ describe('ProcessEmailUseCase', () => {
         created_at: 'mocked-server-timestamp'
       });
 
-      // Discordに通知されることを確認
-      expect(mockDiscordNotifier.notify).toHaveBeenCalledWith(sampleCardUsage);
+      // Discordに通知は行われない (Controllerの責務に移動したため)
+      expect(mockDiscordNotifier.notify).not.toHaveBeenCalled();
 
-      // 保存パスが正しく返されることを確認
-      expect(result).toBe('users/2025/5/10/card-usage-123');
+      // 戻り値が正しいか確認（オブジェクト形式に変更）
+      expect(result).toEqual({
+        usage: sampleCardUsage,
+        savedPath: 'users/2025/5/10/card-usage-123'
+      });
     });
 
     test('異常系: メール解析に失敗した場合、エラーがスローされること', async () => {
@@ -124,7 +126,7 @@ describe('ProcessEmailUseCase', () => {
 
       // 例外がスローされることを確認
       await expect(processEmailUseCase.execute(sampleEmailBody, CardCompany.MUFG))
-        .rejects.toThrow('メール解析エラー');
+        .rejects.toThrow('メール処理中にエラーが発生しました');
 
       // エラーがログに記録されることを確認
       expect(require('../../../shared/utils/Logger').logger.logAppError).toHaveBeenCalled();
@@ -138,23 +140,9 @@ describe('ProcessEmailUseCase', () => {
 
       // 例外がスローされることを確認
       await expect(processEmailUseCase.execute(sampleEmailBody, CardCompany.MUFG))
-        .rejects.toThrow('保存エラー');
+        .rejects.toThrow('メール処理中にエラーが発生しました');
 
       // エラーがログに記録されることを確認
-      expect(require('../../../shared/utils/Logger').logger.logAppError).toHaveBeenCalled();
-    });
-
-    test('異常系: Discord通知に失敗した場合、エラーがスローされること', async () => {
-      // notifyメソッドで例外が発生するようモックを設定
-      mockDiscordNotifier.notify.mockRejectedValueOnce(
-        new Error('通知エラー')
-      );
-
-      // 例外がスローされることを確認
-      await expect(processEmailUseCase.execute(sampleEmailBody, CardCompany.MUFG))
-        .rejects.toThrow();
-
-      // エラーがAppErrorとしてログに記録されることを確認
       expect(require('../../../shared/utils/Logger').logger.logAppError).toHaveBeenCalled();
     });
 
@@ -184,14 +172,13 @@ describe('ProcessEmailUseCase', () => {
       // リポジトリのsaveメソッドが呼ばれることを確認
       expect(mockCardUsageRepository.save).toHaveBeenCalled();
 
-      // Discordに通知されることを確認
-      expect(mockDiscordNotifier.notify).toHaveBeenCalledWith(sampleCardUsage);
+      // Discordに通知されないことを確認（Controllerの責務に移行したため）
+      expect(mockDiscordNotifier.notify).not.toHaveBeenCalled();
 
-      // 結果が正しい形式で返されることを確認
+      // 結果が正しい形式で返されることを確認（notificationSentフィールドが削除された）
       expect(result).toEqual({
         parsedData: sampleCardUsage,
-        savedPath: 'users/2025/5/10/card-usage-123',
-        notificationSent: true
+        savedPath: 'users/2025/5/10/card-usage-123'
       });
     });
 
@@ -203,7 +190,7 @@ describe('ProcessEmailUseCase', () => {
 
       // 例外がスローされることを確認
       await expect(processEmailUseCase.executeTest(sampleEmailBody, CardCompany.MUFG))
-        .rejects.toThrow('テスト実行エラー');
+        .rejects.toThrow('MUFGのテスト実行中にエラーが発生しました');
 
       // エラーがログに記録されることを確認
       expect(require('../../../shared/utils/Logger').logger.logAppError).toHaveBeenCalled();
