@@ -178,7 +178,7 @@ export class Logger {
     if (this.config.level <= LogLevel.INFO) {
       // ポーリングログの抑制
       if (this.config.suppressPolling && message.includes('ポーリング')) {
-        this.handleSuppression('polling', message, context);
+        this.handleSuppression('polling', message, context, 'info');
         return;
       }
       this.log(message, context, 'info');
@@ -393,14 +393,14 @@ export class Logger {
   /**
    * 重複ログの抑制処理
    */
-  private handleSuppression(key: string, message: string, context?: string): void {
+  private handleSuppression(key: string, message: string, context?: string, level: 'debug' | 'info' | 'warn' | 'error' = 'info'): void {
     const now = Date.now();
     const record = this.suppressedMessages.get(key);
 
     if (!record) {
       // 初めてのメッセージは記録して通常出力
       this.suppressedMessages.set(key, { count: 1, lastTime: now });
-      this.log(message, context, 'debug');
+      this.log(message, context, level);
       return;
     }
 
@@ -409,7 +409,7 @@ export class Logger {
 
     // 一定時間経過後に集計を出力
     if (now - record.lastTime > this.suppressionInterval) {
-      this.log(`${key}メッセージが${record.count}回抑制されました（最後の1分間）`, context, 'debug');
+      this.log(`${key}メッセージが${record.count}回抑制されました（最後の1分間）`, context, level);
       record.count = 0;
       record.lastTime = now;
     }

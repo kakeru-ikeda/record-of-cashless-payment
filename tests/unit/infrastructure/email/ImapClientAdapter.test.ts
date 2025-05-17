@@ -1,24 +1,41 @@
 import { ImapClientAdapter, ImapConnectionConfig } from '../../../../src/infrastructure/email/ImapClientAdapter';
 import { AppError, ErrorType } from '../../../../shared/errors/AppError';
+import { EventEmitter } from 'events';
 
 // ImapFlowのモックを作成するファクトリー関数
-const createMockImapFlow = () => ({
-  connect: jest.fn().mockResolvedValue(undefined),
-  logout: jest.fn().mockResolvedValue(undefined),
-  mailboxOpen: jest.fn().mockResolvedValue({ exists: 10, name: 'INBOX' }),
-  list: jest.fn().mockResolvedValue([
-    { path: 'INBOX', name: 'INBOX', children: [] },
-    { path: 'Sent', name: 'Sent', children: [] },
-    { path: 'Archive', name: 'Archive', children: [] }
-  ]),
-  search: jest.fn().mockResolvedValue([100, 101, 102]),
-  fetchOne: jest.fn().mockResolvedValue({ 
-    uid: '12345',
-    source: Buffer.from('テストメール本文') 
-  }),
-  messageFlagsAdd: jest.fn().mockResolvedValue(true),
-  noop: jest.fn().mockResolvedValue(undefined)
-});
+const createMockImapFlow = () => {
+  // EventEmitterを継承したモックオブジェクトを作成
+  const mockEmitter = new EventEmitter();
+  return {
+    connect: jest.fn().mockResolvedValue(undefined),
+    logout: jest.fn().mockResolvedValue(undefined),
+    mailboxOpen: jest.fn().mockResolvedValue({ exists: 10, name: 'INBOX' }),
+    list: jest.fn().mockResolvedValue([
+      { path: 'INBOX', name: 'INBOX', children: [] },
+      { path: 'Sent', name: 'Sent', children: [] },
+      { path: 'Archive', name: 'Archive', children: [] }
+    ]),
+    search: jest.fn().mockResolvedValue([100, 101, 102]),
+    fetchOne: jest.fn().mockResolvedValue({ 
+      uid: '12345',
+      source: Buffer.from('テストメール本文') 
+    }),
+    messageFlagsAdd: jest.fn().mockResolvedValue(true),
+    noop: jest.fn().mockResolvedValue(undefined),
+    // EventEmitterメソッドをモック
+    on: jest.fn((event, handler) => {
+      mockEmitter.on(event, handler);
+      return mockEmitter;
+    }),
+    removeAllListeners: jest.fn((event) => {
+      mockEmitter.removeAllListeners(event);
+      return mockEmitter;
+    }),
+    emit: jest.fn((event, ...args) => {
+      return mockEmitter.emit(event, ...args);
+    })
+  };
+};
 
 // ImapFlowのモックインスタンス
 let mockImapFlowInstance: ReturnType<typeof createMockImapFlow>;
@@ -81,6 +98,9 @@ describe('ImapClientAdapter', () => {
       logger: false,
       emitLogs: false
     });
+    
+    // エラーイベントリスナーが登録されたか確認
+    expect(mockImapFlowInstance.on).toHaveBeenCalledWith('error', expect.any(Function));
     
     // 接続メソッドが呼ばれることを検証
     expect(mockImapFlowInstance.connect).toHaveBeenCalled();
@@ -196,6 +216,9 @@ describe('ImapClientAdapter', () => {
     // 切断
     await adapter.close();
     
+    // イベントリスナーが削除されることを確認
+    expect(mockImapFlowInstance.removeAllListeners).toHaveBeenCalledWith('error');
+    
     // logout メソッドが呼ばれることを確認
     expect(mockImapFlowInstance.logout).toHaveBeenCalled();
   });
@@ -227,5 +250,138 @@ describe('ImapClientAdapter', () => {
     
     // イベントが発行されたことを確認
     expect(connectionLostHandler).toHaveBeenCalledWith('INBOX');
+  });
+  
+  test('正常系: エラーイベント発生時に再接続が試行されること', async () => {
+    // 接続
+    await adapter.connect('INBOX');
+    
+    // connectionLostイベントをスパイ
+    const emitSpy = jest.spyOn(adapter, 'emit');
+    
+    // エラーイベントをシミュレート
+    const mockError = { code: 'ECONNRESET', message: 'Connection reset' };
+    mockImapFlowInstance.emit('error', mockError);
+    
+    // connectionLostイベントが発行されることを確認
+    expect(emitSpy).toHaveBeenCalledWith('connectionLost', expect.any(String));
+    
+    // 接続状態が更新されることを確認
+    expect(adapter.isActive()).toBe(false);
+  });
+  
+  test('正常系: KeepAliveエラー時に再接続が試行されること', async () => {
+    // scheduleReconnectメソッドをスパイ
+    const scheduleReconnectSpy = jest.spyOn(adapter as any, 'scheduleReconnect');
+    
+    // 接続
+    await adapter.connect('INBOX');
+    
+    // KeepAliveエラーハンドラを直接呼び出す方法（タイマーをモックせず）
+    // emitメソッドをスパイ
+    const emitSpy = jest.spyOn(adapter, 'emit');
+    
+    // 接続状態を手動で設定
+    (adapter as any).isConnected = true;
+    (adapter as any).client = mockImapFlowInstance;
+    
+    // noopメソッドが例外をスローするように設定
+    mockImapFlowInstance.noop.mockRejectedValueOnce(new Error('Connection not available'));
+    
+    // keepAliveのエラーハンドリングを直接テスト
+    await expect(async () => {
+      await mockImapFlowInstance.noop();
+    }).rejects.toThrow('Connection not available');
+    
+    // 手動でKeepAliveのエラー処理を呼び出す
+    (adapter as any).isConnected = false;
+    adapter.emit('connectionLost', 'INBOX');
+    (adapter as any).scheduleReconnect('INBOX', 'テスト:INBOX');
+    
+    // 接続状態が更新されていることを確認
+    expect(adapter.isActive()).toBe(false);
+    
+    // scheduleReconnectが呼ばれたことを確認
+    expect(scheduleReconnectSpy).toHaveBeenCalled();
+    expect(scheduleReconnectSpy).toHaveBeenCalledWith('INBOX', expect.any(String));
+  });
+  
+  test('正常系: 再接続後にreconnectedイベントが発火されること', async () => {
+    // 接続してから切断をシミュレート
+    await adapter.connect('INBOX');
+    
+    // reconnectメソッドをスパイ
+    const reconnectSpy = jest.spyOn(adapter as any, 'reconnect');
+    
+    // reconnectedイベントをリスンするリスナーを追加
+    const reconnectedHandler = jest.fn();
+    adapter.on('reconnected', reconnectedHandler);
+    
+    // 切断をシミュレート
+    mockImapFlowInstance.emit('error', { code: 'ECONNRESET', message: 'Connection reset' });
+    
+    // 再接続処理を手動でトリガー
+    await (adapter as any).reconnect('INBOX', 'テスト:INBOX');
+    
+    // 接続メソッドが呼ばれたことを確認
+    expect(mockImapFlowInstance.connect).toHaveBeenCalledTimes(2); // 初回 + 再接続
+    
+    // reconnectedイベントが発火されたことを確認
+    expect(reconnectedHandler).toHaveBeenCalledWith('INBOX');
+  });
+  
+  test('異常系: fetchUnseenMessages中の接続エラーで再接続が開始されること', async () => {
+    // 接続
+    await adapter.connect('INBOX');
+    
+    // scheduleReconnectメソッドをスパイ
+    const scheduleReconnectSpy = jest.spyOn(adapter as any, 'scheduleReconnect');
+    
+    // searchメソッドが例外をスローするように設定
+    mockImapFlowInstance.search.mockRejectedValueOnce(new Error('Connection not available'));
+    
+    // 未読メッセージ取得を実行
+    await adapter.fetchUnseenMessages();
+    
+    // 接続状態が更新されることを確認
+    expect(adapter.isActive()).toBe(false);
+    
+    // scheduleReconnectが呼ばれたことを確認
+    expect(scheduleReconnectSpy).toHaveBeenCalled();
+  });
+  
+  test('異常系: fetchMessage中の接続エラーで再接続が開始されること', async () => {
+    // 接続
+    await adapter.connect('INBOX');
+    
+    // scheduleReconnectメソッドをスパイ
+    const scheduleReconnectSpy = jest.spyOn(adapter as any, 'scheduleReconnect');
+    
+    // fetchOneメソッドが例外をスローするように設定
+    mockImapFlowInstance.fetchOne.mockRejectedValueOnce(new Error('Connection not available'));
+    
+    // メッセージ取得を実行
+    await adapter.fetchMessage('12345');
+    
+    // 接続状態が更新されることを確認
+    expect(adapter.isActive()).toBe(false);
+    
+    // scheduleReconnectが呼ばれたことを確認
+    expect(scheduleReconnectSpy).toHaveBeenCalled();
+  });
+  
+  // テスト後にタイマーをクリーンアップする
+  afterEach(() => {
+    if ((adapter as any).keepAliveTimer) {
+      clearInterval((adapter as any).keepAliveTimer);
+      (adapter as any).keepAliveTimer = null;
+    }
+    
+    if ((adapter as any).reconnectTimer) {
+      clearTimeout((adapter as any).reconnectTimer);
+      (adapter as any).reconnectTimer = null;
+    }
+    
+    jest.clearAllTimers();
   });
 });

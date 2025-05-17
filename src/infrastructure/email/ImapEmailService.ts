@@ -22,6 +22,10 @@ export class ImapEmailService implements EmailService {
   private processedUids = new Set<string>();
   private isMonitoring = false;
   private readonly serviceContext: string;
+  
+  // 再接続のために最後の接続情報を保持
+  private _lastConnectedMailbox: string | null = null;
+  private _lastCallback: ((email: ParsedEmail) => Promise<void>) | null = null;
 
   /**
    * インスタンスを初期化
@@ -55,10 +59,46 @@ export class ImapEmailService implements EmailService {
     // 接続イベントの監視
     this.imapClient.on('connectionLost', (mailboxName) => {
       logger.warn(`接続が切断されました: ${mailboxName}`, this.serviceContext);
+      
+      // 接続状態を更新
+      this.isMonitoring = false;
+      
+      // ポーリングタイマーが動いていれば停止（再接続後に再設定する）
+      if (this.pollingTimer) {
+        clearInterval(this.pollingTimer);
+        this.pollingTimer = null;
+      }
+
+      // ImapClientAdapterの自動再接続機能が動作するため、
+      // ここでは追加のアクションは不要です。
+      // ImapClientAdapterはscheduleReconnectメソッドを内部で呼び出し、
+      // 指数バックオフに基づいて再接続を試みます。
+      // 再接続成功時にreconnectedイベントが発火します。
+      logger.info(`IMAPクライアントの自動再接続プロセスが開始されるのを待機しています: ${mailboxName}`, this.serviceContext);
     });
 
     this.imapClient.on('reconnected', (mailboxName) => {
       logger.info(`再接続に成功しました: ${mailboxName}`, this.serviceContext);
+      
+      // 再接続後に監視を再開
+      if (this._lastConnectedMailbox && this._lastCallback) {
+        logger.info(`メール監視を再開します: ${mailboxName}`, this.serviceContext);
+        this.startMonitoring(this._lastCallback, `${this.serviceContext}:${this._lastConnectedMailbox}`);
+        
+        // 再接続後に即時メール確認を実行
+        this.pollForNewMessages(this._lastCallback, `${this.serviceContext}:${this._lastConnectedMailbox}`)
+          .catch(error => {
+            const appError = new AppError(
+              '再接続後のメール確認中にエラーが発生しました',
+              ErrorType.EMAIL,
+              { mailboxName },
+              error instanceof Error ? error : new Error(String(error))
+            );
+            logger.logAppError(appError, this.serviceContext);
+          });
+      } else {
+        logger.warn('前回の接続情報がないため、監視を再開できません', this.serviceContext);
+      }
     });
   }
 
@@ -75,6 +115,10 @@ export class ImapEmailService implements EmailService {
     const context = `${this.serviceContext}:${mailboxName}`;
 
     try {
+      // 接続情報を保存（再接続時に使用）
+      this._lastConnectedMailbox = mailboxName;
+      this._lastCallback = callback;
+      
       // IMAPクライアントで接続
       await this.imapClient.connect(mailboxName);
 

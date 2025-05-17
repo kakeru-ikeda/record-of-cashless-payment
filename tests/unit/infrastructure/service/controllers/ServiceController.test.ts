@@ -85,9 +85,12 @@ describe('ServiceController', () => {
       expect(res.json).toHaveBeenCalledWith({
         success: true,
         message: 'サービス一覧を取得しました',
+        status: 200,
         data: [
           expect.objectContaining({
             id: 'email-monitoring',
+            name: 'メール監視サービス',
+            description: 'カード利用通知メールの監視サービス',
             status: 'active',
             actions: ['start', 'stop', 'restart']
           })
@@ -142,8 +145,12 @@ describe('ServiceController', () => {
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({
         success: true,
+        status: 200,
         message: 'メール監視サービスを開始しました',
-        data: expect.any(Object)
+        data: expect.objectContaining({
+          id: 'email-monitoring',
+          status: expect.any(String)
+        })
       });
     });
 
@@ -165,8 +172,12 @@ describe('ServiceController', () => {
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({
         success: true,
+        status: 200,
         message: 'メール監視サービスを停止しました',
-        data: expect.any(Object)
+        data: expect.objectContaining({
+          id: 'email-monitoring',
+          status: expect.any(String)
+        })
       });
     });
 
@@ -186,8 +197,12 @@ describe('ServiceController', () => {
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({
         success: true,
+        status: 200,
         message: 'メール監視サービスを再起動しました',
-        data: expect.any(Object)
+        data: expect.objectContaining({
+          id: 'email-monitoring',
+          status: expect.any(String)
+        })
       });
     });
 

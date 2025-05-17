@@ -54,7 +54,6 @@ describe('Application', () => {
 
     // EmailControllerのモックを設定
     mockEmailController = new EmailController(
-      {} as any,
       {} as any
     ) as jest.Mocked<EmailController>;
     (mockEmailController.startAllMonitoring as jest.Mock).mockResolvedValue(undefined);

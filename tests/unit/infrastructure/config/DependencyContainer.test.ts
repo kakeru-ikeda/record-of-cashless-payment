@@ -58,7 +58,7 @@ describe('DependencyContainer', () => {
     
     mockDiscordNotifier = new DiscordWebhookNotifier('') as jest.Mocked<DiscordWebhookNotifier>;
     mockProcessEmailUseCase = new ProcessEmailUseCase({} as any, {} as any, {} as any) as jest.Mocked<ProcessEmailUseCase>;
-    mockEmailController = new EmailController({} as any, {} as any) as jest.Mocked<EmailController>;
+    mockEmailController = new EmailController({} as any) as jest.Mocked<EmailController>;
 
     // コンストラクタのモック
     (ImapEmailService as jest.MockedClass<typeof ImapEmailService>).mockImplementation(
@@ -111,7 +111,6 @@ describe('DependencyContainer', () => {
 
       // EmailControllerが正しい引数で初期化されることを確認
       expect(EmailController).toHaveBeenCalledWith(
-        mockImapEmailService,
         mockProcessEmailUseCase
       );
 

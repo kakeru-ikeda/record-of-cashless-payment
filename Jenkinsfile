@@ -217,6 +217,12 @@ pipeline {
                                 docker stop \$TEMP_CONTAINER_NAME || true
                                 docker rm \$TEMP_CONTAINER_NAME || true
                                 
+                                # 本番コンテナが既に存在する場合は先に削除
+                                if docker ps -a -q --filter name=${imageName} | grep -q .; then
+                                    echo "既存の${imageName}コンテナを削除します"
+                                    docker rm -f ${imageName} || true
+                                fi
+                                
                                 # 本番コンテナを起動
                                 docker run -d --name ${imageName} -p 3000:3000 \\
                                 -e IMAP_SERVER='${imapServer}' \\
