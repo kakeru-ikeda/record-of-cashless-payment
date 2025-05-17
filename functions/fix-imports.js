@@ -101,8 +101,8 @@ try {
 
     // API関連のインポートパスを修正
     content = content.replace(
-        /require\("\.\/api"\)/g,
-        'require("./functions/src/api")'
+        /require\("\.\/api\/app\"\)/g,
+        'require("./functions/src/api/app")'
     );
 
     content = content.replace(
@@ -170,7 +170,7 @@ try {
             /require\("shared\/domain\/mappers\/CardUsageMapper"\)/g,
             'require("../../../shared/domain/mappers/CardUsageMapper")'
         );
-        
+
         // コンパイル後のCardUsageMapperの間違ったパスを修正
         content = content.replace(
             /require\("\.\.\/\.\.\/\.\.\/shared\/domain\/mappers\/CardUsageMapper"\)/g,
