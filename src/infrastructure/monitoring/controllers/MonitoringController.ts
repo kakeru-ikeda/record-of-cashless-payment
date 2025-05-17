@@ -340,9 +340,9 @@ export class MonitoringController {
         const errorsResponse = await fetch('/monitoring/errors');
         const errorsData = await errorsResponse.json();
         
-        // データを描画
-        renderServices(statusData.services);
-        renderErrors(errorsData.errors);
+        // データを描画（新しいレスポンス形式に対応）
+        renderServices(statusData.data.services);
+        renderErrors(errorsData.data.errors);
         
         // タイムスタンプ更新
         document.getElementById('timestamp').textContent = \`最終更新: \${new Date().toLocaleString('ja-JP')}\`;
