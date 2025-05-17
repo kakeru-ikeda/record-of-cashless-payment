@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { logger, LogLevel } from '../../../../shared/utils/Logger';
 import { AppError, ErrorType } from '../../../../shared/errors/AppError';
 import { ErrorHandler } from '../../../../shared/errors/ErrorHandler';
+import { ResponseHelper } from '../../../../shared/utils/ResponseHelper';
 
 /**
  * モニタリングコントローラー - サーバー状態の監視用エンドポイント実装
@@ -11,11 +12,10 @@ export class MonitoringController {
    * シンプルなヘルスチェック - サーバーが稼働中かを確認
    */
   public healthCheck = (req: Request, res: Response): void => {
-    res.status(200).json({
-      status: 'ok',
-      message: 'Server is running',
+    const response = ResponseHelper.success('Server is running', {
       timestamp: new Date().toISOString()
     });
+    res.status(response.status).json(response);
   };
 
   /**
@@ -26,20 +26,22 @@ export class MonitoringController {
       // Loggerクラスからサービスステータスマップにアクセスするためのメソッドを呼び出す
       const serviceStatuses = (logger as any).services || new Map();
       
-      // レスポンスオブジェクトを作成
-      const response = {
-        timestamp: new Date().toISOString(),
-        services: Array.from(serviceStatuses.values()).map((service: any) => ({
-          name: service.name,
-          status: service.status,
-          message: service.message || '',
-          lastUpdated: service.lastUpdated?.toISOString(),
-          errorCount: service.errorCount || 0,
-          lastErrorTime: service.lastErrorTime?.toISOString()
-        }))
-      };
+      // レスポンスデータを作成
+      const servicesData = Array.from(serviceStatuses.values()).map((service: any) => ({
+        name: service.name,
+        status: service.status,
+        message: service.message || '',
+        lastUpdated: service.lastUpdated?.toISOString(),
+        errorCount: service.errorCount || 0,
+        lastErrorTime: service.lastErrorTime?.toISOString()
+      }));
       
-      res.status(200).json(response);
+      const response = ResponseHelper.success('サービスステータスを取得しました', {
+        timestamp: new Date().toISOString(),
+        services: servicesData
+      });
+      
+      res.status(response.status).json(response);
     } catch (error) {
       const appError = error instanceof AppError
         ? error
@@ -65,18 +67,20 @@ export class MonitoringController {
       // Loggerのエラー履歴にアクセス
       const errorHistory = (logger as any).errorHistory || [];
       
-      // レスポンスオブジェクトを作成
-      const response = {
-        timestamp: new Date().toISOString(),
-        errors: errorHistory.map((error: any) => ({
-          timestamp: error.timestamp?.toISOString(),
-          service: error.service,
-          message: error.message,
-          details: error.details
-        }))
-      };
+      // エラーデータを作成
+      const errorsData = errorHistory.map((error: any) => ({
+        timestamp: error.timestamp?.toISOString(),
+        service: error.service,
+        message: error.message,
+        details: error.details
+      }));
       
-      res.status(200).json(response);
+      const response = ResponseHelper.success('エラーログを取得しました', {
+        timestamp: new Date().toISOString(),
+        errors: errorsData
+      });
+      
+      res.status(response.status).json(response);
     } catch (error) {
       const appError = error instanceof AppError
         ? error
@@ -144,7 +148,9 @@ export class MonitoringController {
           );
       
       logger.logAppError(appError, 'MonitoringController');
-      res.status(500).send('Error rendering dashboard');
+      
+      const errorResponse = ResponseHelper.error(500, 'ダッシュボードレンダリング中にエラーが発生しました');
+      res.status(errorResponse.status).send('Error rendering dashboard');
     }
   };
   
@@ -334,9 +340,9 @@ export class MonitoringController {
         const errorsResponse = await fetch('/monitoring/errors');
         const errorsData = await errorsResponse.json();
         
-        // データを描画
-        renderServices(statusData.services);
-        renderErrors(errorsData.errors);
+        // データを描画（新しいレスポンス形式に対応）
+        renderServices(statusData.data.services);
+        renderErrors(errorsData.data.errors);
         
         // タイムスタンプ更新
         document.getElementById('timestamp').textContent = \`最終更新: \${new Date().toLocaleString('ja-JP')}\`;

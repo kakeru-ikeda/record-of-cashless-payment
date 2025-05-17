@@ -83,24 +83,29 @@ describe('HTTP統合テスト', () => {
       const response = await request(app).get('/monitoring/health');
       
       expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty('status', 'ok');
+      expect(response.body).toHaveProperty('success', true);
       expect(response.body).toHaveProperty('message', 'Server is running');
+      expect(response.body).toHaveProperty('data');
     });
 
     test('GET /monitoring/status: サービスステータス情報を返すこと', async () => {
       const response = await request(app).get('/monitoring/status');
       
       expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty('services');
-      expect(response.body.services).toBeInstanceOf(Array);
+      expect(response.body).toHaveProperty('success', true);
+      expect(response.body).toHaveProperty('data');
+      expect(response.body.data).toHaveProperty('services');
+      expect(response.body.data.services).toBeInstanceOf(Array);
     });
 
     test('GET /monitoring/errors: エラーログ情報を返すこと', async () => {
       const response = await request(app).get('/monitoring/errors');
       
       expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty('errors');
-      expect(response.body.errors).toBeInstanceOf(Array);
+      expect(response.body).toHaveProperty('success', true);
+      expect(response.body).toHaveProperty('data');
+      expect(response.body.data).toHaveProperty('errors');
+      expect(response.body.data.errors).toBeInstanceOf(Array);
     });
 
     test('GET /monitoring/dashboard: HTMLダッシュボードを返すこと', async () => {

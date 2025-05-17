@@ -76,8 +76,12 @@ describe('MonitoringController', () => {
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
-          status: 'ok',
-          message: 'Server is running'
+          success: true,
+          status: 200,
+          message: 'Server is running',
+          data: expect.objectContaining({
+            timestamp: expect.any(String)
+          })
         })
       );
     });
@@ -93,12 +97,18 @@ describe('MonitoringController', () => {
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
-          services: expect.arrayContaining([
-            expect.objectContaining({
-              name: 'TestService',
-              status: 'online'
-            })
-          ])
+          success: true,
+          status: 200,
+          message: 'サービスステータスを取得しました',
+          data: expect.objectContaining({
+            services: expect.arrayContaining([
+              expect.objectContaining({
+                name: 'TestService',
+                status: 'online'
+              })
+            ]),
+            timestamp: expect.any(String)
+          })
         })
       );
     });
@@ -138,12 +148,18 @@ describe('MonitoringController', () => {
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
-          errors: expect.arrayContaining([
-            expect.objectContaining({
-              service: 'TestService',
-              message: 'テストエラー'
-            })
-          ])
+          success: true,
+          status: 200,
+          message: 'エラーログを取得しました',
+          data: expect.objectContaining({
+            errors: expect.arrayContaining([
+              expect.objectContaining({
+                service: 'TestService',
+                message: 'テストエラー'
+              })
+            ]),
+            timestamp: expect.any(String)
+          })
         })
       );
     });

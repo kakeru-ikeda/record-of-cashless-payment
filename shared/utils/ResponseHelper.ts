@@ -64,4 +64,34 @@ export class ResponseHelper {
     static validationError(message: string = '入力データが不正です', errors?: any): Response {
         return this.error(400, message, errors);
     }
+
+    /**
+     * 未認証エラーレスポンスを生成する
+     * @param message エラーメッセージ（デフォルト: '認証が必要です'）
+     * @param data エラー詳細データ（オプション）
+     * @returns 401エラーレスポンスオブジェクト
+     */
+    static unauthorized(message: string = '認証が必要です', data?: any): Response {
+        return this.error(401, message, data);
+    }
+
+    /**
+     * トークン無効エラーレスポンスを生成する
+     * @param message エラーメッセージ（デフォルト: '認証トークンが無効または期限切れです'）
+     * @param data エラー詳細データ（オプション）
+     * @returns 401エラーレスポンスオブジェクト
+     */
+    static invalidToken(message: string = '認証トークンが無効または期限切れです', data?: any): Response {
+        return this.error(401, message, data);
+    }
+
+    /**
+     * アクセス拒否エラーレスポンスを生成する
+     * @param message エラーメッセージ（デフォルト: 'この操作を実行する権限がありません'）
+     * @param data エラー詳細データ（オプション）
+     * @returns 403エラーレスポンスオブジェクト
+     */
+    static forbidden(message: string = 'この操作を実行する権限がありません', data?: any): Response {
+        return this.error(403, message, data);
+    }
 }

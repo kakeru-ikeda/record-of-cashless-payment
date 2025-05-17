@@ -3,6 +3,7 @@ import { logger } from '../../../../shared/utils/Logger';
 import { EmailController } from '../../../interfaces/controllers/EmailController';
 import { AppError, ErrorType } from '../../../../shared/errors/AppError';
 import { ErrorHandler } from '../../../../shared/errors/ErrorHandler';
+import { ResponseHelper } from '../../../../shared/utils/ResponseHelper';
 
 /**
  * サービス管理コントローラー
@@ -35,11 +36,8 @@ export class ServiceController {
                 }
             ];
 
-            res.status(200).json({
-                success: true,
-                message: 'サービス一覧を取得しました',
-                data: services
-            });
+            const response = ResponseHelper.success('サービス一覧を取得しました', services);
+            res.status(response.status).json(response);
         } catch (error) {
             const appError = error instanceof AppError
                 ? error
@@ -99,14 +97,14 @@ export class ServiceController {
                         break;
                 }
 
-                res.status(200).json({
-                    success: true,
-                    message: `メール監視サービスを${action === 'start' ? '開始' : action === 'stop' ? '停止' : '再起動'}しました`,
-                    data: {
-                        id: 'email-monitoring',
-                        status: this.emailController.isMonitoring() ? 'active' : 'inactive'
-                    }
-                });
+                const message = `メール監視サービスを${action === 'start' ? '開始' : action === 'stop' ? '停止' : '再起動'}しました`;
+                const data = {
+                    id: 'email-monitoring',
+                    status: this.emailController.isMonitoring() ? 'active' : 'inactive'
+                };
+                
+                const response = ResponseHelper.success(message, data);
+                res.status(response.status).json(response);
             } else {
                 throw new AppError('指定されたサービスが見つかりません', ErrorType.NOT_FOUND, { serviceId });
             }

@@ -15,7 +15,7 @@ https://api-wxn2tlzhia-an.a.run.app/api/v1
 Authorization: Bearer {firebase_auth_token}
 ```
 
-## レスポンスフォーマット
+## レスポンススキーマ
 すべてのエンドポイントは以下の形式でJSONレスポンスを返します：
 
 ```json
