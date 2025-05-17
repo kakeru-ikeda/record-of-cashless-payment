@@ -4,6 +4,7 @@ import { Environment } from '../../../shared/config/Environment';
 import { logger } from '../../../shared/utils/Logger';
 import { AppError, ErrorType } from '../../../shared/errors/AppError';
 import { ParsedEmail } from 'src/infrastructure/email/EmailParser';
+import { DiscordNotifier } from '../../../shared/discord/DiscordNotifier';
 
 /**
  * メール処理のコントローラー
@@ -24,9 +25,11 @@ export class EmailController {
   /**
    * コンストラクタ
    * @param processEmailUseCase メール処理ユースケース
+   * @param discordNotifier Discord通知
    */
   constructor(
-    private readonly processEmailUseCase: ProcessEmailUseCase
+    private readonly processEmailUseCase: ProcessEmailUseCase,
+    private readonly discordNotifier: DiscordNotifier
   ) {
     logger.updateServiceStatus(this.serviceContext, 'offline', '初期化済み');
   }
@@ -73,6 +76,8 @@ export class EmailController {
               );
           
           logger.logAppError(appError, this.serviceContext);
+          // Discordにエラー通知
+          await this.discordNotifier.notifyError(appError, this.serviceContext);
           // 個々のエラーは全体の処理を止めない（他のメールボックスは監視継続）
         }
       }
@@ -86,6 +91,9 @@ export class EmailController {
       
       logger.logAppError(appError, this.serviceContext);
       logger.updateServiceStatus(this.serviceContext, 'error', '監視開始に失敗しました');
+      
+      // Discordにエラー通知
+      await this.discordNotifier.notifyError(appError, this.serviceContext);
       
       // エラーを再スロー
       throw appError;
@@ -120,7 +128,22 @@ export class EmailController {
             logger.info(`${detectedCardCompany}のメールを検出しました`, context);
             
             // メール本文からカード利用情報を抽出して保存
-            await this.processEmailUseCase.execute(email.body, detectedCardCompany);
+            const result = await this.processEmailUseCase.execute(email.body, detectedCardCompany);
+            
+            try {
+              // カード利用情報をDiscordに通知
+              await this.discordNotifier.notify(result.usage);
+              logger.info('Discord通知を送信しました', context);
+            } catch (notifyError) {
+              // 通知エラーはログに記録
+              const notifyAppError = new AppError(
+                'Discord通知の送信に失敗しました',
+                ErrorType.DISCORD,
+                { usage: result.usage },
+                notifyError instanceof Error ? notifyError : new Error(String(notifyError))
+              );
+              logger.logAppError(notifyAppError, context);
+            }
           } else {
             const warnAppError = new AppError(
               'カード会社を特定できませんでした', 
@@ -128,6 +151,8 @@ export class EmailController {
               { subject: email.subject, from: email.from }
             );
             logger.logAppError(warnAppError, context);
+            // Discordにエラー通知
+            await this.discordNotifier.notifyError(warnAppError, context);
           }
         } catch (error) {
           // メール処理エラーをAppErrorに変換してログ出力
@@ -141,6 +166,8 @@ export class EmailController {
               );
           
           logger.logAppError(appError, context);
+          // Discordにエラー通知
+          await this.discordNotifier.notifyError(appError, context);
         }
       });
     } catch (error) {
@@ -155,6 +182,9 @@ export class EmailController {
       
       logger.logAppError(appError, context);
       logger.updateServiceStatus(context, 'error', '接続に失敗しました');
+      
+      // Discordにエラー通知
+      await this.discordNotifier.notifyError(appError, context);
       
       // エラーを再スロー
       throw appError;
@@ -225,6 +255,8 @@ export class EmailController {
             );
         
         logger.logAppError(appError, context);
+        // Discordにエラー通知
+        await this.discordNotifier.notifyError(appError, context);
       }
     }
     

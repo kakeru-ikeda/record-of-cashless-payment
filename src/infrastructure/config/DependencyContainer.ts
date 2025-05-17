@@ -36,22 +36,32 @@ export class DependencyContainer {
       usageWebhookUrl: Environment.DISCORD_WEBHOOK_URL,
       loggingWebhookUrl: Environment.DISCORD_LOGGING_WEBHOOK_URL,
     });
+    
+    // Discord通知とエラーログのステータス更新
+    const discordStatus = Environment.DISCORD_WEBHOOK_URL ? 'online' : 'offline';
+    const errorLoggingStatus = Environment.DISCORD_LOGGING_WEBHOOK_URL ? 'online' : 'offline';
+    
     logger.updateServiceStatus(
       'DiscordNotifier', 
-      Environment.DISCORD_WEBHOOK_URL ? 'online' : 'offline', 
-      Environment.DISCORD_WEBHOOK_URL ? 'Discord通知準備完了' : 'Discord通知無効'
+      discordStatus, 
+      discordStatus === 'online' ? 'Discord通知準備完了' : 'Discord通知無効'
+    );
+    
+    logger.updateServiceStatus(
+      'DiscordErrorLogger', 
+      errorLoggingStatus, 
+      errorLoggingStatus === 'online' ? 'Discordエラーログ通知準備完了' : 'Discordエラーログ通知無効'
     );
 
     // ユースケースの初期化
     this.processEmailUseCase = new ProcessEmailUseCase(
       this.emailService,
-      this.cardUsageRepository,
-      this.discordNotifier
+      this.cardUsageRepository
     );
     logger.updateServiceStatus('ProcessEmailUseCase', 'online', '初期化完了');
 
     // コントローラーの初期化
-    this.emailController = new EmailController(this.processEmailUseCase);
+    this.emailController = new EmailController(this.processEmailUseCase, this.discordNotifier);
     logger.updateServiceStatus('EmailController', 'online', '初期化完了');
   }
 
