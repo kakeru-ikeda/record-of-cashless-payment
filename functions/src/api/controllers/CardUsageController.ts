@@ -33,17 +33,23 @@ export class CardUsageController {
         this.firestoreService.initialize();
 
         let DISCORD_WEBHOOK_URL = '';
+        let DISCORD_LOGGING_WEBHOOK_URL = '';
         let DISCORD_ALERT_WEEKLY_WEBHOOK_URL = '';
         let DISCORD_ALERT_MONTHLY_WEBHOOK_URL = '';
 
         try {
             // 環境変数からWebhook URLを取得
             DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL || '';
+            DISCORD_LOGGING_WEBHOOK_URL = process.env.DISCORD_LOGGING_WEBHOOK_URL || '';
             DISCORD_ALERT_WEEKLY_WEBHOOK_URL = process.env.DISCORD_ALERT_WEEKLY_WEBHOOK_URL || '';
             DISCORD_ALERT_MONTHLY_WEBHOOK_URL = process.env.DISCORD_ALERT_MONTHLY_WEBHOOK_URL || '';
 
             if (DISCORD_WEBHOOK_URL) {
                 console.log('✅ 環境変数から利用明細通知用のDISCORD_WEBHOOK_URLを取得しました');
+            }
+
+            if (DISCORD_LOGGING_WEBHOOK_URL) {
+                console.log('✅ 環境変数からロギング用のDISCORD_LOGGING_WEBHOOK_URLを取得しました');
             }
 
             if (DISCORD_ALERT_WEEKLY_WEBHOOK_URL) {
@@ -57,11 +63,12 @@ export class CardUsageController {
             console.error('環境変数の取得中にエラーが発生しました:', error);
         }
 
-        this.discordNotifier = new DiscordWebhookNotifier(
-            DISCORD_WEBHOOK_URL, // 利用明細通知用
-            DISCORD_ALERT_WEEKLY_WEBHOOK_URL, // 週次アラート通知用
-            DISCORD_ALERT_MONTHLY_WEBHOOK_URL, // 月次アラート通知用
-        );
+        this.discordNotifier = new DiscordWebhookNotifier({
+            usageWebhookUrl: DISCORD_WEBHOOK_URL,
+            loggingWebhookUrl: DISCORD_LOGGING_WEBHOOK_URL,
+            alertWeeklyWebhookUrl: DISCORD_ALERT_WEEKLY_WEBHOOK_URL,
+            alertMonthlyWebhookUrl: DISCORD_ALERT_MONTHLY_WEBHOOK_URL,
+        });
 
         // レポートサービスの初期化
         this.dailyReportService = new DailyReportService(this.firestoreService, this.discordNotifier);
