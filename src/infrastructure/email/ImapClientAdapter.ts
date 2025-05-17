@@ -31,6 +31,7 @@ export interface RawEmailMessage {
 export class ImapClientAdapter extends EventEmitter {
   private client: ImapFlow | null = null;
   private keepAliveTimer: NodeJS.Timeout | null = null;
+  private reconnectTimer: NodeJS.Timeout | null = null;
   private isConnected = false;
   private reconnectAttempts = 0;
   private currentMailbox: string | null = null;
@@ -293,6 +294,12 @@ export class ImapClientAdapter extends EventEmitter {
   private async reconnect(mailboxName: string, context: string): Promise<void> {
     logger.info(`前回接続をクローズして再接続準備`, context);
     
+    // 再接続タイマーをクリア（安全のため）
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    
     if (this.client) {
       try {
         await this.client.logout();
@@ -373,10 +380,16 @@ export class ImapClientAdapter extends EventEmitter {
    * 再接続（指数的バックオフ）
    */
   private scheduleReconnect(mailboxName: string, context: string): void {
+    // すでに再接続タイマーが設定されている場合はクリア
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    
     const delay = Math.min(5 * 60 * 1000, 1000 * Math.pow(2, this.reconnectAttempts));
     logger.info(`${delay/1000}秒後に再接続を試みます (試行回数: ${this.reconnectAttempts})`, context);
     
-    setTimeout(async () => {
+    this.reconnectTimer = setTimeout(async () => {
       logger.info(`再接続処理開始 mailbox=${mailboxName} attempt=${this.reconnectAttempts}`, context);
       this.reconnectAttempts++;
       await this.reconnect(mailboxName, context);
@@ -396,9 +409,16 @@ export class ImapClientAdapter extends EventEmitter {
   async close(): Promise<void> {
     const context = this.serviceContext;
     
+    // キープアライブタイマーをクリア
     if (this.keepAliveTimer) {
       clearInterval(this.keepAliveTimer);
       this.keepAliveTimer = null;
+    }
+    
+    // 再接続タイマーをクリア
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
     }
     
     if (this.client) {

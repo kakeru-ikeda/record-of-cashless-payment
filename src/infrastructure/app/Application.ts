@@ -100,10 +100,57 @@ export class Application {
         });
       }
       
+      // 残っているタイマーをクリーンアップ
+      this.cleanupUnresolvedTimers();
+      
       logger.info('アプリケーションが正常に終了しました', 'App');
     } catch (error) {
       logger.error('シャットダウン中にエラーが発生しました', error, 'App');
     }
+  }
+  
+  /**
+   * 未解決のタイマーをクリーンアップ
+   */
+  private cleanupUnresolvedTimers(): void {
+    try {
+      // アクティブなハンドルを取得
+      // @ts-ignore - process._getActiveHandles は非公開APIだがタイマークリーンアップに必要
+      const activeHandles = process._getActiveHandles ? process._getActiveHandles() : [];
+      
+      // タイマーとインターバルをカウント
+      let timersCount = 0;
+      
+      // タイマーをクリア
+      for (const handle of activeHandles) {
+        if (handle && typeof handle === 'object' && handle.constructor) {
+          // @ts-ignore - 型定義エラーを無視
+          if (handle.constructor.name === 'Timeout') {
+            // @ts-ignore
+            clearTimeout(handle);
+            timersCount++;
+          } 
+          // @ts-ignore
+          else if (handle.constructor.name === 'Interval') {
+            // @ts-ignore
+            clearInterval(handle);
+            timersCount++;
+          }
+        }
+      }
+      
+      if (timersCount > 0) {
+        logger.info(`${timersCount}個の未解決タイマーをクリーンアップしました`, 'App');
+      }
+    } catch (error) {
+      logger.warn('タイマークリーンアップ中にエラーが発生しました', 'App');
+    }
+    
+    // 確実にプロセスを終了させるために2秒後に強制終了
+    setTimeout(() => {
+      logger.info('残っているリソースをクリーンアップするため、プロセスを終了します', 'App');
+      process.exit(0);
+    }, 2000);
   }
   
   /**

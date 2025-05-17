@@ -376,6 +376,12 @@ describe('ImapClientAdapter', () => {
       clearInterval((adapter as any).keepAliveTimer);
       (adapter as any).keepAliveTimer = null;
     }
+    
+    if ((adapter as any).reconnectTimer) {
+      clearTimeout((adapter as any).reconnectTimer);
+      (adapter as any).reconnectTimer = null;
+    }
+    
     jest.clearAllTimers();
   });
 });

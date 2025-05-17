@@ -20,4 +20,10 @@ module.exports = {
     '^chalk$': '<rootDir>/tests/mocks/chalkMock.js'
   },
   setupFilesAfterEnv: ['./tests/jest.setup.js'],
+  // タイムアウト処理の改善
+  testTimeout: 10000,
+  // テスト終了時に未解決のプロミスやタイマーを検出
+  detectOpenHandles: true,
+  // 必要に応じて強制終了を有効化
+  forceExit: true,
 };

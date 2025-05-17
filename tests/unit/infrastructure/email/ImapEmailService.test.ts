@@ -90,7 +90,22 @@ describe('ImapEmailService', () => {
         clearInterval((emailService as any).pollingTimer);
         (emailService as any).pollingTimer = null;
       }
-      await emailService.close();
+      
+      // ImapClientAdapter のタイマーも確実にクリア
+      if (mockImapClient) {
+        // 明示的に internal タイマーをクリアする
+        if ((mockImapClient as any).keepAliveTimer) {
+          clearInterval((mockImapClient as any).keepAliveTimer);
+          (mockImapClient as any).keepAliveTimer = null;
+        }
+        
+        if ((mockImapClient as any).reconnectTimer) {
+          clearTimeout((mockImapClient as any).reconnectTimer);
+          (mockImapClient as any).reconnectTimer = null;
+        }
+        
+        await emailService.close();
+      }
     }
     jest.clearAllTimers();
   });
