@@ -62,8 +62,8 @@ describe('DependencyContainer', () => {
       usageWebhookUrl: mockEnvironment.DISCORD_WEBHOOK_URL,
       loggingWebhookUrl: mockEnvironment.DISCORD_LOGGING_WEBHOOK_URL
     }) as jest.Mocked<DiscordWebhookNotifier>;
-    mockProcessEmailUseCase = new ProcessEmailUseCase({} as any, {} as any, {} as any) as jest.Mocked<ProcessEmailUseCase>;
-    mockEmailController = new EmailController({} as any) as jest.Mocked<EmailController>;
+    mockProcessEmailUseCase = new ProcessEmailUseCase({} as any, {} as any) as jest.Mocked<ProcessEmailUseCase>;
+    mockEmailController = new EmailController({} as any, {} as any) as jest.Mocked<EmailController>;
 
     // コンストラクタのモック
     (ImapEmailService as jest.MockedClass<typeof ImapEmailService>).mockImplementation(
@@ -113,13 +113,13 @@ describe('DependencyContainer', () => {
       // ProcessEmailUseCaseが正しい引数で初期化されることを確認
       expect(ProcessEmailUseCase).toHaveBeenCalledWith(
         mockImapEmailService,
-        mockFirestoreCardUsageRepository,
-        mockDiscordNotifier
+        mockFirestoreCardUsageRepository
       );
 
       // EmailControllerが正しい引数で初期化されることを確認
       expect(EmailController).toHaveBeenCalledWith(
-        mockProcessEmailUseCase
+        mockProcessEmailUseCase,
+        mockDiscordNotifier
       );
 
       // ステータス更新のログが記録されることを確認
