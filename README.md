@@ -145,6 +145,26 @@ DISCORD_REPORT_MONTHLY_WEBHOOK_URL=https://discord.com/api/webhooks/マンスリ
 }
 ```
 
+**認証エラーレスポンス例**:
+```json
+{
+  "status": 401,
+  "success": false,
+  "message": "認証トークンが無効または期限切れです",
+  "data": null
+}
+```
+
+**権限エラーレスポンス例**:
+```json
+{
+  "status": 403,
+  "success": false,
+  "message": "この操作を実行する権限がありません",
+  "data": null
+}
+```
+
 ### Firebase Functions
 - **onFirestoreWrite**: 新しいカード利用情報が追加された時に実行
   - デイリー/ウィークリー/マンスリーレポートの生成
