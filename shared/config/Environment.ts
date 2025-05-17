@@ -80,6 +80,7 @@ export class Environment {
         this.validateDiscordWebhook(this.DISCORD_REPORT_DAILY_WEBHOOK_URL, '日次レポート通知用');
         this.validateDiscordWebhook(this.DISCORD_REPORT_WEEKLY_WEBHOOK_URL, '週次レポート通知用');
         this.validateDiscordWebhook(this.DISCORD_REPORT_MONTHLY_WEBHOOK_URL, '月次レポート通知用');
+        this.validateDiscordWebhook(this.DISCORD_LOGGING_WEBHOOK_URL, 'エラーログ通知用');
 
         logger.info('✅ 環境変数の検証が完了しました', CONTEXT);
         return true;
