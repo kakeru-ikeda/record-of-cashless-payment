@@ -84,6 +84,9 @@ export class ImapClientAdapter extends EventEmitter {
         
         // connectionLostイベントを発生させ、再接続メカニズムをトリガーする
         this.emit('connectionLost', this.currentMailbox);
+        
+        // 明示的に再接続プロセスを開始
+        this.scheduleReconnect(this.currentMailbox || mailboxName, context);
       });
       
       // サーバーに接続
@@ -198,6 +201,9 @@ export class ImapClientAdapter extends EventEmitter {
         this.isConnected = false;
         logger.updateServiceStatus(context, 'error', '接続が切断されました');
         this.emit('connectionLost', this.currentMailbox);
+        
+        // 明示的に再接続プロセスを開始
+        this.scheduleReconnect(this.currentMailbox || 'INBOX', context);
       }
       
       return [];
@@ -247,6 +253,9 @@ export class ImapClientAdapter extends EventEmitter {
         this.isConnected = false;
         logger.updateServiceStatus(context, 'error', '接続が切断されました');
         this.emit('connectionLost', this.currentMailbox);
+        
+        // 明示的に再接続プロセスを開始
+        this.scheduleReconnect(this.currentMailbox || 'INBOX', context);
       }
       
       return null;
@@ -303,7 +312,16 @@ export class ImapClientAdapter extends EventEmitter {
     try {
       await this.connect(mailboxName);
       logger.info('reconnect(): connect() 完了', context);
-      this.emit('reconnected', mailboxName);
+      
+      // 明示的にreconnectedイベントを発火
+      // connect()が成功したことを確認してから発火する
+      if (this.isConnected && this.client) {
+        this.emit('reconnected', mailboxName);
+        logger.info(`reconnectedイベントを発火しました: ${mailboxName}`, context);
+      } else {
+        logger.warn(`接続状態が不安定なため、再接続処理を再試行します: ${mailboxName}`, context);
+        this.scheduleReconnect(mailboxName, context);
+      }
     } catch (error) {
       const appError = new AppError(
         '再接続に失敗しました',
@@ -343,6 +361,9 @@ export class ImapClientAdapter extends EventEmitter {
           this.isConnected = false;
           logger.updateServiceStatus(context, 'error', 'KeepAliveエラー');
           this.emit('connectionLost', this.currentMailbox);
+          
+          // 明示的に再接続プロセスを開始
+          this.scheduleReconnect(this.currentMailbox || 'INBOX', context);
         }
       }
     }, 3 * 60 * 1000); // 3分ごと
