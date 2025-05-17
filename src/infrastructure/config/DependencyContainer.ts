@@ -48,9 +48,9 @@ export class DependencyContainer {
     );
     
     logger.updateServiceStatus(
-      'DiscordErrorLogger', 
+      'DiscordNotifier', 
       errorLoggingStatus, 
-      errorLoggingStatus === 'online' ? 'Discordエラーログ通知準備完了' : 'Discordエラーログ通知無効'
+      errorLoggingStatus === 'online' ? 'Discordログ通知準備完了' : 'Discordログ通知無効'
     );
 
     // ユースケースの初期化

@@ -60,6 +60,15 @@ export interface DiscordNotifier {
      * @returns 通知の成功または失敗を表すブール値
      */
     notifyError(error: AppError, context?: string): Promise<boolean>;
+
+    /**
+     * ログメッセージを通知する
+     * @param message 通知するメッセージ文字列
+     * @param title メッセージのタイトル（オプション）
+     * @param context メッセージのコンテキスト情報（オプション）
+     * @returns 通知の成功または失敗を表すブール値
+     */
+    notifyLogging(message: string, title?: string, context?: string): Promise<boolean>;
 }
 
 /**
@@ -567,6 +576,62 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
             // ここでログ送信に失敗した場合はコンソールに出力するのみ（無限ループ防止）
             logger.error(
                 `エラー通知の送信中に例外が発生しました: ${err instanceof Error ? err.message : '不明なエラー'}`,
+                this.serviceContext
+            );
+            return false;
+        }
+    }
+
+    /**
+     * Discord Webhookを使用してログメッセージを通知する
+     * @param message 通知するメッセージ文字列
+     * @param title メッセージのタイトル（オプション）
+     * @param context メッセージのコンテキスト情報（オプション）
+     * @returns 通知の成功または失敗を表すブール値
+     */
+    async notifyLogging(message: string, title?: string, context?: string): Promise<boolean> {
+        try {
+            const webhookUrl = this.getWebhookUrl(NotificationType.ERROR_LOG);
+            
+            // 現在の日時を取得
+            const timestamp = new Date().toISOString();
+            
+            // コンテキスト情報があれば設定
+            const serviceContext = context || this.serviceContext;
+            
+            // タイトルがなければデフォルトのタイトルを設定
+            const messageTitle = title || 'システムログ';
+            
+            const embeds = [
+                {
+                    title: `📝 ${messageTitle}`,
+                    description: `ログメッセージが記録されました\n-`,
+                    color: 7506394, // 灰色
+                    fields: [
+                        {
+                            name: 'メッセージ',
+                            value: message || '空のメッセージ',
+                            inline: false
+                        },
+                        {
+                            name: 'コンテキスト',
+                            value: serviceContext || '不明',
+                            inline: true
+                        },
+                        {
+                            name: '記録時刻',
+                            value: timestamp || '不明',
+                            inline: true
+                        }
+                    ]
+                }
+            ];
+            
+            return this.sendDiscordNotification(webhookUrl, embeds, 'ログメッセージ');
+        } catch (err) {
+            // ここでログ送信に失敗した場合はコンソールに出力するのみ（無限ループ防止）
+            logger.error(
+                `ログメッセージの送信中に例外が発生しました: ${err instanceof Error ? err.message : '不明なエラー'}`,
                 this.serviceContext
             );
             return false;

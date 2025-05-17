@@ -84,6 +84,21 @@ export class EmailController {
       
       this.isMonitoringActive = true;
       logger.updateServiceStatus(this.serviceContext, 'online', '全メールボックスの監視中');
+      
+      // 監視開始のログをDiscordに通知
+      try {
+        const mailboxNames = Object.entries(this.mailboxes)
+          .map(([company, box]) => `${company}: ${box}`)
+          .join(', ');
+          
+        await this.discordNotifier.notifyLogging(
+          `メールボックス監視を開始しました。\n監視対象: ${mailboxNames}`,
+          '📬 メール監視開始',
+          this.serviceContext
+        );
+      } catch (notifyError) {
+        logger.warn('Discord通知の送信に失敗しました', this.serviceContext);
+      }
     } catch (error) {
       const appError = error instanceof AppError
         ? error
@@ -262,6 +277,17 @@ export class EmailController {
     
     this.isMonitoringActive = false;
     logger.updateServiceStatus(this.serviceContext, 'offline', '監視停止');
+    
+    // 監視停止のログをDiscordに通知
+    try {
+      await this.discordNotifier.notifyLogging(
+        'すべてのメールボックスの監視を停止しました。',
+        '📭 メール監視停止',
+        this.serviceContext
+      );
+    } catch (notifyError) {
+      logger.warn('Discord通知の送信に失敗しました', this.serviceContext);
+    }
   }
 }
 
