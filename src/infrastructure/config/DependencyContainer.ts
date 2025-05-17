@@ -32,7 +32,10 @@ export class DependencyContainer {
     await this.cardUsageRepository.initialize();
     logger.updateServiceStatus('FirestoreRepository', 'online', '初期化完了');
 
-    this.discordNotifier = new DiscordWebhookNotifier(Environment.DISCORD_WEBHOOK_URL);
+    this.discordNotifier = new DiscordWebhookNotifier({
+      usageWebhookUrl: Environment.DISCORD_WEBHOOK_URL,
+      loggingWebhookUrl: Environment.DISCORD_LOGGING_WEBHOOK_URL,
+    });
     logger.updateServiceStatus(
       'DiscordNotifier', 
       Environment.DISCORD_WEBHOOK_URL ? 'online' : 'offline', 
