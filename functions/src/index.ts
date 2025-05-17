@@ -9,7 +9,7 @@ import { WeeklyReportService } from './services/reports/WeeklyReportService';
 import { DailyReportService } from './services/reports/DailyReportService';
 import { MonthlyReportService } from './services/reports/MonthlyReportService';
 import { DateUtil } from '../../shared/utils/DateUtil';
-import { app as apiApp } from './api';
+import { app as apiApp } from './api/app';
 
 // Firestoreサービスの初期化
 const firestoreService = FirestoreService.getInstance();
