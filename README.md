@@ -101,6 +101,50 @@ DISCORD_REPORT_MONTHLY_WEBHOOK_URL=https://discord.com/api/webhooks/マンスリ
 - **モニタリングAPI**: サービス状態確認、ヘルスチェック（`/monitoring/*`）
 - **サービス管理API**: メール監視の制御、強制実行（`/api/services/*`）
 
+##### レスポンススキーマ
+すべてのAPIは統一された標準レスポンス形式を返します：
+
+```json
+{
+  "status": 200,        // HTTPステータスコード
+  "success": true,      // 処理成功フラグ
+  "message": "処理が正常に完了しました", // 処理結果メッセージ
+  "data": {             // レスポンスデータ（オプション）
+    // エンドポイント固有のデータ
+  }
+}
+```
+
+**成功レスポンス例（サービス一覧取得）**:
+```json
+{
+  "status": 200,
+  "success": true,
+  "message": "サービス一覧を取得しました",
+  "data": [
+    {
+      "id": "email-monitoring",
+      "name": "メール監視サービス",
+      "description": "カード利用通知メールの監視サービス",
+      "status": "active",
+      "actions": ["start", "stop", "restart"]
+    }
+  ]
+}
+```
+
+**エラーレスポンス例**:
+```json
+{
+  "status": 404,
+  "success": false,
+  "message": "指定されたサービスが見つかりません",
+  "data": {
+    "serviceId": "unknown-service"
+  }
+}
+```
+
 ### Firebase Functions
 - **onFirestoreWrite**: 新しいカード利用情報が追加された時に実行
   - デイリー/ウィークリー/マンスリーレポートの生成
@@ -115,7 +159,7 @@ DISCORD_REPORT_MONTHLY_WEBHOOK_URL=https://discord.com/api/webhooks/マンスリ
   - ヘルスチェック
   - 詳細な仕様についてはドキュメントを参照してください：[API仕様書](/functions/src/api/readme.md)
 
-APIセットは共通の認証基盤（Firebase Authentication）を使用しており、一元化された権限管理を実現しています。
+APIセットは共通の認証基盤（Firebase Authentication）を使用しており、一元化された権限管理を実現しています。すべてのAPIは、メインシステムAPIと同様の標準レスポンススキーマに準拠しています。
 
 ## 運用
 
@@ -136,6 +180,26 @@ APIセットは共通の認証基盤（Firebase Authentication）を使用して
 6. **重複チェック**: 同一取引の重複登録防止
 7. **データ保存**: Firestoreの年/月/日付構造に従って保存
 8. **通知生成**: Discordへの通知メッセージ作成と送信
+
+## 技術仕様
+
+### API設計
+
+#### レスポンスヘルパー
+API間で一貫したレスポンス形式を実現するため、`ResponseHelper`クラスを使用しています。このユーティリティクラスは、標準化されたレスポンスオブジェクトを生成します：
+
+```typescript
+// 成功レスポンスの生成
+const response = ResponseHelper.success("処理が成功しました", データオブジェクト);
+
+// エラーレスポンスの生成
+const errorResponse = ResponseHelper.error(404, "リソースが見つかりません", エラー詳細);
+
+// バリデーションエラーの生成
+const validationError = ResponseHelper.validationError("入力データが不正です", バリデーションエラー詳細);
+```
+
+すべてのAPIコントローラーは、このヘルパークラスを使用してレスポンスを返します。これにより、クライアント側での処理の一貫性と予測可能性が向上します。
 
 ## 使い方
 
