@@ -2,15 +2,19 @@ import { EmailController } from '../../../../src/interfaces/controllers/EmailCon
 import { ImapEmailService, CardCompany } from '../../../../src/infrastructure/email/ImapEmailService';
 import { ProcessEmailUseCase } from '../../../../src/usecases/ProcessEmailUseCase';
 import { ParsedEmail } from '../../../../src/infrastructure/email/EmailParser';
+import { DiscordNotifier } from '../../../../shared/discord/DiscordNotifier';
 
 // 依存コンポーネントをモック
 jest.mock('../../../../src/infrastructure/email/ImapEmailService');
 jest.mock('../../../../src/usecases/ProcessEmailUseCase');
+jest.mock('../../../../shared/discord/DiscordNotifier');
 jest.mock('../../../../shared/config/Environment', () => ({
   Environment: {
     IMAP_SERVER: 'imap.example.com',
     IMAP_USER: 'user@example.com',
-    IMAP_PASSWORD: 'password'
+    IMAP_PASSWORD: 'password',
+    DISCORD_WEBHOOK_URL: 'https://discord.webhook/test',
+    DISCORD_LOGGING_WEBHOOK_URL: 'https://discord.webhook/test_logging'
   }
 }));
 
@@ -30,6 +34,7 @@ describe('EmailController', () => {
   let emailController: EmailController;
   let mockEmailService: jest.Mocked<ImapEmailService>;
   let mockProcessEmailUseCase: jest.Mocked<ProcessEmailUseCase>;
+  let mockDiscordNotifier: jest.Mocked<DiscordNotifier>;
   // コールバック関数を保存する変数
   let emailCallbacks: Record<string, Function> = {};
 
@@ -90,12 +95,29 @@ describe('EmailController', () => {
 
     mockProcessEmailUseCase = new ProcessEmailUseCase(
       mockEmailService,
-      {} as any,
       {} as any
     ) as jest.Mocked<ProcessEmailUseCase>;
 
+    mockDiscordNotifier = {
+      notify: jest.fn().mockResolvedValue(true),
+      notifyError: jest.fn().mockResolvedValue(true)
+    } as unknown as jest.Mocked<DiscordNotifier>;
+
+    // ProcessEmailUseCase.executeのモック設定
+    mockProcessEmailUseCase.execute = jest.fn().mockResolvedValue({
+      usage: {
+        card_name: 'テストカード',
+        datetime_of_use: '2025-05-10T06:30:00.000Z',
+        amount: 1500,
+        where_to_use: 'テスト利用先',
+        memo: '',
+        is_active: true
+      },
+      savedPath: 'users/2025/5/10/card-usage-123'
+    });
+
     // EmailControllerのインスタンスを作成
-    emailController = new EmailController(mockProcessEmailUseCase);
+    emailController = new EmailController(mockProcessEmailUseCase, mockDiscordNotifier);
   });
 
   describe('isMonitoring', () => {
@@ -216,6 +238,9 @@ describe('EmailController', () => {
         sampleParsedEmail.body,
         CardCompany.MUFG
       );
+
+      // Discord通知が呼ばれることを確認
+      expect(mockDiscordNotifier.notify).toHaveBeenCalled();
     });
 
     test('正常系: SMBCのメールが正しく検出され処理される', async () => {
@@ -233,6 +258,9 @@ describe('EmailController', () => {
         smbcSampleParsedEmail.body,
         CardCompany.SMBC
       );
+      
+      // Discord通知が呼ばれることを確認
+      expect(mockDiscordNotifier.notify).toHaveBeenCalled();
     });
 
     test('異常系: カード会社が検出できないメールの場合', async () => {
@@ -255,6 +283,9 @@ describe('EmailController', () => {
 
       // ProcessEmailUseCaseは呼ばれないことを確認
       expect(mockProcessEmailUseCase.execute).not.toHaveBeenCalled();
+      
+      // Discord通知も呼ばれないことを確認
+      expect(mockDiscordNotifier.notify).not.toHaveBeenCalled();
     });
 
     test('異常系: メール処理中にエラーが発生した場合', async () => {
@@ -272,6 +303,9 @@ describe('EmailController', () => {
 
       // executeは呼ばれるがエラーはキャッチされる
       expect(mockProcessEmailUseCase.execute).toHaveBeenCalled();
+      
+      // エラー時にDiscord通知が呼ばれることを確認
+      expect(mockDiscordNotifier.notifyError).toHaveBeenCalled();
     });
   });
 });

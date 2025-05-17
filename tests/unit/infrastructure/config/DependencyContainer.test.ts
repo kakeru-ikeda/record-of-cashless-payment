@@ -12,6 +12,7 @@ jest.mock('../../../../shared/config/Environment', () => ({
     IMAP_USER: 'test-user',
     IMAP_PASSWORD: 'test-password',
     DISCORD_WEBHOOK_URL: 'https://discord.webhook/test',
+    DISCORD_LOGGING_WEBHOOK_URL: 'https://discord.webhook/test_logging',
   }
 }));
 
@@ -50,15 +51,19 @@ describe('DependencyContainer', () => {
 
     // 環境変数を初期化
     mockEnvironment.DISCORD_WEBHOOK_URL = 'https://discord.webhook/test';
+    mockEnvironment.DISCORD_LOGGING_WEBHOOK_URL = 'https://discord.webhook/test_logging';
 
     // モックの設定
     mockImapEmailService = new ImapEmailService('', '', '') as jest.Mocked<ImapEmailService>;
     mockFirestoreCardUsageRepository = new FirestoreCardUsageRepository() as jest.Mocked<FirestoreCardUsageRepository>;
     mockFirestoreCardUsageRepository.initialize = jest.fn().mockResolvedValue(undefined);
     
-    mockDiscordNotifier = new DiscordWebhookNotifier('') as jest.Mocked<DiscordWebhookNotifier>;
-    mockProcessEmailUseCase = new ProcessEmailUseCase({} as any, {} as any, {} as any) as jest.Mocked<ProcessEmailUseCase>;
-    mockEmailController = new EmailController({} as any) as jest.Mocked<EmailController>;
+    mockDiscordNotifier = new DiscordWebhookNotifier({
+      usageWebhookUrl: mockEnvironment.DISCORD_WEBHOOK_URL,
+      loggingWebhookUrl: mockEnvironment.DISCORD_LOGGING_WEBHOOK_URL
+    }) as jest.Mocked<DiscordWebhookNotifier>;
+    mockProcessEmailUseCase = new ProcessEmailUseCase({} as any, {} as any) as jest.Mocked<ProcessEmailUseCase>;
+    mockEmailController = new EmailController({} as any, {} as any) as jest.Mocked<EmailController>;
 
     // コンストラクタのモック
     (ImapEmailService as jest.MockedClass<typeof ImapEmailService>).mockImplementation(
@@ -99,19 +104,22 @@ describe('DependencyContainer', () => {
 
       // DiscordWebhookNotifierが正しい引数で初期化されることを確認
       expect(DiscordWebhookNotifier).toHaveBeenCalledWith(
-        mockEnvironment.DISCORD_WEBHOOK_URL
+        expect.objectContaining({
+          usageWebhookUrl: mockEnvironment.DISCORD_WEBHOOK_URL,
+          loggingWebhookUrl: mockEnvironment.DISCORD_LOGGING_WEBHOOK_URL
+        })
       );
 
       // ProcessEmailUseCaseが正しい引数で初期化されることを確認
       expect(ProcessEmailUseCase).toHaveBeenCalledWith(
         mockImapEmailService,
-        mockFirestoreCardUsageRepository,
-        mockDiscordNotifier
+        mockFirestoreCardUsageRepository
       );
 
       // EmailControllerが正しい引数で初期化されることを確認
       expect(EmailController).toHaveBeenCalledWith(
-        mockProcessEmailUseCase
+        mockProcessEmailUseCase,
+        mockDiscordNotifier
       );
 
       // ステータス更新のログが記録されることを確認

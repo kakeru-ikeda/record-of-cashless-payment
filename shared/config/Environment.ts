@@ -32,6 +32,8 @@ export class Environment {
     static readonly DISCORD_REPORT_WEEKLY_WEBHOOK_URL = process.env.DISCORD_REPORT_WEEKLY_WEBHOOK_URL || '';
     // レポート通知用のWebhook URL（月次）
     static readonly DISCORD_REPORT_MONTHLY_WEBHOOK_URL = process.env.DISCORD_REPORT_MONTHLY_WEBHOOK_URL || '';
+    // エラーログ通知用のWebhook URL
+    static readonly DISCORD_LOGGING_WEBHOOK_URL = process.env.DISCORD_LOGGING_WEBHOOK_URL || '';
 
     // Firebase関連の設定
     static readonly FIREBASE_ADMIN_KEY_PATH = process.env.GOOGLE_APPLICATION_CREDENTIALS
@@ -78,6 +80,7 @@ export class Environment {
         this.validateDiscordWebhook(this.DISCORD_REPORT_DAILY_WEBHOOK_URL, '日次レポート通知用');
         this.validateDiscordWebhook(this.DISCORD_REPORT_WEEKLY_WEBHOOK_URL, '週次レポート通知用');
         this.validateDiscordWebhook(this.DISCORD_REPORT_MONTHLY_WEBHOOK_URL, '月次レポート通知用');
+        this.validateDiscordWebhook(this.DISCORD_LOGGING_WEBHOOK_URL, 'エラーログ通知用');
 
         logger.info('✅ 環境変数の検証が完了しました', CONTEXT);
         return true;
@@ -174,5 +177,15 @@ export class Environment {
     static getDiscordReportMonthlyWebhookUrl(): string {
         // 月次レポート用URLがなければ標準URLにフォールバック
         return this.DISCORD_REPORT_MONTHLY_WEBHOOK_URL || this.DISCORD_WEBHOOK_URL;
+    }
+
+    /**
+     * エラーログ通知用のDiscord WebhookのURLを取得する
+     * エラーログの通知に使用される
+     * @returns エラーログ通知用Discord WebhookのURL
+     */
+    static getDiscordLoggingWebhookUrl(): string {
+        // エラーログ用URLがなければ標準URLにフォールバック
+        return this.DISCORD_LOGGING_WEBHOOK_URL || this.DISCORD_WEBHOOK_URL;
     }
 }

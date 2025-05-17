@@ -64,16 +64,34 @@
 .env ファイルをプロジェクトルートに作成：
 
 ```
+# システムの基本設定
+PORT=3000
+COMPACT_LOGS=false
+SUPPRESS_POLLING_LOGS=true
+API_TEST_MODE=true
+
+# IMAPの設定
 IMAP_SERVER=imap.gmail.com
-IMAP_USER=あなたのメールアドレス@gmail.com
-IMAP_PASSWORD=あなたのアプリパスワード
-DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/あなたのウェブフックURL
-GOOGLE_APPLICATION_CREDENTIALS=./firebase-admin-key.json
+IMAP_USER=yourmailaddress@example.com
+IMAP_PASSWORD=xxxx xxxx xxxx xxxx
+
+# Discordの設定
+DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/yourguildid/yourwebhookid
+DISCORD_LOGGING_WEBHOOK_URL=https://discord.com/api/webhooks/yourguildid/yourloggingwebhookid
+
+# Firebaseの設定
+GOOGLE_APPLICATION_CREDENTIALS=firebase-admin-key.json
 ```
 
 .env ファイルを /functions ディレクトリ配下に作成：
 
 ```
+# 利用通知用Webhook URLs
+DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/yourguildid/yourwebhookid
+
+# ロギング用Webhook URLs
+DISCORD_LOGGING_WEBHOOK_URL=https://discord.com/api/webhooks/yourguildid/yourwebhookid
+
 # アラート通知用Webhook URLs
 DISCORD_ALERT_WEEKLY_WEBHOOK_URL=https://discord.com/api/webhooks/ウィークリーアラート用ウェブフックURL
 DISCORD_ALERT_MONTHLY_WEBHOOK_URL=https://discord.com/api/webhooks/マンスリーアラート用ウェブフックURL
@@ -84,9 +102,9 @@ DISCORD_REPORT_WEEKLY_WEBHOOK_URL=https://discord.com/api/webhooks/ウィーク�
 DISCORD_REPORT_MONTHLY_WEBHOOK_URL=https://discord.com/api/webhooks/マンスリーレポート用ウェブフックURL
 ```
 
-> **注意**: 利用明細通知用のWebhook URLはCloud Functionsでは使用しません。メインプログラムの.envファイルに設定してください。
-
 > **注意**: Gmail を使用する場合は、アプリパスワードの発行が必要です。
+
+本番環境ではコンテナに設定される環境変数が参照されます。必要に応じてDockerfile 及び Jenkinsfileの設定も行ってください。
 
 ## 機能詳細
 
@@ -177,7 +195,7 @@ DISCORD_REPORT_MONTHLY_WEBHOOK_URL=https://discord.com/api/webhooks/マンスリ
   - カード利用情報のCRUD操作
   - 日次/週次/月次レポートの取得
   - ヘルスチェック
-  - 詳細な仕様についてはドキュメントを参照してください：[API仕様書](/functions/src/api/readme.md)
+  - 詳細な仕様についてはドキュメントを参照してください：[API仕様書](/functions/src/api/README.md)
 
 APIセットは共通の認証基盤（Firebase Authentication）を使用しており、一元化された権限管理を実現しています。すべてのAPIは、メインシステムAPIと同様の標準レスポンススキーマに準拠しています。
 

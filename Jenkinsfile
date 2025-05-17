@@ -116,6 +116,7 @@ pipeline {
                         string(credentialsId: 'IMAP_USER', variable: 'IMAP_USER'),
                         string(credentialsId: 'IMAP_PASSWORD', variable: 'IMAP_PASSWORD'),
                         string(credentialsId: 'DISCORD_WEBHOOK_URL', variable: 'DISCORD_WEBHOOK_URL'),
+                        string(credentialsId: 'DISCORD_LOGGING_WEBHOOK_URL', variable: 'DISCORD_LOGGING_WEBHOOK_URL'),
                         string(credentialsId: 'DISCORD_WEBHOOK_JENKINS_LOG_URL', variable: 'DISCORD_WEBHOOK_JENKINS_LOG_URL'),
                         string(credentialsId: 'GOOGLE_APPLICATION_CREDENTIALS', variable: 'GOOGLE_APPLICATION_CREDENTIALS'),
                         file(credentialsId: 'FIREBASE_ADMIN_KEY', variable: 'FIREBASE_ADMIN_KEY'),
@@ -229,6 +230,7 @@ pipeline {
                                 -e IMAP_USER='${imapUser}' \\
                                 -e IMAP_PASSWORD='${imapPassword}' \\
                                 -e DISCORD_WEBHOOK_URL='${discordWebhookUrl}' \\
+                                -e DISCORD_LOGGING_WEBHOOK_URL='${DISCORD_LOGGING_WEBHOOK_URL}' \\
                                 -e GOOGLE_APPLICATION_CREDENTIALS='/usr/src/app/firebase-admin-key.json' \\
                                 -v /tmp/firebase-admin-key.json:/usr/src/app/firebase-admin-key.json \\
                                 ${dockerHubUser}/${imageName}:latest
@@ -260,6 +262,7 @@ pipeline {
                                             -e IMAP_USER='${imapUser}' \\
                                             -e IMAP_PASSWORD='${imapPassword}' \\
                                             -e DISCORD_WEBHOOK_URL='${discordWebhookUrl}' \\
+                                            -e DISCORD_LOGGING_WEBHOOK_URL='${DISCORD_LOGGING_WEBHOOK_URL}' \\
                                             -e GOOGLE_APPLICATION_CREDENTIALS='/usr/src/app/firebase-admin-key.json' \\
                                             -v /tmp/firebase-admin-key.json:/usr/src/app/firebase-admin-key.json \\
                                             \$CURRENT_CONTAINER_IMAGE
