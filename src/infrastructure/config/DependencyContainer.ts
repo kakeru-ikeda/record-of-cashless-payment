@@ -10,12 +10,13 @@ import { NotifyCardUsageUseCase } from '../../usecases/notification/NotifyCardUs
 import { ErrorHandler } from '../../../shared/errors/ErrorHandler';
 import { IProcessCardCompanyEmailUseCase } from '../../domain/usecases/email/IProcessCardCompanyEmailUseCase';
 import { INotifyCardUsageUseCase } from '../../domain/usecases/notification/INotifyCardUsageUseCase';
+import { IDependencyContainer } from '../../domain/interfaces/config/IDependencyContainer';
 
 /**
  * アプリケーションの依存性を管理するコンテナクラス
  * 各サービス、リポジトリ、ユースケース、コントローラーの初期化と提供を担当
  */
-export class DependencyContainer {
+export class DependencyContainer implements IDependencyContainer {
   private emailService: ImapEmailService;
   private cardUsageRepository: FirestoreCardUsageRepository;
   private discordNotifier: DiscordWebhookNotifier;
@@ -58,7 +59,7 @@ export class DependencyContainer {
     // 新しいユースケースの初期化
     this.notifyCardUsageUseCase = new NotifyCardUsageUseCase(this.discordNotifier);
     logger.updateServiceStatus('NotifyCardUsageUseCase', 'online', '初期化完了');
-    
+
     this.processCardCompanyEmailUseCase = new ProcessCardCompanyEmailUseCase(
       this.processEmailUseCase
     );

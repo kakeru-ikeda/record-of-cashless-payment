@@ -2,11 +2,12 @@ import { ImapFlow } from 'imapflow';
 import { logger } from '../../../shared/utils/Logger';
 import { AppError, ErrorType } from '../../../shared/errors/AppError';
 import { EventEmitter } from 'events';
+import { IEmailClient, ImapConnectionConfig as IImapConnectionConfig } from '../../domain/interfaces/email/IEmailClient';
 
 /**
  * IMAP接続管理のための型定義
  */
-export interface ImapConnectionConfig {
+export interface ImapConnectionConfig extends IImapConnectionConfig {
   host: string;
   port: number;
   secure: boolean;
@@ -28,7 +29,7 @@ export interface RawEmailMessage {
  * IMAP接続・管理を専門に行うアダプタークラス
  * ImapFlowライブラリのラッパーとして機能し、接続管理・再接続・メール取得などの低レベル操作を担当
  */
-export class ImapClientAdapter extends EventEmitter {
+export class ImapClientAdapter extends EventEmitter implements IEmailClient {
   private client: ImapFlow | null = null;
   private keepAliveTimer: NodeJS.Timeout | null = null;
   private reconnectTimer: NodeJS.Timeout | null = null;

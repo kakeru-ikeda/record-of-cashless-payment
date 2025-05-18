@@ -3,6 +3,7 @@ import { htmlToText } from 'html-to-text';
 import { logger } from '../../../shared/utils/Logger';
 import { AppError, ErrorType } from '../../../shared/errors/AppError';
 import { RawEmailMessage } from './ImapClientAdapter';
+import { IEmailParser } from '../../domain/interfaces/email/IEmailParser';
 
 /**
  * パース済みメールの型定義
@@ -19,7 +20,7 @@ export interface ParsedEmail {
  * メール解析を担当するクラス
  * 生のメールデータを受け取り、構造化された形式に変換する
  */
-export class EmailParser {
+export class EmailParser implements IEmailParser {
   private readonly serviceContext: string;
   
   constructor() {
