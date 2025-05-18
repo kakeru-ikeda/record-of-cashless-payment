@@ -1,10 +1,9 @@
-import { CardCompany } from '../infrastructure/email/CardUsageExtractor';
-import { ParsedEmail } from '../infrastructure/email/EmailParser';
-import { IProcessCardCompanyEmailUseCase } from '../domain/usecases/IProcessCardCompanyEmailUseCase';
+import { CardCompany } from '../../infrastructure/email/CardUsageExtractor';
+import { ParsedEmail } from '../../infrastructure/email/EmailParser';
+import { IProcessCardCompanyEmailUseCase } from '../../domain/usecases/IProcessCardCompanyEmailUseCase';
 import { ProcessEmailUseCase } from './ProcessEmailUseCase';
-import { logger } from '../../shared/utils/Logger';
-import { AppError, ErrorType } from '../../shared/errors/AppError';
-import { ErrorHandler } from '../../shared/errors/ErrorHandler';
+import { logger } from '../../../shared/utils/Logger';
+import { ErrorHandler } from '../../../shared/errors/ErrorHandler';
 import { CardUsageNotification } from 'shared/domain/entities/CardUsageNotification';
 
 export class ProcessCardCompanyEmailUseCase implements IProcessCardCompanyEmailUseCase {

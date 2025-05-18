@@ -1,4 +1,4 @@
-import { ProcessEmailUseCase } from '../../../src/usecases/ProcessEmailUseCase';
+import { ProcessEmailUseCase } from '../../../src/usecases/email/ProcessEmailUseCase';
 import { ImapEmailService, CardCompany } from '../../../src/infrastructure/email/ImapEmailService';
 import { ICardUsageRepository } from '../../../src/domain/repositories/ICardUsageRepository';
 import { DiscordNotifier } from '../../../shared/discord/DiscordNotifier';

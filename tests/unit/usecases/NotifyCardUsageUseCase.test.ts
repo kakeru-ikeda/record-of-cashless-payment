@@ -1,4 +1,4 @@
-import { NotifyCardUsageUseCase } from '../../../src/usecases/NotifyCardUsageUseCase';
+import { NotifyCardUsageUseCase } from '../../../src/usecases/notification/NotifyCardUsageUseCase';
 import { DiscordNotifier } from '../../../shared/discord/DiscordNotifier';
 import { CardUsageNotification } from '../../../shared/domain/entities/CardUsageNotification';
 import { AppError, ErrorType } from '../../../shared/errors/AppError';

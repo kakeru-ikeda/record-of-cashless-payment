@@ -1,13 +1,13 @@
 import { EmailController } from '../../../../src/interfaces/controllers/EmailController';
 import { ImapEmailService, CardCompany } from '../../../../src/infrastructure/email/ImapEmailService';
-import { ProcessCardCompanyEmailUseCase } from '../../../../src/usecases/ProcessCardCompanyEmailUseCase';
-import { NotifyCardUsageUseCase } from '../../../../src/usecases/NotifyCardUsageUseCase';
+import { ProcessCardCompanyEmailUseCase } from '../../../../src/usecases/email/ProcessCardCompanyEmailUseCase';
+import { NotifyCardUsageUseCase } from '../../../../src/usecases/notification/NotifyCardUsageUseCase';
 import { ParsedEmail } from '../../../../src/infrastructure/email/EmailParser';
 
 // 依存コンポーネントをモック
 jest.mock('../../../../src/infrastructure/email/ImapEmailService');
-jest.mock('../../../../src/usecases/ProcessCardCompanyEmailUseCase');
-jest.mock('../../../../src/usecases/NotifyCardUsageUseCase');
+jest.mock('../../../../src/usecases/email/ProcessCardCompanyEmailUseCase');
+jest.mock('../../../../src/usecases/notification/NotifyCardUsageUseCase');
 jest.mock('../../../../shared/config/Environment', () => ({
   Environment: {
     IMAP_SERVER: 'imap.example.com',

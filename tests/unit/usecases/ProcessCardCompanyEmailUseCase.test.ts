@@ -1,5 +1,5 @@
-import { ProcessCardCompanyEmailUseCase } from '../../../src/usecases/ProcessCardCompanyEmailUseCase';
-import { ProcessEmailUseCase } from '../../../src/usecases/ProcessEmailUseCase';
+import { ProcessCardCompanyEmailUseCase } from '../../../src/usecases/email/ProcessCardCompanyEmailUseCase';
+import { ProcessEmailUseCase } from '../../../src/usecases/email/ProcessEmailUseCase';
 import { ParsedEmail } from '../../../src/infrastructure/email/EmailParser';
 import { CardCompany } from '../../../src/infrastructure/email/CardUsageExtractor';
 import { CardUsageNotification } from '../../../shared/domain/entities/CardUsageNotification';

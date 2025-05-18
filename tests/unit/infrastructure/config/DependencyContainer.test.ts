@@ -2,10 +2,10 @@ import { DependencyContainer } from '../../../../src/infrastructure/config/Depen
 import { ImapEmailService } from '../../../../src/infrastructure/email/ImapEmailService';
 import { FirestoreCardUsageRepository } from '../../../../src/infrastructure/firebase/FirestoreCardUsageRepository';
 import { DiscordWebhookNotifier } from '../../../../shared/discord/DiscordNotifier';
-import { ProcessEmailUseCase } from '../../../../src/usecases/ProcessEmailUseCase';
+import { ProcessEmailUseCase } from '../../../../src/usecases/email/ProcessEmailUseCase';
 import { EmailController } from '../../../../src/interfaces/controllers/EmailController';
-import { ProcessCardCompanyEmailUseCase } from '../../../../src/usecases/ProcessCardCompanyEmailUseCase';
-import { NotifyCardUsageUseCase } from '../../../../src/usecases/NotifyCardUsageUseCase';
+import { ProcessCardCompanyEmailUseCase } from '../../../../src/usecases/email/ProcessCardCompanyEmailUseCase';
+import { NotifyCardUsageUseCase } from '../../../../src/usecases/notification/NotifyCardUsageUseCase';
 
 // ErrorHandlerをモック化
 jest.mock('../../../../shared/errors/ErrorHandler', () => ({
@@ -36,10 +36,10 @@ jest.mock('../../../../shared/config/Environment', () => ({
 jest.mock('../../../../src/infrastructure/email/ImapEmailService');
 jest.mock('../../../../src/infrastructure/firebase/FirestoreCardUsageRepository');
 jest.mock('../../../../shared/discord/DiscordNotifier');
-jest.mock('../../../../src/usecases/ProcessEmailUseCase');
+jest.mock('../../../../src/usecases/email/ProcessEmailUseCase');
 jest.mock('../../../../src/interfaces/controllers/EmailController');
-jest.mock('../../../../src/usecases/ProcessCardCompanyEmailUseCase');
-jest.mock('../../../../src/usecases/NotifyCardUsageUseCase');
+jest.mock('../../../../src/usecases/email/ProcessCardCompanyEmailUseCase');
+jest.mock('../../../../src/usecases/notification/NotifyCardUsageUseCase');
 
 // Loggerをモック化
 jest.mock('../../../../shared/utils/Logger', () => ({

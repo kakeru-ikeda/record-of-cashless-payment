@@ -1,12 +1,12 @@
 import { ImapEmailService } from '../email/ImapEmailService';
 import { FirestoreCardUsageRepository } from '../firebase/FirestoreCardUsageRepository';
 import { DiscordWebhookNotifier } from '../../../shared/discord/DiscordNotifier';
-import { ProcessEmailUseCase } from '../../usecases/ProcessEmailUseCase';
+import { ProcessEmailUseCase } from '../../usecases/email/ProcessEmailUseCase';
 import { EmailController } from '../../interfaces/controllers/EmailController';
 import { Environment } from '../../../shared/config/Environment';
 import { logger } from '../../../shared/utils/Logger';
-import { ProcessCardCompanyEmailUseCase } from '../../usecases/ProcessCardCompanyEmailUseCase';
-import { NotifyCardUsageUseCase } from '../../usecases/NotifyCardUsageUseCase';
+import { ProcessCardCompanyEmailUseCase } from '../../usecases/email/ProcessCardCompanyEmailUseCase';
+import { NotifyCardUsageUseCase } from '../../usecases/notification/NotifyCardUsageUseCase';
 import { ErrorHandler } from '../../../shared/errors/ErrorHandler';
 import { IProcessCardCompanyEmailUseCase } from '../../domain/usecases/IProcessCardCompanyEmailUseCase';
 import { INotifyCardUsageUseCase } from '../../domain/usecases/INotifyCardUsageUseCase';

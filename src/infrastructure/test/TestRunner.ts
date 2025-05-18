@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from '../../../shared/utils/Logger';
-import { ProcessEmailUseCase } from '../../usecases/ProcessEmailUseCase';
+import { ProcessEmailUseCase } from '../../usecases/email/ProcessEmailUseCase';
 import { CardCompany } from '../email/ImapEmailService';
 
 /**

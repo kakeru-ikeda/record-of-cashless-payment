@@ -4,7 +4,7 @@ import { DependencyContainer } from '../../../../src/infrastructure/config/Depen
 import { EmailController } from '../../../../src/interfaces/controllers/EmailController';
 import { TestRunner } from '../../../../src/infrastructure/test/TestRunner';
 import { CardCompany } from '../../../../src/infrastructure/email/ImapEmailService';
-import { ProcessEmailUseCase } from '../../../../src/usecases/ProcessEmailUseCase';
+import { ProcessEmailUseCase } from '../../../../src/usecases/email/ProcessEmailUseCase';
 import { Server } from 'http';
 
 // 依存コンポーネントをモック化
