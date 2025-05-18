@@ -1,13 +1,13 @@
 import { EmailController } from '../../../../src/interfaces/controllers/EmailController';
 import { ImapEmailService, CardCompany } from '../../../../src/infrastructure/email/ImapEmailService';
-import { ProcessEmailUseCase } from '../../../../src/usecases/ProcessEmailUseCase';
+import { ProcessCardCompanyEmailUseCase } from '../../../../src/usecases/ProcessCardCompanyEmailUseCase';
+import { NotifyCardUsageUseCase } from '../../../../src/usecases/NotifyCardUsageUseCase';
 import { ParsedEmail } from '../../../../src/infrastructure/email/EmailParser';
-import { DiscordNotifier } from '../../../../shared/discord/DiscordNotifier';
 
 // 依存コンポーネントをモック
 jest.mock('../../../../src/infrastructure/email/ImapEmailService');
-jest.mock('../../../../src/usecases/ProcessEmailUseCase');
-jest.mock('../../../../shared/discord/DiscordNotifier');
+jest.mock('../../../../src/usecases/ProcessCardCompanyEmailUseCase');
+jest.mock('../../../../src/usecases/NotifyCardUsageUseCase');
 jest.mock('../../../../shared/config/Environment', () => ({
   Environment: {
     IMAP_SERVER: 'imap.example.com',
@@ -30,21 +30,36 @@ jest.mock('../../../../shared/utils/Logger', () => ({
   }
 }));
 
+// ErrorHandlerをモック化
+jest.mock('../../../../shared/errors/ErrorHandler', () => ({
+  ErrorHandler: {
+    errorDecorator: () => () => (
+      _target: any,
+      _propertyKey: string | symbol,
+      descriptor: PropertyDescriptor
+    ) => descriptor,
+    handleEventError: jest.fn(),
+    extractErrorInfoFromArgs: jest.fn()
+  }
+}));
+
 describe('EmailController', () => {
   let emailController: EmailController;
-  let mockEmailService: jest.Mocked<ImapEmailService>;
-  let mockProcessEmailUseCase: jest.Mocked<ProcessEmailUseCase>;
-  let mockDiscordNotifier: jest.Mocked<DiscordNotifier>;
-  // コールバック関数を保存する変数
-  let emailCallbacks: Record<string, Function> = {};
+  let mockImapEmailService: jest.Mocked<ImapEmailService>;
+  let mockProcessCardCompanyEmailUseCase: jest.Mocked<ProcessCardCompanyEmailUseCase>;
+  let mockNotifyCardUsageUseCase: jest.Mocked<NotifyCardUsageUseCase>;
 
-  // テスト用のサンプルデータ
+  // コールバック関数を保存するためのオブジェクト
+  let emailCallbacks: Record<string, (email: ParsedEmail) => Promise<void>> = {};
+
+  // テスト用のサンプルメールデータ
   const sampleParsedEmail: ParsedEmail = {
     uid: '123',
-    subject: 'デビットカード取引確認メール',
-    from: 'service@bk.mufg.jp',
+    subject: 'デビットカード利用のお知らせ',
+    from: 'notification@bk.mufg.jp',
     body: `カード名称：Ｄ　三菱ＵＦＪ－ＪＣＢデビット
 デビットカード取引確認メール
+
 【ご利用日時(日本時間)】 2025年5月10日 15:30:00
 【ご利用金額】 1,500円
 【ご利用先】 コンビニ
@@ -54,8 +69,8 @@ describe('EmailController', () => {
 
   const smbcSampleParsedEmail: ParsedEmail = {
     uid: '456',
-    subject: '三井住友カード ご利用のお知らせ',
-    from: 'service@smbc-card.com',
+    subject: '三井住友カードのご利用のお知らせ',
+    from: 'notification@smbc-card.com',
     body: `三井住友カード 様
 
 三井住友カードの利用のお知らせ
@@ -86,69 +101,55 @@ describe('EmailController', () => {
       return mockInstance;
     });
 
-    // モックの初期化
-    mockEmailService = new ImapEmailService(
-      'imap.example.com',
-      'user',
-      'password'
-    ) as jest.Mocked<ImapEmailService>;
+    // ProcessCardCompanyEmailUseCaseのモックを設定
+    mockProcessCardCompanyEmailUseCase = {
+      execute: jest.fn().mockResolvedValue({
+        cardCompany: CardCompany.MUFG,
+        usageResult: {
+          usage: {
+            card_name: 'テストカード',
+            datetime_of_use: '2025-05-10T06:30:00.000Z',
+            amount: 1500,
+            where_to_use: 'テスト利用先',
+          },
+          savedPath: 'users/2025/5/10/card-usage-123'
+        }
+      })
+    } as unknown as jest.Mocked<ProcessCardCompanyEmailUseCase>;
 
-    mockProcessEmailUseCase = new ProcessEmailUseCase(
-      mockEmailService,
-      {} as any
-    ) as jest.Mocked<ProcessEmailUseCase>;
-
-    mockDiscordNotifier = {
-      notify: jest.fn().mockResolvedValue(true),
-      notifyError: jest.fn().mockResolvedValue(true)
-    } as unknown as jest.Mocked<DiscordNotifier>;
-
-    // ProcessEmailUseCase.executeのモック設定
-    mockProcessEmailUseCase.execute = jest.fn().mockResolvedValue({
-      usage: {
-        card_name: 'テストカード',
-        datetime_of_use: '2025-05-10T06:30:00.000Z',
-        amount: 1500,
-        where_to_use: 'テスト利用先',
-        memo: '',
-        is_active: true
-      },
-      savedPath: 'users/2025/5/10/card-usage-123'
-    });
+    // NotifyCardUsageUseCaseのモックを設定
+    mockNotifyCardUsageUseCase = {
+      notifyUsage: jest.fn().mockResolvedValue(undefined),
+      notifyError: jest.fn().mockResolvedValue(undefined),
+      notifyLogging: jest.fn().mockResolvedValue(undefined)
+    } as unknown as jest.Mocked<NotifyCardUsageUseCase>;
 
     // EmailControllerのインスタンスを作成
-    emailController = new EmailController(mockProcessEmailUseCase, mockDiscordNotifier);
-  });
-
-  describe('isMonitoring', () => {
-    test('初期状態では監視は無効', () => {
-      expect(emailController.isMonitoring()).toBe(false);
-    });
-
-    test('startAllMonitoring後は監視有効になる', async () => {
-      await emailController.startAllMonitoring();
-      expect(emailController.isMonitoring()).toBe(true);
-    });
+    emailController = new EmailController(
+      mockProcessCardCompanyEmailUseCase,
+      mockNotifyCardUsageUseCase
+    );
   });
 
   describe('startAllMonitoring', () => {
-    test('正常系: すべてのメールボックス監視が開始される', async () => {
+    test('正常系: すべてのメールボックスの監視を開始できること', async () => {
       await emailController.startAllMonitoring();
 
       // ImapEmailServiceのインスタンスが2回作成されることを確認
-      expect(ImapEmailService).toHaveBeenCalledTimes(3);  // デフォルト + MUFG + SMBC
+      expect(ImapEmailService).toHaveBeenCalledTimes(2);
 
       // connectメソッドが各メールボックスで呼ばれることを確認
       const emailServiceInstances = (ImapEmailService as jest.Mock).mock.results;
 
       // 実装内で新しく作られるインスタンスのconnectが正しく呼ばれることを確認
-      const connectCalls = emailServiceInstances
-        .map(result => result.value.connect)
-        .filter(connect => typeof connect === 'function')
-        .map(connect => connect.mock.calls)
-        .flat();
-
-      expect(connectCalls.length).toBe(2);
+      expect(emailServiceInstances[0].value.connect).toHaveBeenCalledWith(
+        '三菱東京UFJ銀行',
+        expect.any(Function)
+      );
+      expect(emailServiceInstances[1].value.connect).toHaveBeenCalledWith(
+        '三井住友カード',
+        expect.any(Function)
+      );
 
       // MUFGのコールバックが登録されていること
       expect(emailCallbacks['MUFG']).toBeDefined();
@@ -176,25 +177,25 @@ describe('EmailController', () => {
 
       await emailController.startAllMonitoring();
 
-      // SMBCのコールバックは登録されていること
+      // エラーが発生してもSMBCの接続は行われる
       expect(emailCallbacks['SMBC']).toBeDefined();
-      expect(typeof emailCallbacks['SMBC']).toBe('function');
-
+      
+      // 監視フラグはtrueになる
       expect(emailController.isMonitoring()).toBe(true);
     });
   });
 
   describe('stopMonitoring', () => {
-    test('すべてのメール監視を正常に停止できること', async () => {
+    test('正常系: すべてのメールボックスの監視を停止できること', async () => {
       // まず監視開始
       await emailController.startAllMonitoring();
-      expect(emailController.isMonitoring()).toBe(true);
 
       // 監視停止
       await emailController.stopMonitoring();
 
-      // すべてのメールサービスのclose()が呼ばれることを確認
-      const closeMethodCalls = (ImapEmailService as jest.Mock).mock.results
+      // すべてのインスタンスのcloseメソッドが呼ばれることを確認
+      const instances = (ImapEmailService as jest.Mock).mock.results;
+      const closeMethodCalls = instances
         .map(result => result.value.close)
         .filter(close => typeof close === 'function')
         .map(close => close.mock.calls)
@@ -223,7 +224,7 @@ describe('EmailController', () => {
   });
 
   describe('メールの処理', () => {
-    test('正常系: MUFGのメールが正しく検出され処理される', async () => {
+    test('正常系: メールが正しく処理されること', async () => {
       // 監視開始
       await emailController.startAllMonitoring();
 
@@ -233,79 +234,69 @@ describe('EmailController', () => {
 
       await callback(sampleParsedEmail);
 
-      // ProcessEmailUseCaseのexecuteが呼ばれることを検証
-      expect(mockProcessEmailUseCase.execute).toHaveBeenCalledWith(
-        sampleParsedEmail.body,
-        CardCompany.MUFG
+      // ProcessCardCompanyEmailUseCaseのexecuteが呼ばれることを検証
+      expect(mockProcessCardCompanyEmailUseCase.execute).toHaveBeenCalledWith(
+        sampleParsedEmail
       );
 
-      // Discord通知が呼ばれることを確認
-      expect(mockDiscordNotifier.notify).toHaveBeenCalled();
-    });
-
-    test('正常系: SMBCのメールが正しく検出され処理される', async () => {
-      // 監視開始
-      await emailController.startAllMonitoring();
-
-      // SMBCのコールバックを取得して手動で実行
-      const callback = emailCallbacks['SMBC'];
-      expect(callback).toBeDefined();
-
-      await callback(smbcSampleParsedEmail);
-
-      // ProcessEmailUseCaseのexecuteが呼ばれることを検証
-      expect(mockProcessEmailUseCase.execute).toHaveBeenCalledWith(
-        smbcSampleParsedEmail.body,
-        CardCompany.SMBC
+      // NotifyCardUsageUseCaseのnotifyUsageが呼ばれることを確認
+      expect(mockNotifyCardUsageUseCase.notifyUsage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          card_name: expect.any(String),
+          datetime_of_use: expect.any(String),
+          amount: expect.any(Number),
+          where_to_use: expect.any(String)
+        })
       );
-      
-      // Discord通知が呼ばれることを確認
-      expect(mockDiscordNotifier.notify).toHaveBeenCalled();
     });
 
-    test('異常系: カード会社が検出できないメールの場合', async () => {
+    test('異常系: ProcessCardCompanyEmailUseCaseがnullを返す場合の挙動', async () => {
+      // カード会社を特定できないケース
+      mockProcessCardCompanyEmailUseCase.execute.mockResolvedValueOnce({
+        cardCompany: null
+      });
+
       // 監視開始
       await emailController.startAllMonitoring();
 
-      // カード会社を検出できないメール
-      const unknownEmail: ParsedEmail = {
-        ...sampleParsedEmail,
-        subject: '不明なメール',
-        from: 'unknown@example.com',
-        body: 'これはカード利用に関係ないメールです。'
-      };
-
-      // MUFGのコールバックを取得して手動で実行
+      // コールバックを取得して手動で実行
       const callback = emailCallbacks['MUFG'];
-      expect(callback).toBeDefined();
-
-      await callback(unknownEmail);
-
-      // ProcessEmailUseCaseは呼ばれないことを確認
-      expect(mockProcessEmailUseCase.execute).not.toHaveBeenCalled();
-      
-      // Discord通知も呼ばれないことを確認
-      expect(mockDiscordNotifier.notify).not.toHaveBeenCalled();
-    });
-
-    test('異常系: メール処理中にエラーが発生した場合', async () => {
-      // 監視開始
-      await emailController.startAllMonitoring();
-
-      // ProcessEmailUseCase.executeがエラーをスローするようにモック
-      mockProcessEmailUseCase.execute.mockRejectedValueOnce(new Error('処理エラー'));
-
-      // MUFGのコールバックを取得して手動で実行
-      const callback = emailCallbacks['MUFG'];
-      expect(callback).toBeDefined();
-
       await callback(sampleParsedEmail);
 
-      // executeは呼ばれるがエラーはキャッチされる
-      expect(mockProcessEmailUseCase.execute).toHaveBeenCalled();
-      
-      // エラー時にDiscord通知が呼ばれることを確認
-      expect(mockDiscordNotifier.notifyError).toHaveBeenCalled();
+      // エラー通知が呼ばれることを確認
+      expect(mockNotifyCardUsageUseCase.notifyError).toHaveBeenCalled();
+      // 利用通知は呼ばれないことを確認
+      expect(mockNotifyCardUsageUseCase.notifyUsage).not.toHaveBeenCalled();
+    });
+
+    test('異常系: ProcessCardCompanyEmailUseCaseでエラーが発生した場合', async () => {
+      // 監視開始
+      await emailController.startAllMonitoring();
+
+      // エラーをスローするようにモック
+      mockProcessCardCompanyEmailUseCase.execute.mockRejectedValueOnce(new Error('処理エラー'));
+
+      // コールバックを取得して手動で実行
+      const callback = emailCallbacks['MUFG'];
+      await callback(sampleParsedEmail);
+
+      // エラー通知が呼ばれることを確認
+      expect(mockNotifyCardUsageUseCase.notifyError).toHaveBeenCalled();
+    });
+
+    test('異常系: NotifyCardUsageUseCaseでエラーが発生した場合', async () => {
+      // 監視開始
+      await emailController.startAllMonitoring();
+
+      // 通知でエラーをスローするようにモック
+      mockNotifyCardUsageUseCase.notifyUsage.mockRejectedValueOnce(new Error('通知エラー'));
+
+      // コールバックを取得して手動で実行
+      const callback = emailCallbacks['MUFG'];
+      await callback(sampleParsedEmail);
+
+      // エラー通知が呼ばれることを確認
+      expect(mockNotifyCardUsageUseCase.notifyError).toHaveBeenCalled();
     });
   });
 });

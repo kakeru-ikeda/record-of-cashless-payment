@@ -1,5 +1,5 @@
 import { Server } from 'http';
-import { AppConfig } from '../config/AppConfig';
+import { HttpAppConfig } from '../config/HttpAppConfig';
 import { DependencyContainer } from '../config/DependencyContainer';
 import { TestRunner } from '../test/TestRunner';
 import { logger } from '../../../shared/utils/Logger';
@@ -11,11 +11,11 @@ import { CardCompany } from '../email/ImapEmailService';
 export class Application {
   private server: Server | null = null;
   private dependencyContainer: DependencyContainer;
-  private appConfig: AppConfig;
+  private httpAppConfig: HttpAppConfig;
   
   constructor() {
     this.dependencyContainer = new DependencyContainer();
-    this.appConfig = new AppConfig();
+    this.httpAppConfig = new HttpAppConfig();
   }
   
   /**
@@ -26,14 +26,14 @@ export class Application {
     await this.dependencyContainer.initialize();
     
     // モニタリングルートを設定
-    this.appConfig.setupMonitoringRoutes();
+    this.httpAppConfig.setupMonitoringRoutes();
     
     // サービスルートを設定
     const emailController = this.dependencyContainer.getEmailController();
-    this.appConfig.setupServiceRoutes(emailController);
+    this.httpAppConfig.setupServiceRoutes(emailController);
     
     // サーバーを起動
-    this.server = this.appConfig.startServer();
+    this.server = this.httpAppConfig.startServer();
   }
   
   /**

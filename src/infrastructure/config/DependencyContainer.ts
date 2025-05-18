@@ -3,8 +3,13 @@ import { FirestoreCardUsageRepository } from '../firebase/FirestoreCardUsageRepo
 import { DiscordWebhookNotifier } from '../../../shared/discord/DiscordNotifier';
 import { ProcessEmailUseCase } from '../../usecases/ProcessEmailUseCase';
 import { EmailController } from '../../interfaces/controllers/EmailController';
-import { logger } from '../../../shared/utils/Logger';
 import { Environment } from '../../../shared/config/Environment';
+import { logger } from '../../../shared/utils/Logger';
+import { ProcessCardCompanyEmailUseCase } from '../../usecases/ProcessCardCompanyEmailUseCase';
+import { NotifyCardUsageUseCase } from '../../usecases/NotifyCardUsageUseCase';
+import { ErrorHandler } from '../../../shared/errors/ErrorHandler';
+import { IProcessCardCompanyEmailUseCase } from '../../domain/usecases/IProcessCardCompanyEmailUseCase';
+import { INotifyCardUsageUseCase } from '../../domain/usecases/INotifyCardUsageUseCase';
 
 /**
  * アプリケーションの依存性を管理するコンテナクラス
@@ -15,6 +20,8 @@ export class DependencyContainer {
   private cardUsageRepository: FirestoreCardUsageRepository;
   private discordNotifier: DiscordWebhookNotifier;
   private processEmailUseCase: ProcessEmailUseCase;
+  private processCardCompanyEmailUseCase: ProcessCardCompanyEmailUseCase;
+  private notifyCardUsageUseCase: NotifyCardUsageUseCase;
   private emailController: EmailController;
 
   /**
@@ -36,32 +43,32 @@ export class DependencyContainer {
       usageWebhookUrl: Environment.DISCORD_WEBHOOK_URL,
       loggingWebhookUrl: Environment.DISCORD_LOGGING_WEBHOOK_URL,
     });
-    
-    // Discord通知とエラーログのステータス更新
-    const discordStatus = Environment.DISCORD_WEBHOOK_URL ? 'online' : 'offline';
-    const errorLoggingStatus = Environment.DISCORD_LOGGING_WEBHOOK_URL ? 'online' : 'offline';
-    
-    logger.updateServiceStatus(
-      'DiscordNotifier', 
-      discordStatus, 
-      discordStatus === 'online' ? 'Discord通知準備完了' : 'Discord通知無効'
-    );
-    
-    logger.updateServiceStatus(
-      'DiscordNotifier', 
-      errorLoggingStatus, 
-      errorLoggingStatus === 'online' ? 'Discordログ通知準備完了' : 'Discordログ通知無効'
-    );
+    logger.updateServiceStatus('DiscordNotifier', 'online', '初期化完了');
 
-    // ユースケースの初期化
+    // ErrorHandlerの初期化
+    ErrorHandler.initialize(this.discordNotifier);
+
+    // ユースケースレイヤーの初期化
     this.processEmailUseCase = new ProcessEmailUseCase(
       this.emailService,
       this.cardUsageRepository
     );
     logger.updateServiceStatus('ProcessEmailUseCase', 'online', '初期化完了');
 
+    // 新しいユースケースの初期化
+    this.notifyCardUsageUseCase = new NotifyCardUsageUseCase(this.discordNotifier);
+    logger.updateServiceStatus('NotifyCardUsageUseCase', 'online', '初期化完了');
+    
+    this.processCardCompanyEmailUseCase = new ProcessCardCompanyEmailUseCase(
+      this.processEmailUseCase
+    );
+    logger.updateServiceStatus('ProcessCardCompanyEmailUseCase', 'online', '初期化完了');
+
     // コントローラーの初期化
-    this.emailController = new EmailController(this.processEmailUseCase, this.discordNotifier);
+    this.emailController = new EmailController(
+      this.processCardCompanyEmailUseCase,
+      this.notifyCardUsageUseCase
+    );
     logger.updateServiceStatus('EmailController', 'online', '初期化完了');
   }
 
@@ -77,6 +84,20 @@ export class DependencyContainer {
    */
   public getProcessEmailUseCase(): ProcessEmailUseCase {
     return this.processEmailUseCase;
+  }
+
+  /**
+   * ProcessCardCompanyEmailUseCaseを取得
+   */
+  public getProcessCardCompanyEmailUseCase(): IProcessCardCompanyEmailUseCase {
+    return this.processCardCompanyEmailUseCase;
+  }
+
+  /**
+   * NotifyCardUsageUseCaseを取得
+   */
+  public getNotifyCardUsageUseCase(): INotifyCardUsageUseCase {
+    return this.notifyCardUsageUseCase;
   }
 
   /**

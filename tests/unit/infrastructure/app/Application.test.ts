@@ -1,5 +1,5 @@
 import { Application } from '../../../../src/infrastructure/app/Application';
-import { AppConfig } from '../../../../src/infrastructure/config/AppConfig';
+import { HttpAppConfig } from '../../../../src/infrastructure/config/HttpAppConfig';
 import { DependencyContainer } from '../../../../src/infrastructure/config/DependencyContainer';
 import { EmailController } from '../../../../src/interfaces/controllers/EmailController';
 import { TestRunner } from '../../../../src/infrastructure/test/TestRunner';
@@ -8,7 +8,7 @@ import { ProcessEmailUseCase } from '../../../../src/usecases/ProcessEmailUseCas
 import { Server } from 'http';
 
 // 依存コンポーネントをモック化
-jest.mock('../../../../src/infrastructure/config/AppConfig');
+jest.mock('../../../../src/infrastructure/config/HttpAppConfig');
 jest.mock('../../../../src/infrastructure/config/DependencyContainer');
 jest.mock('../../../../src/interfaces/controllers/EmailController');
 jest.mock('../../../../src/infrastructure/test/TestRunner');
@@ -28,7 +28,7 @@ jest.mock('../../../../shared/utils/Logger', () => ({
 
 describe('Application', () => {
   let application: Application;
-  let mockAppConfig: jest.Mocked<AppConfig>;
+  let mockHttpAppConfig: jest.Mocked<HttpAppConfig>;
   let mockDependencyContainer: jest.Mocked<DependencyContainer>;
   let mockEmailController: jest.Mocked<EmailController>;
   let mockTestRunner: jest.Mocked<TestRunner>;
@@ -47,10 +47,10 @@ describe('Application', () => {
     };
 
     // AppConfigのモックを設定
-    mockAppConfig = new AppConfig() as jest.Mocked<AppConfig>;
-    (mockAppConfig.setupMonitoringRoutes as jest.Mock).mockReturnValue(undefined);
-    (mockAppConfig.setupServiceRoutes as jest.Mock).mockReturnValue(undefined);
-    (mockAppConfig.startServer as jest.Mock).mockReturnValue(mockServer);
+    mockHttpAppConfig = new HttpAppConfig() as jest.Mocked<HttpAppConfig>;
+    (mockHttpAppConfig.setupMonitoringRoutes as jest.Mock).mockReturnValue(undefined);
+    (mockHttpAppConfig.setupServiceRoutes as jest.Mock).mockReturnValue(undefined);
+    (mockHttpAppConfig.startServer as jest.Mock).mockReturnValue(mockServer);
 
     // EmailControllerのモックを設定
     mockEmailController = new EmailController(
@@ -85,7 +85,7 @@ describe('Application', () => {
 
     // DependencyContainerとAppConfigのコンストラクタをモック
     (DependencyContainer as unknown as jest.Mock).mockImplementation(() => mockDependencyContainer);
-    (AppConfig as unknown as jest.Mock).mockImplementation(() => mockAppConfig);
+    (HttpAppConfig as unknown as jest.Mock).mockImplementation(() => mockHttpAppConfig);
 
     // Applicationのインスタンスを作成
     application = new Application();
@@ -99,9 +99,9 @@ describe('Application', () => {
       expect(mockDependencyContainer.initialize).toHaveBeenCalled();
 
       // AppConfigのメソッドが正しく呼ばれることを確認
-      expect(mockAppConfig.setupMonitoringRoutes).toHaveBeenCalled();
-      expect(mockAppConfig.setupServiceRoutes).toHaveBeenCalledWith(mockEmailController);
-      expect(mockAppConfig.startServer).toHaveBeenCalled();
+      expect(mockHttpAppConfig.setupMonitoringRoutes).toHaveBeenCalled();
+      expect(mockHttpAppConfig.setupServiceRoutes).toHaveBeenCalledWith(mockEmailController);
+      expect(mockHttpAppConfig.startServer).toHaveBeenCalled();
     });
 
     test('異常系: 初期化中にエラーが発生した場合、例外がスローされること', async () => {
