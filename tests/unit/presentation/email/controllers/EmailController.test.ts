@@ -1,14 +1,14 @@
-import { EmailController } from '../../../../src/interfaces/controllers/EmailController';
-import { ImapEmailService, CardCompany } from '../../../../src/infrastructure/email/ImapEmailService';
-import { ProcessCardCompanyEmailUseCase } from '../../../../src/usecases/email/ProcessCardCompanyEmailUseCase';
-import { NotifyCardUsageUseCase } from '../../../../src/usecases/notification/NotifyCardUsageUseCase';
-import { ParsedEmail } from '../../../../src/infrastructure/email/EmailParser';
+import { EmailController } from '../../../../../src/presentation/email/controllers/EmailController';
+import { ImapEmailService, CardCompany } from '../../../../../src/infrastructure/email/ImapEmailService';
+import { ProcessCardCompanyEmailUseCase } from '../../../../../src/usecases/email/ProcessCardCompanyEmailUseCase';
+import { NotifyCardUsageUseCase } from '../../../../../src/usecases/notification/NotifyCardUsageUseCase';
+import { ParsedEmail } from '../../../../../src/infrastructure/email/EmailParser';
 
 // 依存コンポーネントをモック
-jest.mock('../../../../src/infrastructure/email/ImapEmailService');
-jest.mock('../../../../src/usecases/email/ProcessCardCompanyEmailUseCase');
-jest.mock('../../../../src/usecases/notification/NotifyCardUsageUseCase');
-jest.mock('../../../../shared/config/Environment', () => ({
+jest.mock('../../../../../src/infrastructure/email/ImapEmailService');
+jest.mock('../../../../../src/usecases/email/ProcessCardCompanyEmailUseCase');
+jest.mock('../../../../../src/usecases/notification/NotifyCardUsageUseCase');
+jest.mock('../../../../../shared/config/Environment', () => ({
   Environment: {
     IMAP_SERVER: 'imap.example.com',
     IMAP_USER: 'user@example.com',
@@ -19,7 +19,7 @@ jest.mock('../../../../shared/config/Environment', () => ({
 }));
 
 // Loggerをモック化
-jest.mock('../../../../shared/utils/Logger', () => ({
+jest.mock('../../../../../shared/utils/Logger', () => ({
   logger: {
     info: jest.fn(),
     debug: jest.fn(),
@@ -31,7 +31,7 @@ jest.mock('../../../../shared/utils/Logger', () => ({
 }));
 
 // ErrorHandlerをモック化
-jest.mock('../../../../shared/errors/ErrorHandler', () => ({
+jest.mock('../../../../../shared/errors/ErrorHandler', () => ({
   ErrorHandler: {
     errorDecorator: () => () => (
       _target: any,
@@ -45,7 +45,6 @@ jest.mock('../../../../shared/errors/ErrorHandler', () => ({
 
 describe('EmailController', () => {
   let emailController: EmailController;
-  let mockImapEmailService: jest.Mocked<ImapEmailService>;
   let mockProcessCardCompanyEmailUseCase: jest.Mocked<ProcessCardCompanyEmailUseCase>;
   let mockNotifyCardUsageUseCase: jest.Mocked<NotifyCardUsageUseCase>;
 

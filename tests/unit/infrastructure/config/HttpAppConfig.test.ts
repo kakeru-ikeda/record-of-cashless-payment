@@ -2,7 +2,7 @@ import { HttpAppConfig } from '../../../../src/infrastructure/config/HttpAppConf
 import { MonitoringRoutes } from '../../../../src/infrastructure/monitoring/routes/monitoringRoutes';
 import { ServiceRoutes } from '../../../../src/infrastructure/service/routes/ServiceRoutes';
 import { ServiceController } from '../../../../src/infrastructure/service/controllers/ServiceController';
-import { EmailController } from '../../../../src/interfaces/controllers/EmailController';
+import { EmailController } from '../../../../src/presentation/email/controllers/EmailController';
 import { Server } from 'http';
 
 // 依存コンポーネントをモック

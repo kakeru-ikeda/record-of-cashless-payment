@@ -1,9 +1,9 @@
 import { ServiceController } from '../../../../../src/infrastructure/service/controllers/ServiceController';
-import { EmailController } from '../../../../../src/interfaces/controllers/EmailController';
+import { EmailController } from '../../../../../src/presentation/email/controllers/EmailController';
 import { Request, Response } from 'express';
 
 // EmailControllerをモック
-jest.mock('../../../../../src/interfaces/controllers/EmailController');
+jest.mock('../../../../../src/presentation/email/controllers/EmailController');
 
 // Loggerをモック化
 jest.mock('../../../../../shared/utils/Logger', () => ({

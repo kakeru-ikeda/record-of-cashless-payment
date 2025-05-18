@@ -1,7 +1,7 @@
 import { Application } from '../../../../src/infrastructure/app/Application';
 import { HttpAppConfig } from '../../../../src/infrastructure/config/HttpAppConfig';
 import { DependencyContainer } from '../../../../src/infrastructure/config/DependencyContainer';
-import { EmailController } from '../../../../src/interfaces/controllers/EmailController';
+import { EmailController } from '../../../../src/presentation/email/controllers/EmailController';
 import { TestRunner } from '../../../../src/infrastructure/test/TestRunner';
 import { CardCompany } from '../../../../src/infrastructure/email/ImapEmailService';
 import { ProcessEmailUseCase } from '../../../../src/usecases/email/ProcessEmailUseCase';
@@ -10,7 +10,7 @@ import { Server } from 'http';
 // 依存コンポーネントをモック化
 jest.mock('../../../../src/infrastructure/config/HttpAppConfig');
 jest.mock('../../../../src/infrastructure/config/DependencyContainer');
-jest.mock('../../../../src/interfaces/controllers/EmailController');
+jest.mock('../../../../src/presentation/email/controllers/EmailController');
 jest.mock('../../../../src/infrastructure/test/TestRunner');
 
 // Loggerをモック化

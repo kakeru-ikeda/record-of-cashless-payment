@@ -3,7 +3,7 @@ import { MonitoringRoutes } from '../monitoring/routes/monitoringRoutes';
 import { ServiceRoutes } from '../service/routes/ServiceRoutes';
 import { ServiceController } from '../service/controllers/ServiceController';
 import { logger } from '../../../shared/utils/Logger';
-import { EmailController } from '../../interfaces/controllers/EmailController';
+import { EmailController } from '../../presentation/email/controllers/EmailController';
 
 /**
  * アプリケーション設定を管理するクラス

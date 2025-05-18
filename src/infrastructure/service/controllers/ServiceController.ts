@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { logger } from '../../../../shared/utils/Logger';
-import { EmailController } from '../../../interfaces/controllers/EmailController';
+import { EmailController } from '../../../presentation/email/controllers/EmailController';
 import { AppError, ErrorType } from '../../../../shared/errors/AppError';
 import { ErrorHandler } from '../../../../shared/errors/ErrorHandler';
 import { ResponseHelper } from '../../../../shared/utils/ResponseHelper';
