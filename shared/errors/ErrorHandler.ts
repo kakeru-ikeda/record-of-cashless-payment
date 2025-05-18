@@ -1,18 +1,30 @@
 import { AppError, ErrorType } from './AppError';
 import { ResponseHelper } from '../utils/ResponseHelper';
+import { DiscordNotifier } from '../discord/DiscordNotifier';
+import { logger } from '../utils/Logger';
 
 /**
  * エラーハンドリングのためのユーティリティクラス
  * アプリケーション全体で統一されたエラー処理を提供します
  */
 export class ErrorHandler {
+    private static discordNotifier: DiscordNotifier;
+
+    /**
+     * ErrorHandlerを初期化
+     * @param discordNotifier Discord通知インスタンス
+     */
+    static initialize(discordNotifier: DiscordNotifier): void {
+        this.discordNotifier = discordNotifier;
+    }
+
     /**
      * エラーをキャッチして適切に処理する
      * @param error 発生したエラー
      * @param context エラーが発生したコンテキスト情報
      * @returns 標準化されたレスポンスオブジェクト
      */
-    static handle(error: any, context: string = '不明なコンテキスト'): ReturnType<typeof ResponseHelper.error> {
+    static handleApiError(error: any, context: string = '不明なコンテキスト'): ReturnType<typeof ResponseHelper.error> {
         // すでにAppErrorインスタンスならそのまま使用
         const appError = error instanceof AppError
             ? error
@@ -30,13 +42,135 @@ export class ErrorHandler {
     }
 
     /**
+     * イベント処理のエラーをハンドリング (Discord通知サポート)
+     * @param error 発生したエラー
+     * @param context エラーが発生したコンテキスト情報
+     * @param options 追加オプション
+     * @returns 正規化されたAppError
+     */
+    static async handleEventError(
+        error: any, 
+        context: string, 
+        options?: {
+            suppressNotification?: boolean;
+            additionalInfo?: Record<string, unknown>;
+            defaultMessage?: string;
+        }
+    ): Promise<AppError> {
+        // エラーの正規化
+        const appError = error instanceof AppError
+            ? error
+            : this.convertToAppError(error, options?.defaultMessage, options?.additionalInfo);
+
+        // 標準ロガーを使用
+        logger.logAppError(appError, context);
+
+        // Discordに通知 (抑制されていない場合)
+        if (!options?.suppressNotification && this.discordNotifier) {
+            try {
+                await this.discordNotifier.notifyError(appError, context);
+            } catch (notifyError) {
+                logger.warn(`Discord通知の送信に失敗しました: ${
+                    notifyError instanceof Error ? notifyError.message : String(notifyError)
+                }`, 'ErrorHandler');
+            }
+        }
+
+        return appError;
+    }
+
+    /**
+     * エラーデコレータ - 非同期メソッドをラップしてエラー処理を追加
+     * @param context エラーコンテキスト
+     * @param options エラーハンドリングオプション
+     */
+    static errorDecorator(context: string, options?: {
+        suppressNotification?: boolean; // Discord通知を抑制するかどうか
+        defaultMessage?: string; // カスタムエラーメッセージ
+        rethrow?: boolean;  // エラーを再スローするかどうか
+    }) {
+        return function(
+            _target: any,
+            _propertyKey: string | symbol,
+            descriptor: PropertyDescriptor
+        ): PropertyDescriptor {
+            const originalMethod = descriptor.value;
+            if (!originalMethod) return descriptor;
+            
+            descriptor.value = async function(...args: any[]): Promise<any> {
+                try {
+                    return await originalMethod.apply(this, args);
+                } catch (error) {
+                    // エラー情報を抽出（引数から必要な情報を取り出す）
+                    const additionalInfo = ErrorHandler.extractErrorInfoFromArgs(args);
+                    
+                    // 拡張されたエラーハンドラを使用
+                    const appError = await ErrorHandler.handleEventError(error, context, {
+                        ...options,
+                        additionalInfo
+                    });
+                    
+                    // 設定に応じてエラーを再スロー
+                    if (options?.rethrow !== false) {
+                        throw appError;
+                    }
+                    
+                    // エラーがスローされない場合は未定義を返す
+                    return undefined;
+                }
+            };
+            
+            return descriptor;
+        };
+    }
+
+    /**
+     * 引数からエラー情報を抽出するヘルパー関数
+     */
+    static extractErrorInfoFromArgs(args: any[]): Record<string, unknown> {
+        const info: Record<string, unknown> = {};
+        
+        // 引数からエラー情報に関連しそうなものを抽出
+        for (const arg of args) {
+            if (arg && typeof arg === 'object') {
+                // メールに関する情報
+                if ('subject' in arg) info.subject = arg.subject;
+                if ('from' in arg) info.from = arg.from;
+                if ('body' in arg && typeof arg.body === 'string') {
+                    // 本文は長すぎる場合があるので先頭部分のみ
+                    info.bodyPreview = arg.body.substring(0, 100);
+                }
+                
+                // カード会社情報
+                if ('cardCompany' in arg) info.cardCompany = arg.cardCompany;
+                
+                // その他の情報
+                if ('id' in arg) info.id = arg.id;
+                if ('uid' in arg) info.uid = arg.uid;
+                if ('mailboxName' in arg) info.mailboxName = arg.mailboxName;
+            }
+        }
+        
+        return info;
+    }
+
+    /**
      * 様々な形式のエラーをAppErrorに変換する
      * @param error 元のエラー
      * @returns AppErrorインスタンス
      */
-    static convertToAppError(error: any): AppError {
+    static convertToAppError(error: any, customMessage?: string, additionalDetails?: Record<string, unknown>): AppError {
         // すでにAppErrorインスタンスならそのまま返す
         if (error instanceof AppError) {
+            // 追加情報がある場合は新しいインスタンスを作成
+            if (additionalDetails) {
+                return new AppError(
+                    customMessage || error.message,
+                    error.type,
+                    { ...error.details, ...additionalDetails },
+                    error.originalError
+                );
+            }
             return error;
         }
 
@@ -45,26 +179,38 @@ export class ErrorHandler {
             // エラーの種類を推測
             const errorType = this.inferErrorType(error);
             return new AppError(
-                error.message || '不明なエラーが発生しました',
+                customMessage || error.message || '不明なエラーが発生しました',
                 errorType,
-                undefined,
+                additionalDetails || undefined,
                 error
             );
         }
 
         // 文字列の場合
         if (typeof error === 'string') {
-            return new AppError(error);
+            return new AppError(
+                customMessage || error,
+                ErrorType.GENERAL,
+                additionalDetails
+            );
         }
 
         // オブジェクトの場合
         if (typeof error === 'object' && error !== null) {
-            const message = error.message || JSON.stringify(error);
-            return new AppError(message, ErrorType.GENERAL, error);
+            const message = customMessage || error.message || JSON.stringify(error);
+            return new AppError(
+                message, 
+                ErrorType.GENERAL, 
+                additionalDetails ? { ...error, ...additionalDetails } : error
+            );
         }
 
         // その他の場合
-        return new AppError('不明なエラーが発生しました');
+        return new AppError(
+            customMessage || '不明なエラーが発生しました',
+            ErrorType.GENERAL,
+            additionalDetails
+        );
     }
 
     /**
@@ -196,7 +342,7 @@ ${appError.toLogString()}
         try {
             return await fn();
         } catch (error) {
-            return this.handle(error, context);
+            return this.handleApiError(error, context);
         }
     }
 
