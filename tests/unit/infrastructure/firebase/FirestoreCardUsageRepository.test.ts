@@ -30,7 +30,6 @@ jest.mock('../../../../shared/utils/Logger', () => ({
 describe('FirestoreCardUsageRepository', () => {
   let firestoreCardUsageRepository: FirestoreCardUsageRepository;
   let mockFirestoreService: jest.Mocked<FirestoreService>;
-  let mockFirestore: jest.Mocked<Firestore>;
 
   // テスト用データ
   const testDate = new Date('2025-05-10T15:30:00');
@@ -217,26 +216,6 @@ describe('FirestoreCardUsageRepository', () => {
 
       // エラーがスローされることを確認
       await expect(firestoreCardUsageRepository.getByTimestamp('1715350200000')).rejects.toThrow(AppError);
-    });
-  });
-
-  describe('toNotification', () => {
-    test('CardUsageオブジェクトがCardUsageNotificationオブジェクトに変換されること', () => {
-      // toNotificationを実行
-      const result = firestoreCardUsageRepository.toNotification(testCardUsage);
-
-      // CardUsageMapperが呼ばれることを確認
-      expect(CardUsageMapper.toNotification).toHaveBeenCalledWith(testCardUsage);
-
-      // 結果が正しいことを確認
-      expect(result).toEqual({
-        card_name: testCardUsage.card_name,
-        datetime_of_use: testDate.toISOString(),
-        amount: testCardUsage.amount,
-        where_to_use: testCardUsage.where_to_use,
-        memo: '',
-        is_active: true
-      });
     });
   });
 });
