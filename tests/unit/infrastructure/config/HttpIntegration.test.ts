@@ -1,9 +1,9 @@
 import request from 'supertest';
 import express from 'express';
-import { ServiceController } from '../../../../src/infrastructure/service/controllers/ServiceController';
-import { MonitoringRoutes } from '../../../../src/infrastructure/monitoring/routes/monitoringRoutes';
-import { ServiceRoutes } from '../../../../src/infrastructure/service/routes/ServiceRoutes';
-import { EmailController } from '../../../../src/interfaces/controllers/EmailController';
+import { ServiceController } from '../../../../src/presentation/api/controllers/ServiceController';
+import { MonitoringRoutes } from '../../../../src/presentation/api/routes/MonitoringRoutes';
+import { ServiceRoutes } from '../../../../src/presentation/api/routes/ServiceRoutes';
+import { EmailController } from '../../../../src/presentation/email/controllers/EmailController';
 
 // 認証ミドルウェアをモック化して常に認証を通すようにする
 jest.mock('../../../../shared/firebase/AuthMiddleware', () => ({
@@ -47,7 +47,7 @@ jest.mock('../../../../shared/utils/Logger', () => {
 });
 
 // EmailControllerをモック
-jest.mock('../../../../src/interfaces/controllers/EmailController');
+jest.mock('../../../../src/presentation/email/controllers/EmailController');
 
 describe('HTTP統合テスト', () => {
   let app: express.Application;
