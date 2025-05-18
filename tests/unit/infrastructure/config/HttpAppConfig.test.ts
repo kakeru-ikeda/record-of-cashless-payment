@@ -1,9 +1,8 @@
-import { AppConfig } from '../../../../src/infrastructure/config/AppConfig';
+import { HttpAppConfig } from '../../../../src/infrastructure/config/HttpAppConfig';
 import { MonitoringRoutes } from '../../../../src/infrastructure/monitoring/routes/monitoringRoutes';
 import { ServiceRoutes } from '../../../../src/infrastructure/service/routes/ServiceRoutes';
 import { ServiceController } from '../../../../src/infrastructure/service/controllers/ServiceController';
 import { EmailController } from '../../../../src/interfaces/controllers/EmailController';
-import { Application } from 'express';
 import { Server } from 'http';
 
 // 依存コンポーネントをモック
@@ -36,7 +35,7 @@ jest.mock('../../../../shared/utils/Logger', () => ({
 }));
 
 describe('AppConfig', () => {
-  let appConfig: AppConfig;
+  let httpAppConfig: HttpAppConfig;
   let mockExpressApp: any;
   let mockMonitoringRoutes: jest.Mocked<MonitoringRoutes>;
   let mockServiceRoutes: jest.Mocked<ServiceRoutes>;
@@ -78,7 +77,7 @@ describe('AppConfig', () => {
     mockEmailController = {} as jest.Mocked<EmailController>;
 
     // AppConfigのインスタンスを作成
-    appConfig = new AppConfig();
+    httpAppConfig = new HttpAppConfig();
   });
 
   describe('constructor', () => {
@@ -92,16 +91,16 @@ describe('AppConfig', () => {
 
     test('デフォルトポートは環境変数未設定時に3000になること', () => {
       delete process.env.PORT;
-      appConfig = new AppConfig();
-      const server = appConfig.startServer();
+      httpAppConfig = new HttpAppConfig();
+      const server = httpAppConfig.startServer();
       
       expect(mockExpressApp.listen).toHaveBeenCalledWith(3000, expect.any(Function));
     });
 
     test('環境変数PORTが設定されている場合はその値が使われること', () => {
       process.env.PORT = '4000';
-      appConfig = new AppConfig();
-      const server = appConfig.startServer();
+      httpAppConfig = new HttpAppConfig();
+      const server = httpAppConfig.startServer();
       
       expect(mockExpressApp.listen).toHaveBeenCalledWith(4000, expect.any(Function));
       
@@ -112,7 +111,7 @@ describe('AppConfig', () => {
 
   describe('setupMonitoringRoutes', () => {
     test('モニタリングルートが正しく設定されること', () => {
-      appConfig.setupMonitoringRoutes();
+      httpAppConfig.setupMonitoringRoutes();
 
       // MonitoringRoutesのインスタンスが作成されることを確認
       expect(MonitoringRoutes).toHaveBeenCalled();
@@ -128,7 +127,7 @@ describe('AppConfig', () => {
 
   describe('setupServiceRoutes', () => {
     test('サービス管理ルートが正しく設定されること', () => {
-      appConfig.setupServiceRoutes(mockEmailController);
+      httpAppConfig.setupServiceRoutes(mockEmailController);
 
       // ServiceControllerとServiceRoutesのインスタンスが作成されることを確認
       expect(ServiceController).toHaveBeenCalled();
@@ -148,7 +147,7 @@ describe('AppConfig', () => {
 
   describe('startServer', () => {
     test('HTTPサーバーが起動されること', () => {
-      const server = appConfig.startServer();
+      const server = httpAppConfig.startServer();
 
       // listenメソッドが呼ばれることを確認
       expect(mockExpressApp.listen).toHaveBeenCalled();
@@ -166,7 +165,7 @@ describe('AppConfig', () => {
 
   describe('getApp', () => {
     test('Expressアプリケーションインスタンスが返されること', () => {
-      const app = appConfig.getApp();
+      const app = httpAppConfig.getApp();
       expect(app).toBe(mockExpressApp);
     });
   });

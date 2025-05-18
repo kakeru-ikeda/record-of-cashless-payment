@@ -9,7 +9,7 @@ import { EmailController } from '../../interfaces/controllers/EmailController';
  * アプリケーション設定を管理するクラス
  * サーバー設定、ミドルウェア設定、ルート設定を担当
  */
-export class AppConfig {
+export class HttpAppConfig {
   private app: Application;
   private port: number;
   
