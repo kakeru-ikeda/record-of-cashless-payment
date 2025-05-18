@@ -54,7 +54,7 @@ export class MonitoringController {
       
       logger.logAppError(appError, 'MonitoringController');
       
-      const errorResponse = ErrorHandler.handle(error, 'MonitoringController.getServiceStatus');
+      const errorResponse = ErrorHandler.handleApiError(error, 'MonitoringController.getServiceStatus');
       res.status(errorResponse.status).json(errorResponse);
     }
   };
@@ -93,7 +93,7 @@ export class MonitoringController {
       
       logger.logAppError(appError, 'MonitoringController');
       
-      const errorResponse = ErrorHandler.handle(error, 'MonitoringController.getErrorLogs');
+      const errorResponse = ErrorHandler.handleApiError(error, 'MonitoringController.getErrorLogs');
       res.status(errorResponse.status).json(errorResponse);
     }
   };

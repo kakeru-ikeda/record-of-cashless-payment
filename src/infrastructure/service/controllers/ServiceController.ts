@@ -50,7 +50,7 @@ export class ServiceController {
             
             logger.logAppError(appError, 'ServiceController');
             
-            const errorResponse = ErrorHandler.handle(error, 'ServiceController.getServices');
+            const errorResponse = ErrorHandler.handleApiError(error, 'ServiceController.getServices');
             res.status(errorResponse.status).json(errorResponse);
         }
     };
@@ -123,7 +123,7 @@ export class ServiceController {
             
             logger.logAppError(appError, 'ServiceController');
             
-            const errorResponse = ErrorHandler.handle(error, 'ServiceController.controlService');
+            const errorResponse = ErrorHandler.handleApiError(error, 'ServiceController.controlService');
             res.status(errorResponse.status).json(errorResponse);
         }
     };
