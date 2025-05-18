@@ -5,6 +5,7 @@ import { TestRunner } from '../test/TestRunner';
 import { logger } from '../../../shared/utils/Logger';
 import { CardCompany } from '../email/ImapEmailService';
 import { IApplication } from '../../domain/application/IApplication';
+import { ErrorHandler } from '../../../shared/errors/ErrorHandler';
 
 /**
  * アプリケーションのライフサイクル管理を担当するクラス
@@ -22,6 +23,9 @@ export class Application implements IApplication {
   /**
    * アプリケーションを初期化
    */
+  @ErrorHandler.errorDecorator('Application', {
+    defaultMessage: 'アプリケーションの初期化に失敗しました'
+  })
   public async initialize(): Promise<void> {
     // 依存関係を初期化
     await this.dependencyContainer.initialize();
@@ -40,6 +44,9 @@ export class Application implements IApplication {
   /**
    * テストモードでアプリケーションを実行
    */
+  @ErrorHandler.errorDecorator('Application', {
+    defaultMessage: 'テストモードの実行に失敗しました'
+  })
   public async runInTestMode(cardCompany: CardCompany): Promise<void> {
     logger.info('メール通知サービスをテストモードで起動します', 'App');
 
@@ -53,6 +60,9 @@ export class Application implements IApplication {
   /**
    * 通常モードでアプリケーションを実行（メール監視）
    */
+  @ErrorHandler.errorDecorator('Application', {
+    defaultMessage: '通常モードの実行に失敗しました'
+  })
   public async runInNormalMode(): Promise<void> {
     logger.info('メール監視モードで実行しています...', 'App');
 
@@ -95,6 +105,11 @@ export class Application implements IApplication {
   /**
    * アプリケーションのシャットダウン処理
    */
+  @ErrorHandler.errorDecorator('Application', {
+    defaultMessage: 'アプリケーションのシャットダウンに失敗しました',
+    suppressNotification: false,  // シャットダウン時のエラーは通知する
+    rethrow: false  // シャットダウン時にエラーが発生しても処理を継続する
+  })
   public async shutdown(): Promise<void> {
     logger.info('アプリケーションを終了しています...', 'App');
 
@@ -137,38 +152,38 @@ export class Application implements IApplication {
   /**
    * 未解決のタイマーをクリーンアップ
    */
+  @ErrorHandler.errorDecorator('Application', {
+    defaultMessage: 'タイマークリーンアップに失敗しました',
+    rethrow: false  // クリーンアップ時のエラーは無視して処理を続行
+  })
   private cleanupUnresolvedTimers(): void {
-    try {
-      // アクティブなハンドルを取得
-      // @ts-ignore - process._getActiveHandles は非公開APIだがタイマークリーンアップに必要
-      const activeHandles = process._getActiveHandles ? process._getActiveHandles() : [];
+    // アクティブなハンドルを取得
+    // @ts-ignore - process._getActiveHandles は非公開APIだがタイマークリーンアップに必要
+    const activeHandles = process._getActiveHandles ? process._getActiveHandles() : [];
 
-      // タイマーとインターバルをカウント
-      let timersCount = 0;
+    // タイマーとインターバルをカウント
+    let timersCount = 0;
 
-      // タイマーをクリア
-      for (const handle of activeHandles) {
-        if (handle && typeof handle === 'object' && handle.constructor) {
-          // @ts-ignore - 型定義エラーを無視
-          if (handle.constructor.name === 'Timeout') {
-            // @ts-ignore
-            clearTimeout(handle);
-            timersCount++;
-          }
+    // タイマーをクリア
+    for (const handle of activeHandles) {
+      if (handle && typeof handle === 'object' && handle.constructor) {
+        // @ts-ignore - 型定義エラーを無視
+        if (handle.constructor.name === 'Timeout') {
           // @ts-ignore
-          else if (handle.constructor.name === 'Interval') {
-            // @ts-ignore
-            clearInterval(handle);
-            timersCount++;
-          }
+          clearTimeout(handle);
+          timersCount++;
+        }
+        // @ts-ignore
+        else if (handle.constructor.name === 'Interval') {
+          // @ts-ignore
+          clearInterval(handle);
+          timersCount++;
         }
       }
+    }
 
-      if (timersCount > 0) {
-        logger.info(`${timersCount}個の未解決タイマーをクリーンアップしました`, 'App');
-      }
-    } catch (error) {
-      logger.warn('タイマークリーンアップ中にエラーが発生しました', 'App');
+    if (timersCount > 0) {
+      logger.info(`${timersCount}個の未解決タイマーをクリーンアップしました`, 'App');
     }
 
     // 確実にプロセスを終了させるために10秒後に強制終了

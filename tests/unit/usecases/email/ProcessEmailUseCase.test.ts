@@ -190,7 +190,7 @@ describe('ProcessEmailUseCase', () => {
 
       // 例外がスローされることを確認
       await expect(processEmailUseCase.executeTest(sampleEmailBody, CardCompany.MUFG))
-        .rejects.toThrow('MUFGのテスト実行中にエラーが発生しました');
+        .rejects.toThrow('テスト実行中にエラーが発生しました');
 
       // エラーがログに記録されることを確認
       expect(require('../../../../shared/utils/Logger').logger.logAppError).toHaveBeenCalled();

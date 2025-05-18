@@ -5,7 +5,7 @@ import { ICardUsageRepository } from '../../domain/repositories/ICardUsageReposi
 import { IProcessEmailUseCase } from '../../../src/domain/usecases/email/IProcessEmailUseCase';
 import { ImapEmailService, CardCompany } from '../../infrastructure/email/ImapEmailService';
 import { logger } from '../../../shared/utils/Logger';
-import { AppError, ErrorType } from '../../../shared/errors/AppError';
+import { ErrorHandler } from '../../../shared/errors/ErrorHandler';
 
 /**
  * メール処理のユースケース
@@ -31,51 +31,37 @@ export class ProcessEmailUseCase implements IProcessEmailUseCase {
    * @param cardCompany カード会社の種類
    * @returns 処理されたカード利用情報と保存パス
    */
-  async execute(emailBody: string, cardCompany: CardCompany = CardCompany.MUFG): Promise<{usage: CardUsageNotification, savedPath: string}> {
-    try {
-      logger.info(`${cardCompany}のメール本文の解析を開始します...`, this.serviceContext);
+  @ErrorHandler.errorDecorator('ProcessEmailUseCase', {
+    defaultMessage: 'メール処理中にエラーが発生しました'
+  })
+  async execute(emailBody: string, cardCompany: CardCompany = CardCompany.MUFG): Promise<{ usage: CardUsageNotification, savedPath: string }> {
+    logger.info(`${cardCompany}のメール本文の解析を開始します...`, this.serviceContext);
 
-      // メール本文からカード利用情報を抽出（既にCardUsageMapperを使用）
-      const usage = await this.emailService.parseCardUsageFromEmail(emailBody, cardCompany);
+    // メール本文からカード利用情報を抽出（既にCardUsageMapperを使用）
+    const usage = await this.emailService.parseCardUsageFromEmail(emailBody, cardCompany);
 
-      logger.debug(`パース結果: ${JSON.stringify(usage)}`, this.serviceContext);
+    logger.debug(`パース結果: ${JSON.stringify(usage)}`, this.serviceContext);
 
-      // Firestoreのタイムスタンプに変換
-      const firestoreTimestamp = admin.firestore.Timestamp.fromDate(new Date(usage.datetime_of_use));
+    // Firestoreのタイムスタンプに変換
+    const firestoreTimestamp = admin.firestore.Timestamp.fromDate(new Date(usage.datetime_of_use));
 
-      // カード利用情報エンティティを作成
-      const cardUsageEntity: CardUsage = {
-        card_name: usage.card_name,
-        datetime_of_use: firestoreTimestamp,
-        amount: usage.amount,
-        where_to_use: usage.where_to_use,
-        memo: usage.memo,
-        is_active: usage.is_active,
-        created_at: admin.firestore.FieldValue.serverTimestamp() as admin.firestore.Timestamp
-      };
+    // カード利用情報エンティティを作成
+    const cardUsageEntity: CardUsage = {
+      card_name: usage.card_name,
+      datetime_of_use: firestoreTimestamp,
+      amount: usage.amount,
+      where_to_use: usage.where_to_use,
+      memo: usage.memo,
+      is_active: usage.is_active,
+      created_at: admin.firestore.FieldValue.serverTimestamp() as admin.firestore.Timestamp
+    };
 
-      // リポジトリを通じてFirestoreに保存
-      const savedPath = await this.cardUsageRepository.save(cardUsageEntity);
-      logger.info(`カード利用情報を保存しました: ${savedPath}`, this.serviceContext);
+    // リポジトリを通じてFirestoreに保存
+    const savedPath = await this.cardUsageRepository.save(cardUsageEntity);
+    logger.info(`カード利用情報を保存しました: ${savedPath}`, this.serviceContext);
 
-      // 処理したカード利用情報と保存パスを返す
-      return { usage, savedPath };
-    } catch (error) {
-      // AppErrorかどうかを確認
-      if (error instanceof AppError) {
-        logger.logAppError(error, this.serviceContext);
-      } else {
-        const appError = new AppError(
-          'メール処理中にエラーが発生しました',
-          ErrorType.GENERAL,
-          { emailBodyLength: emailBody.length, cardCompany },
-          error instanceof Error ? error : new Error(String(error))
-        );
-        logger.logAppError(appError, this.serviceContext);
-        throw appError;
-      }
-      throw error;
-    }
+    // 処理したカード利用情報と保存パスを返す
+    return { usage, savedPath };
   }
 
   /**
@@ -84,48 +70,40 @@ export class ProcessEmailUseCase implements IProcessEmailUseCase {
    * @param cardCompany カード会社の種類
    * @returns 処理結果
    */
+  @ErrorHandler.errorDecorator('ProcessEmailUseCase', {
+    defaultMessage: 'テスト実行中にエラーが発生しました'
+  })
   async executeTest(emailBody: string, cardCompany: CardCompany = CardCompany.MUFG): Promise<{
     parsedData: CardUsageNotification;
     savedPath: string;
   }> {
-    try {
-      logger.info(`テストモードで${cardCompany}のメール処理を実行します`, this.serviceContext);
+    logger.info(`テストモードで${cardCompany}のメール処理を実行します`, this.serviceContext);
 
-      // メール本文からカード利用情報を抽出
-      const usage = await this.emailService.parseCardUsageFromEmail(emailBody, cardCompany);
-      logger.debug(`テストパース結果: ${JSON.stringify(usage)}`, this.serviceContext);
+    // メール本文からカード利用情報を抽出
+    const usage = await this.emailService.parseCardUsageFromEmail(emailBody, cardCompany);
+    logger.debug(`テストパース結果: ${JSON.stringify(usage)}`, this.serviceContext);
 
-      // Firestoreのタイムスタンプに変換
-      const firestoreTimestamp = admin.firestore.Timestamp.fromDate(new Date(usage.datetime_of_use));
+    // Firestoreのタイムスタンプに変換
+    const firestoreTimestamp = admin.firestore.Timestamp.fromDate(new Date(usage.datetime_of_use));
 
-      // カード利用情報エンティティを作成
-      const cardUsageEntity: CardUsage = {
-        card_name: usage.card_name,
-        datetime_of_use: firestoreTimestamp,
-        amount: usage.amount,
-        where_to_use: usage.where_to_use,
-        memo: usage.memo,
-        is_active: usage.is_active,
-        created_at: admin.firestore.FieldValue.serverTimestamp() as admin.firestore.Timestamp
-      };
+    // カード利用情報エンティティを作成
+    const cardUsageEntity: CardUsage = {
+      card_name: usage.card_name,
+      datetime_of_use: firestoreTimestamp,
+      amount: usage.amount,
+      where_to_use: usage.where_to_use,
+      memo: usage.memo,
+      is_active: usage.is_active,
+      created_at: admin.firestore.FieldValue.serverTimestamp() as admin.firestore.Timestamp
+    };
 
-      // リポジトリを通じてFirestoreに保存
-      const savedPath = await this.cardUsageRepository.save(cardUsageEntity);
-      logger.info('カード利用情報を保存しました: ' + savedPath, this.serviceContext);
+    // リポジトリを通じてFirestoreに保存
+    const savedPath = await this.cardUsageRepository.save(cardUsageEntity);
+    logger.info('カード利用情報を保存しました: ' + savedPath, this.serviceContext);
 
-      return {
-        parsedData: usage,
-        savedPath
-      };
-    } catch (error) {
-      const appError = new AppError(
-        `${cardCompany}のテスト実行中にエラーが発生しました`,
-        ErrorType.GENERAL,
-        { emailBodyLength: emailBody.length },
-        error instanceof Error ? error : new Error(String(error))
-      );
-      logger.logAppError(appError, this.serviceContext);
-      throw appError;
-    }
+    return {
+      parsedData: usage,
+      savedPath
+    };
   }
 }

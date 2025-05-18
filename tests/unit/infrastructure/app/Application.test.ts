@@ -37,7 +37,7 @@ describe('Application', () => {
   beforeEach(() => {
     // すべてのモックをリセット
     jest.clearAllMocks();
-    
+
     // モックサーバー
     mockServer = {
       close: jest.fn().mockImplementation((callback: () => void) => {
@@ -111,7 +111,7 @@ describe('Application', () => {
       );
 
       // エラーがスローされることを確認
-      await expect(application.initialize()).rejects.toThrow('初期化エラー');
+      await expect(application.initialize()).rejects.toThrow('アプリケーションの初期化に失敗しました');
     });
   });
 
@@ -142,7 +142,7 @@ describe('Application', () => {
       );
 
       // エラーがスローされることを確認
-      await expect(application.runInTestMode(CardCompany.MUFG)).rejects.toThrow('テスト実行エラー');
+      await expect(application.runInTestMode(CardCompany.MUFG)).rejects.toThrow('テストモードの実行に失敗しました');
     });
   });
 
@@ -150,13 +150,13 @@ describe('Application', () => {
     test('正常系: シャットダウン時にメール監視とサーバーが停止されること', async () => {
       // まず初期化してサーバーを設定
       await application.initialize();
-      
+
       // シャットダウンを実行
       await application.shutdown();
 
       // EmailControllerのstopMonitoringが呼ばれることを確認
       expect(mockEmailController.stopMonitoring).toHaveBeenCalled();
-      
+
       // サーバーのcloseが呼ばれることを確認
       expect(mockServer.close).toHaveBeenCalled();
     });
@@ -164,7 +164,7 @@ describe('Application', () => {
     test('異常系: シャットダウン中にエラーが発生しても処理が継続されること', async () => {
       // サーバー初期化
       await application.initialize();
-      
+
       // EmailControllerのstopMonitoringでエラーが発生する場合
       (mockEmailController.stopMonitoring as jest.Mock).mockRejectedValueOnce(
         new Error('監視停止エラー')
@@ -180,25 +180,25 @@ describe('Application', () => {
       // タイマーをモック化
       jest.useFakeTimers();
     });
-    
+
     afterEach(() => {
       // テスト後にモックタイマーをリセット
       jest.useRealTimers();
     });
-    
+
     test('コンパクトモードの場合、ステータスダッシュボードが表示されること', async () => {
       // コンパクトモードを有効化
       process.env.COMPACT_LOGS = 'true';
 
       // 通常モードで実行
       await application.runInNormalMode();
-      
+
       // タイマーを実行（全ての非同期タイマーを実行）
       jest.runAllTimers();
 
       // renderStatusDashboardが呼ばれることを確認
       expect(require('../../../../shared/utils/Logger').logger.renderStatusDashboard).toHaveBeenCalled();
-      
+
       // 環境変数をリセット
       delete process.env.COMPACT_LOGS;
     });
