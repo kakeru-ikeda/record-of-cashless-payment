@@ -1,13 +1,13 @@
-import { ProcessEmailUseCase } from '../../../src/usecases/email/ProcessEmailUseCase';
-import { ImapEmailService, CardCompany } from '../../../src/infrastructure/email/ImapEmailService';
-import { ICardUsageRepository } from '../../../src/domain/repositories/ICardUsageRepository';
-import { DiscordNotifier } from '../../../shared/discord/DiscordNotifier';
-import { CardUsageNotification } from '../../../shared/domain/entities/CardUsageNotification';
+import { ProcessEmailUseCase } from '../../../../src/usecases/email/ProcessEmailUseCase';
+import { ImapEmailService, CardCompany } from '../../../../src/infrastructure/email/ImapEmailService';
+import { ICardUsageRepository } from '../../../../src/domain/repositories/ICardUsageRepository';
+import { DiscordNotifier } from '../../../../shared/discord/DiscordNotifier';
+import { CardUsageNotification } from '../../../../shared/domain/entities/CardUsageNotification';
 import * as admin from 'firebase-admin';
 
 // 依存コンポーネントをモック化
-jest.mock('../../../src/infrastructure/email/ImapEmailService');
-jest.mock('../../../shared/discord/DiscordNotifier');
+jest.mock('../../../../src/infrastructure/email/ImapEmailService');
+jest.mock('../../../../shared/discord/DiscordNotifier');
 
 // firebase-adminのTimestampをモック化
 jest.mock('firebase-admin', () => {
@@ -24,7 +24,7 @@ jest.mock('firebase-admin', () => {
 });
 
 // Loggerをモック化
-jest.mock('../../../shared/utils/Logger', () => ({
+jest.mock('../../../../shared/utils/Logger', () => ({
   logger: {
     info: jest.fn(),
     debug: jest.fn(),
@@ -129,7 +129,7 @@ describe('ProcessEmailUseCase', () => {
         .rejects.toThrow('メール処理中にエラーが発生しました');
 
       // エラーがログに記録されることを確認
-      expect(require('../../../shared/utils/Logger').logger.logAppError).toHaveBeenCalled();
+      expect(require('../../../../shared/utils/Logger').logger.logAppError).toHaveBeenCalled();
     });
 
     test('異常系: データ保存に失敗した場合、エラーがスローされること', async () => {
@@ -143,7 +143,7 @@ describe('ProcessEmailUseCase', () => {
         .rejects.toThrow('メール処理中にエラーが発生しました');
 
       // エラーがログに記録されることを確認
-      expect(require('../../../shared/utils/Logger').logger.logAppError).toHaveBeenCalled();
+      expect(require('../../../../shared/utils/Logger').logger.logAppError).toHaveBeenCalled();
     });
 
     test('カード会社を指定しない場合、デフォルトでMUFGになること', async () => {
@@ -193,7 +193,7 @@ describe('ProcessEmailUseCase', () => {
         .rejects.toThrow('MUFGのテスト実行中にエラーが発生しました');
 
       // エラーがログに記録されることを確認
-      expect(require('../../../shared/utils/Logger').logger.logAppError).toHaveBeenCalled();
+      expect(require('../../../../shared/utils/Logger').logger.logAppError).toHaveBeenCalled();
     });
   });
 });

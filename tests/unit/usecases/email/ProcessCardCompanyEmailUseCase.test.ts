@@ -1,11 +1,11 @@
-import { ProcessCardCompanyEmailUseCase } from '../../../src/usecases/email/ProcessCardCompanyEmailUseCase';
-import { ProcessEmailUseCase } from '../../../src/usecases/email/ProcessEmailUseCase';
-import { ParsedEmail } from '../../../src/infrastructure/email/EmailParser';
-import { CardCompany } from '../../../src/infrastructure/email/CardUsageExtractor';
-import { CardUsageNotification } from '../../../shared/domain/entities/CardUsageNotification';
+import { ProcessCardCompanyEmailUseCase } from '../../../../src/usecases/email/ProcessCardCompanyEmailUseCase';
+import { ProcessEmailUseCase } from '../../../../src/usecases/email/ProcessEmailUseCase';
+import { ParsedEmail } from '../../../../src/infrastructure/email/EmailParser';
+import { CardCompany } from '../../../../src/infrastructure/email/CardUsageExtractor';
+import { CardUsageNotification } from '../../../../shared/domain/entities/CardUsageNotification';
 
 // Loggerをモック化
-jest.mock('../../../shared/utils/Logger', () => ({
+jest.mock('../../../../shared/utils/Logger', () => ({
   logger: {
     info: jest.fn(),
     debug: jest.fn(),
@@ -17,7 +17,7 @@ jest.mock('../../../shared/utils/Logger', () => ({
 }));
 
 // ErrorHandlerをモック化
-jest.mock('../../../shared/errors/ErrorHandler', () => ({
+jest.mock('../../../../shared/errors/ErrorHandler', () => ({
   ErrorHandler: {
     errorDecorator: () => () => (
       _target: any,

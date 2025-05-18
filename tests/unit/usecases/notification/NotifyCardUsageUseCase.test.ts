@@ -1,10 +1,10 @@
-import { NotifyCardUsageUseCase } from '../../../src/usecases/notification/NotifyCardUsageUseCase';
-import { DiscordNotifier } from '../../../shared/discord/DiscordNotifier';
-import { CardUsageNotification } from '../../../shared/domain/entities/CardUsageNotification';
-import { AppError, ErrorType } from '../../../shared/errors/AppError';
+import { NotifyCardUsageUseCase } from '../../../../src/usecases/notification/NotifyCardUsageUseCase';
+import { DiscordNotifier } from '../../../../shared/discord/DiscordNotifier';
+import { CardUsageNotification } from '../../../../shared/domain/entities/CardUsageNotification';
+import { AppError, ErrorType } from '../../../../shared/errors/AppError';
 
 // Loggerをモック化
-jest.mock('../../../shared/utils/Logger', () => ({
+jest.mock('../../../../shared/utils/Logger', () => ({
   logger: {
     info: jest.fn(),
     debug: jest.fn(),
@@ -16,7 +16,7 @@ jest.mock('../../../shared/utils/Logger', () => ({
 }));
 
 // ErrorHandlerをモック化
-jest.mock('../../../shared/errors/ErrorHandler', () => ({
+jest.mock('../../../../shared/errors/ErrorHandler', () => ({
   ErrorHandler: {
     errorDecorator: () => () => (
       _target: any,
