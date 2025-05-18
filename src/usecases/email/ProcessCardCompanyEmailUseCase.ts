@@ -1,6 +1,6 @@
 import { CardCompany } from '../../infrastructure/email/CardUsageExtractor';
 import { ParsedEmail } from '../../infrastructure/email/EmailParser';
-import { IProcessCardCompanyEmailUseCase } from '../../domain/usecases/IProcessCardCompanyEmailUseCase';
+import { IProcessCardCompanyEmailUseCase } from '../../domain/usecases/email/IProcessCardCompanyEmailUseCase';
 import { ProcessEmailUseCase } from './ProcessEmailUseCase';
 import { logger } from '../../../shared/utils/Logger';
 import { ErrorHandler } from '../../../shared/errors/ErrorHandler';

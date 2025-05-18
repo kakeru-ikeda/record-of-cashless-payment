@@ -8,8 +8,8 @@ import { logger } from '../../../shared/utils/Logger';
 import { ProcessCardCompanyEmailUseCase } from '../../usecases/email/ProcessCardCompanyEmailUseCase';
 import { NotifyCardUsageUseCase } from '../../usecases/notification/NotifyCardUsageUseCase';
 import { ErrorHandler } from '../../../shared/errors/ErrorHandler';
-import { IProcessCardCompanyEmailUseCase } from '../../domain/usecases/IProcessCardCompanyEmailUseCase';
-import { INotifyCardUsageUseCase } from '../../domain/usecases/INotifyCardUsageUseCase';
+import { IProcessCardCompanyEmailUseCase } from '../../domain/usecases/email/IProcessCardCompanyEmailUseCase';
+import { INotifyCardUsageUseCase } from '../../domain/usecases/notification/INotifyCardUsageUseCase';
 
 /**
  * アプリケーションの依存性を管理するコンテナクラス

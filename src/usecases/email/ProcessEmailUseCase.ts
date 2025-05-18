@@ -2,6 +2,7 @@ import * as admin from 'firebase-admin';
 import { CardUsage } from '../../domain/entities/CardUsage';
 import { CardUsageNotification } from '../../../shared/domain/entities/CardUsageNotification';
 import { ICardUsageRepository } from '../../domain/repositories/ICardUsageRepository';
+import { IProcessEmailUseCase } from '../../../src/domain/usecases/email/IProcessEmailUseCase';
 import { ImapEmailService, CardCompany } from '../../infrastructure/email/ImapEmailService';
 import { logger } from '../../../shared/utils/Logger';
 import { AppError, ErrorType } from '../../../shared/errors/AppError';
@@ -9,7 +10,7 @@ import { AppError, ErrorType } from '../../../shared/errors/AppError';
 /**
  * メール処理のユースケース
  */
-export class ProcessEmailUseCase {
+export class ProcessEmailUseCase implements IProcessEmailUseCase {
   private readonly serviceContext = 'ProcessEmailUseCase';
 
   /**
