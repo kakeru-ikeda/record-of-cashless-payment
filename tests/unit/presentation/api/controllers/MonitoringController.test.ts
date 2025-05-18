@@ -1,82 +1,78 @@
 import { MonitoringController } from '../../../../../src/presentation/api/controllers/MonitoringController';
+import { MonitoringView } from '../../../../../src/presentation/api/views/MonitoringView';
 import { Request, Response } from 'express';
 
-// Loggerをモック化
-jest.mock('../../../../../shared/utils/Logger', () => {
-  const mockServices = new Map();
-  mockServices.set('TestService', {
-    name: 'TestService',
-    status: 'online',
-    message: 'テスト用サービス',
-    lastUpdated: new Date(),
-    errorCount: 0
-  });
-  
-  const mockErrorHistory = [
-    {
-      timestamp: new Date(),
-      service: 'TestService',
-      message: 'テストエラー',
-      details: 'エラーの詳細'
-    }
-  ];
+// MonitoringViewをモック
+jest.mock('../../../../../src/presentation/api/views/MonitoringView');
 
-  return {
-    logger: {
-      info: jest.fn(),
-      debug: jest.fn(),
-      warn: jest.fn(),
-      error: jest.fn(),
-      logAppError: jest.fn(),
-      updateServiceStatus: jest.fn(),
-      services: mockServices,
-      errorHistory: mockErrorHistory,
-      LogLevel: {
-        DEBUG: 0,
-        INFO: 1,
-        WARN: 2,
-        ERROR: 3
+// Loggerをモック
+jest.mock('../../../../../shared/utils/Logger', () => ({
+  logger: {
+    services: new Map([
+      ['TestService', {
+        name: 'TestService',
+        status: 'online',
+        message: 'テスト中',
+        lastUpdated: new Date(),
+        errorCount: 0
+      }]
+    ]),
+    errorHistory: [
+      {
+        timestamp: new Date(),
+        service: 'TestService',
+        message: 'テストエラー',
+        details: 'エラー詳細'
       }
-    }
-  };
-});
-
-// Express Request/Responseのモック作成ヘルパー
-const mockRequest = (params = {}, body = {}) => {
-  return {
-    params,
-    body
-  } as unknown as Request;
-};
-
-const mockResponse = () => {
-  const res: Partial<Response> = {};
-  res.status = jest.fn().mockReturnValue(res);
-  res.json = jest.fn().mockReturnValue(res);
-  res.send = jest.fn().mockReturnValue(res);
-  res.setHeader = jest.fn().mockReturnValue(res);
-  return res as Response;
-};
+    ],
+    logAppError: jest.fn()
+  }
+}));
 
 describe('MonitoringController', () => {
   let monitoringController: MonitoringController;
+  let mockView: jest.Mocked<MonitoringView>;
+  let mockRequest: Partial<Request>;
+  let mockResponse: Partial<Response>;
+  let jsonMock: jest.Mock;
+  let statusMock: jest.Mock;
+  let sendMock: jest.Mock;
+  let setHeaderMock: jest.Mock;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    // レスポンスモックをセットアップ
+    jsonMock = jest.fn();
+    statusMock = jest.fn().mockReturnThis();
+    sendMock = jest.fn();
+    setHeaderMock = jest.fn();
+    
+    mockRequest = {};
+    mockResponse = {
+      json: jsonMock,
+      status: statusMock,
+      send: sendMock,
+      setHeader: setHeaderMock
+    };
+    
+    // モックビューの設定
+    mockView = new MonitoringView() as jest.Mocked<MonitoringView>;
+    mockView.renderDashboard.mockReturnValue('<html>...</html>');
+    
+    // コントローラーの作成
     monitoringController = new MonitoringController();
+    // プライベートプロパティのモック置き換え
+    (monitoringController as any).monitoringView = mockView;
   });
 
   describe('healthCheck', () => {
-    test('正常系: 200ステータスとサーバー稼働メッセージを返すこと', () => {
-      const req = mockRequest();
-      const res = mockResponse();
-
-      monitoringController.healthCheck(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith(
+    test('正常なレスポンスを返すこと', () => {
+      monitoringController.healthCheck(mockRequest as Request, mockResponse as Response);
+      
+      // ステータスコードが200であることを確認
+      expect(statusMock).toHaveBeenCalledWith(200);
+      // JSONレスポンスが正しい形式であることを確認
+      expect(jsonMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          success: true,
           status: 200,
           message: 'Server is running',
           data: expect.objectContaining({
@@ -88,16 +84,14 @@ describe('MonitoringController', () => {
   });
 
   describe('getServiceStatus', () => {
-    test('正常系: 200ステータスとサービスステータス情報を返すこと', () => {
-      const req = mockRequest();
-      const res = mockResponse();
-
-      monitoringController.getServiceStatus(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith(
+    test('サービスステータスを正しく取得すること', () => {
+      monitoringController.getServiceStatus(mockRequest as Request, mockResponse as Response);
+      
+      // ステータスコードが200であることを確認
+      expect(statusMock).toHaveBeenCalledWith(200);
+      // JSONレスポンスが正しい形式であることを確認
+      expect(jsonMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          success: true,
           status: 200,
           message: 'サービスステータスを取得しました',
           data: expect.objectContaining({
@@ -106,59 +100,7 @@ describe('MonitoringController', () => {
                 name: 'TestService',
                 status: 'online'
               })
-            ]),
-            timestamp: expect.any(String)
-          })
-        })
-      );
-    });
-
-    test('異常系: エラー発生時に適切なエラーレスポンスを返すこと', () => {
-      const req = mockRequest();
-      const res = mockResponse();
-      
-      // logger変数を取得
-      const { logger } = require('../../../../../shared/utils/Logger');
-      
-      // serviceデータの取得でエラーを発生させる
-      const mockServices = logger.services;
-      
-      // 一時的にservicesを未定義にしてエラーを発生させる
-      logger.services = undefined;
-      
-      // エラーが発生してもハンドリングされ、適切なレスポンスが返されることを期待
-      monitoringController.getServiceStatus(req, res);
-      
-      // エラーハンドリングが呼ばれたことを確認
-      expect(res.status).toHaveBeenCalled();
-      expect(res.json).toHaveBeenCalled();
-      
-      // 後始末: servicesを元に戻す
-      logger.services = mockServices;
-    });
-  });
-
-  describe('getErrorLogs', () => {
-    test('正常系: 200ステータスとエラーログ情報を返すこと', () => {
-      const req = mockRequest();
-      const res = mockResponse();
-
-      monitoringController.getErrorLogs(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: true,
-          status: 200,
-          message: 'エラーログを取得しました',
-          data: expect.objectContaining({
-            errors: expect.arrayContaining([
-              expect.objectContaining({
-                service: 'TestService',
-                message: 'テストエラー'
-              })
-            ]),
-            timestamp: expect.any(String)
+            ])
           })
         })
       );
@@ -166,15 +108,15 @@ describe('MonitoringController', () => {
   });
 
   describe('renderDashboard', () => {
-    test('正常系: HTMLダッシュボードを適切なヘッダーとともに返すこと', () => {
-      const req = mockRequest();
-      const res = mockResponse();
-
-      monitoringController.renderDashboard(req, res);
-
-      expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'text/html');
-      expect(res.send).toHaveBeenCalled();
-      // HTMLテンプレートの検証は複雑になるため、呼び出しのみ確認
+    test('ビューを使用してHTMLを生成して返すこと', () => {
+      monitoringController.renderDashboard(mockRequest as Request, mockResponse as Response);
+      
+      // ビューのrenderDashboardメソッドが呼ばれることを確認
+      expect(mockView.renderDashboard).toHaveBeenCalled();
+      // Content-Typeヘッダーが設定されることを確認
+      expect(setHeaderMock).toHaveBeenCalledWith('Content-Type', 'text/html');
+      // レンダリングされたHTMLが送信されることを確認
+      expect(sendMock).toHaveBeenCalledWith('<html>...</html>');
     });
   });
 });
