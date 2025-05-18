@@ -1,7 +1,7 @@
 import express, { Application } from 'express';
-import { MonitoringRoutes } from '../monitoring/routes/monitoringRoutes';
-import { ServiceRoutes } from '../service/routes/ServiceRoutes';
-import { ServiceController } from '../service/controllers/ServiceController';
+import { MonitoringRoutes } from '../../presentation/api/routes/MonitoringRoutes';
+import { ServiceRoutes } from '../../presentation/api/routes/ServiceRoutes';
+import { ServiceController } from '../../presentation/api/controllers/ServiceController';
 import { logger } from '../../../shared/utils/Logger';
 import { EmailController } from '../../presentation/email/controllers/EmailController';
 

@@ -1,14 +1,15 @@
 import { HttpAppConfig } from '../../../../src/infrastructure/config/HttpAppConfig';
-import { MonitoringRoutes } from '../../../../src/infrastructure/monitoring/routes/monitoringRoutes';
-import { ServiceRoutes } from '../../../../src/infrastructure/service/routes/ServiceRoutes';
-import { ServiceController } from '../../../../src/infrastructure/service/controllers/ServiceController';
+import { MonitoringRoutes } from '../../../../src/presentation/api/routes/MonitoringRoutes';
+import { ServiceRoutes } from '../../../../src/presentation/api/routes/ServiceRoutes';
+import { ServiceController } from '../../../../src/presentation/api/controllers/ServiceController';
 import { EmailController } from '../../../../src/presentation/email/controllers/EmailController';
 import { Server } from 'http';
 
 // 依存コンポーネントをモック
-jest.mock('../../../../src/infrastructure/monitoring/routes/monitoringRoutes');
-jest.mock('../../../../src/infrastructure/service/routes/ServiceRoutes');
-jest.mock('../../../../src/infrastructure/service/controllers/ServiceController');
+jest.mock('../../../../src/presentation/api/routes/MonitoringRoutes');
+jest.mock('../../../../src/presentation/api/routes/ServiceRoutes');
+jest.mock('../../../../src/presentation/api/controllers/ServiceController');
+jest.mock('../../../../src/presentation/api/controllers/MonitoringController');
 jest.mock('express', () => {
   const mockRouter = {
     use: jest.fn().mockReturnThis(),

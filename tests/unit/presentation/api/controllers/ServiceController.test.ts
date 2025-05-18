@@ -1,4 +1,4 @@
-import { ServiceController } from '../../../../../src/infrastructure/service/controllers/ServiceController';
+import { ServiceController } from '../../../../../src/presentation/api/controllers/ServiceController';
 import { EmailController } from '../../../../../src/presentation/email/controllers/EmailController';
 import { Request, Response } from 'express';
 

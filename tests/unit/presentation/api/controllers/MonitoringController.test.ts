@@ -1,4 +1,4 @@
-import { MonitoringController } from '../../../../../src/infrastructure/monitoring/controllers/MonitoringController';
+import { MonitoringController } from '../../../../../src/presentation/api/controllers/MonitoringController';
 import { Request, Response } from 'express';
 
 // Loggerをモック化
