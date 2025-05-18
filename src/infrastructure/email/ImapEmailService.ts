@@ -4,7 +4,7 @@ import { AppError, ErrorType } from '../../../shared/errors/AppError';
 import { ImapClientAdapter, ImapConnectionConfig } from './ImapClientAdapter';
 import { EmailParser, ParsedEmail } from './EmailParser';
 import { CardUsageExtractor, CardCompany, CardUsageInfo } from './CardUsageExtractor';
-import { EmailService } from '../../domain/interfaces/EmailService';
+import { IEmailService } from '../../domain/interfaces/email/IEmailService';
 import { CardUsage } from '../../domain/entities/CardUsage';
 import { CardUsageNotification } from '../../../shared/domain/entities/CardUsageNotification';
 import { CardUsageMapper } from '../../../shared/domain/mappers/CardUsageMapper';
@@ -14,7 +14,7 @@ import { Timestamp } from 'firebase-admin/firestore';
  * IMAP接続とメール処理のサービス
  * メール監視、メール解析、カード利用情報抽出のフローを調整
  */
-export class ImapEmailService implements EmailService {
+export class ImapEmailService implements IEmailService {
   private imapClient: ImapClientAdapter;
   private emailParser: EmailParser;
   private cardUsageExtractor: CardUsageExtractor;
