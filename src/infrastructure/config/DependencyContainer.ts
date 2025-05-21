@@ -29,6 +29,8 @@ export class DependencyContainer implements IDependencyContainer {
    * 依存性を初期化
    */
   public async initialize(): Promise<void> {
+    logger.setDiscordNotifier(this.discordNotifier);
+
     // インフラストラクチャレイヤーの初期化
     this.emailService = new ImapEmailService(
       Environment.IMAP_SERVER,
@@ -45,9 +47,6 @@ export class DependencyContainer implements IDependencyContainer {
       loggingWebhookUrl: Environment.DISCORD_LOGGING_WEBHOOK_URL,
     });
     logger.updateServiceStatus('DiscordNotifier', 'online', '初期化完了');
-
-    // ErrorHandlerの初期化
-    ErrorHandler.initialize(this.discordNotifier);
 
     // ユースケースレイヤーの初期化
     this.processEmailUseCase = new ProcessEmailUseCase(
