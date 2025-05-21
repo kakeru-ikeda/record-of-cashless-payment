@@ -3,6 +3,7 @@ import { ImapEmailService, CardCompany } from '../../../../../src/infrastructure
 import { ProcessCardCompanyEmailUseCase } from '../../../../../src/usecases/email/ProcessCardCompanyEmailUseCase';
 import { NotifyCardUsageUseCase } from '../../../../../src/usecases/notification/NotifyCardUsageUseCase';
 import { ParsedEmail } from '../../../../../src/infrastructure/email/EmailParser';
+import { ErrorHandler } from '../../../../../shared/errors/ErrorHandler';
 
 // 依存コンポーネントをモック
 jest.mock('../../../../../src/infrastructure/email/ImapEmailService');
@@ -260,10 +261,10 @@ describe('EmailController', () => {
 
       // コールバックを取得して手動で実行
       const callback = emailCallbacks['MUFG'];
-      await callback(sampleParsedEmail);
+      
+      // AppErrorがスローされることを期待する
+      await expect(callback(sampleParsedEmail)).rejects.toThrow('カード会社を特定できませんでした');
 
-      // エラー通知が呼ばれることを確認
-      expect(mockNotifyCardUsageUseCase.notifyError).toHaveBeenCalled();
       // 利用通知は呼ばれないことを確認
       expect(mockNotifyCardUsageUseCase.notifyUsage).not.toHaveBeenCalled();
     });
@@ -272,30 +273,34 @@ describe('EmailController', () => {
       // 監視開始
       await emailController.startAllMonitoring();
 
-      // エラーをスローするようにモック
+      // エラーをモック
       mockProcessCardCompanyEmailUseCase.execute.mockRejectedValueOnce(new Error('処理エラー'));
 
-      // コールバックを取得して手動で実行
+      // コールバックを取得
       const callback = emailCallbacks['MUFG'];
-      await callback(sampleParsedEmail);
-
-      // エラー通知が呼ばれることを確認
-      expect(mockNotifyCardUsageUseCase.notifyError).toHaveBeenCalled();
+      
+      // 例外がスローされることを期待するように変更
+      await expect(callback(sampleParsedEmail)).rejects.toThrow('処理エラー');
+      
+      // 利用通知は呼ばれないことを確認
+      expect(mockNotifyCardUsageUseCase.notifyUsage).not.toHaveBeenCalled();
     });
 
     test('異常系: NotifyCardUsageUseCaseでエラーが発生した場合', async () => {
       // 監視開始
       await emailController.startAllMonitoring();
 
-      // 通知でエラーをスローするようにモック
+      // 通知エラーをモック
       mockNotifyCardUsageUseCase.notifyUsage.mockRejectedValueOnce(new Error('通知エラー'));
 
-      // コールバックを取得して手動で実行
+      // コールバックを取得
       const callback = emailCallbacks['MUFG'];
-      await callback(sampleParsedEmail);
-
-      // エラー通知が呼ばれることを確認
-      expect(mockNotifyCardUsageUseCase.notifyError).toHaveBeenCalled();
+      
+      // 例外がスローされることを期待するように変更
+      await expect(callback(sampleParsedEmail)).rejects.toThrow('通知エラー');
+      
+      // notifyUsageが呼ばれたことを確認
+      expect(mockNotifyCardUsageUseCase.notifyUsage).toHaveBeenCalled();
     });
   });
 });

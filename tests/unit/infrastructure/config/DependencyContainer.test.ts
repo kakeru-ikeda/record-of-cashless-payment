@@ -49,7 +49,8 @@ jest.mock('../../../../shared/utils/Logger', () => ({
     warn: jest.fn(),
     error: jest.fn(),
     logAppError: jest.fn(),
-    updateServiceStatus: jest.fn()
+    updateServiceStatus: jest.fn(),
+    setDiscordNotifier: jest.fn(),
   }
 }));
 
