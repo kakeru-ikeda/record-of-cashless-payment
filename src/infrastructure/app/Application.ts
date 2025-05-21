@@ -40,7 +40,7 @@ export class Application implements IApplication {
     // サーバーを起動
     this.server = this.httpAppConfig.startServer();
 
-    logger.info('システムが正常に起動しました', 'App', {
+    logger.info('システムを起動しています', 'App', {
       notify: true,
       title: '🟢 RoCP System起動'
     });
@@ -106,7 +106,7 @@ export class Application implements IApplication {
   public async shutdown(): Promise<void> {
     logger.info('システムが終了処理を開始しました。メールボックス監視を停止します。', 'App', {
       notify: true,
-      title: '🔴 システム終了',
+      title: '🔴 RoCP System終了',
     });
 
     // メール監視を停止
