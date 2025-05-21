@@ -251,15 +251,14 @@ export class Logger {
    * ERRORレベルのログを出力（任意でDiscord通知）
    */
   public error(
-    message: string,
-    error?: AppError | Error,
+    error: AppError | Error,
     context?: string, 
-    notify: boolean = true
+    options?: LogNotifyOptions
   ): void {
     // エラーオブジェクトがAppErrorでない場合は新規作成
     if (!(error instanceof AppError)) {
       error = new AppError(
-        message,
+        error.message,
         ErrorType.GENERAL,
         {},
         error instanceof Error ? error : undefined
@@ -292,7 +291,7 @@ export class Logger {
     }
 
     // Discord通知（非同期で実行、プロミスは無視）
-    if (notify && this.isDiscordNotificationEnabled()) {
+    if (options?.notify && this.isDiscordNotificationEnabled()) {
       this.discordNotifier!.notifyError(error as AppError, context)
         .catch(err => console.warn(`Discord通知エラー: ${err instanceof Error ? err.message : String(err)}`));
     }
