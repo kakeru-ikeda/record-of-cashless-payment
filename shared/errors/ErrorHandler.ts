@@ -1,6 +1,5 @@
 import { AppError, ErrorType } from './AppError';
 import { ResponseHelper } from '../utils/ResponseHelper';
-import { DiscordNotifier } from '../discord/DiscordNotifier';
 import { logger } from '../utils/Logger';
 
 /**
@@ -8,16 +7,6 @@ import { logger } from '../utils/Logger';
  * アプリケーション全体で統一されたエラー処理を提供します
  */
 export class ErrorHandler {
-    private static discordNotifier: DiscordNotifier;
-
-    /**
-     * ErrorHandlerを初期化
-     * @param discordNotifier Discord通知インスタンス
-     */
-    static initialize(discordNotifier: DiscordNotifier): void {
-        this.discordNotifier = discordNotifier;
-    }
-
     /**
      * エラーをキャッチして適切に処理する
      * @param error 発生したエラー
@@ -63,18 +52,9 @@ export class ErrorHandler {
             : this.convertToAppError(error, options?.defaultMessage, options?.additionalInfo);
 
         // 標準ロガーを使用
-        logger.logAppError(appError, context);
-
-        // Discordに通知 (抑制されていない場合)
-        if (!options?.suppressNotification && this.discordNotifier) {
-            try {
-                await this.discordNotifier.notifyError(appError, context);
-            } catch (notifyError) {
-                logger.warn(`Discord通知の送信に失敗しました: ${
-                    notifyError instanceof Error ? notifyError.message : String(notifyError)
-                }`, 'ErrorHandler');
-            }
-        }
+        logger.error(appError, context, {
+            notify: !options?.suppressNotification,
+        });
 
         return appError;
     }
