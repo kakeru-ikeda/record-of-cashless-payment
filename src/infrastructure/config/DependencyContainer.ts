@@ -29,6 +29,13 @@ export class DependencyContainer implements IDependencyContainer {
    * 依存性を初期化
    */
   public async initialize(): Promise<void> {
+    // DiscordNotifierの初期化
+    this.discordNotifier = new DiscordWebhookNotifier({
+      usageWebhookUrl: Environment.DISCORD_WEBHOOK_URL,
+      loggingWebhookUrl: Environment.DISCORD_LOGGING_WEBHOOK_URL,
+    });
+    logger.updateServiceStatus('DiscordNotifier', 'online', '初期化完了');
+
     // loggerにDiscordNotifierを設定
     logger.setDiscordNotifier(this.discordNotifier);
 
@@ -42,12 +49,6 @@ export class DependencyContainer implements IDependencyContainer {
     this.cardUsageRepository = new FirestoreCardUsageRepository();
     await this.cardUsageRepository.initialize();
     logger.updateServiceStatus('FirestoreRepository', 'online', '初期化完了');
-
-    this.discordNotifier = new DiscordWebhookNotifier({
-      usageWebhookUrl: Environment.DISCORD_WEBHOOK_URL,
-      loggingWebhookUrl: Environment.DISCORD_LOGGING_WEBHOOK_URL,
-    });
-    logger.updateServiceStatus('DiscordNotifier', 'online', '初期化完了');
 
     // ユースケースレイヤーの初期化
     this.processEmailUseCase = new ProcessEmailUseCase(

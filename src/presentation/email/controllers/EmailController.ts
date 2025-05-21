@@ -78,7 +78,7 @@ export class EmailController {
     
     // 監視開始のログをDiscordに通知
     logger.info(
-      `メールボックス監視を開始しました。\n監視対象: ${Object.entries(this.mailboxes)
+      `メールボックス監視を開始しました。監視対象: ${Object.entries(this.mailboxes)
         .map(([company, box]) => `${company}: ${box}`)
         .join(', ')}`,
       this.serviceContext,
