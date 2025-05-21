@@ -58,7 +58,7 @@ export class Environment {
         const missingVars = requiredVars.filter(varName => !process.env[varName]);
 
         if (missingVars.length > 0) {
-            logger.error('必須環境変数が設定されていません: ' + missingVars.join(', '), CONTEXT);
+            logger.warn('必須環境変数が設定されていません: ' + missingVars.join(', '), CONTEXT);
             return false;
         }
 
