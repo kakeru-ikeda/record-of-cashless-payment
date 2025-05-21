@@ -207,7 +207,7 @@ export class ImapClientAdapter extends EventEmitter implements IEmailClient {
         null,
         error instanceof Error ? error : new Error(String(error))
       );
-      logger.logAppError(appError, context);
+      logger.error(appError, context);
 
       // 接続エラーの場合は接続状態を更新
       if (error instanceof Error && (
@@ -248,7 +248,7 @@ export class ImapClientAdapter extends EventEmitter implements IEmailClient {
           ErrorType.EMAIL,
           { uid }
         );
-        logger.logAppError(appError, context);
+        logger.error(appError, context);
         return null;
       }
 
@@ -263,7 +263,7 @@ export class ImapClientAdapter extends EventEmitter implements IEmailClient {
         { uid },
         error instanceof Error ? error : new Error(String(error))
       );
-      logger.logAppError(appError, context);
+      logger.error(appError, context);
 
       // 接続エラーの場合は接続状態を更新
       if (error instanceof Error && (
@@ -306,7 +306,7 @@ export class ImapClientAdapter extends EventEmitter implements IEmailClient {
         { uid },
         error instanceof Error ? error : new Error(String(error))
       );
-      logger.logAppError(appError, context);
+      logger.error(appError, context);
       return false;
     }
   }
@@ -345,7 +345,10 @@ export class ImapClientAdapter extends EventEmitter implements IEmailClient {
 
     try {
       await this.connect(mailboxName);
-      logger.info('reconnect(): connect() 完了', context);
+      logger.info(`IMAP再接続処理が正常に完了しました: ${mailboxName}`, context, {
+        notify: true,
+        title: `🔵 IMAP再接続成功`,
+      });
 
       // 明示的にreconnectedイベントを発火
       // connect()が成功したことを確認してから発火する

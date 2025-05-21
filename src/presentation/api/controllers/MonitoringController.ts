@@ -62,7 +62,7 @@ export class MonitoringController {
             error instanceof Error ? error : undefined
           );
       
-      logger.logAppError(appError, 'MonitoringController');
+      logger.error(appError, 'MonitoringController');
       
       const errorResponse = ErrorHandler.handleApiError(error, 'MonitoringController.getServiceStatus');
       res.status(errorResponse.status).json(errorResponse);
@@ -101,7 +101,7 @@ export class MonitoringController {
             error instanceof Error ? error : undefined
           );
       
-      logger.logAppError(appError, 'MonitoringController');
+      logger.error(appError, 'MonitoringController');
       
       const errorResponse = ErrorHandler.handleApiError(error, 'MonitoringController.getErrorLogs');
       res.status(errorResponse.status).json(errorResponse);
@@ -151,7 +151,7 @@ export class MonitoringController {
             error instanceof Error ? error : undefined
           );
       
-      logger.logAppError(appError, 'MonitoringController');
+      logger.error(appError, 'MonitoringController');
       
       const errorResponse = ResponseHelper.error(500, 'ダッシュボードレンダリング中にエラーが発生しました');
       res.status(errorResponse.status).send('Error rendering dashboard');

@@ -49,13 +49,13 @@ export class FirestoreService {
             if (level === 'info') {
                 console.log(logMessage);
             } else {
-                console.error(logMessage);
+                console.warn(logMessage);
             }
         } else {
             if (level === 'info') {
                 logger.info(message, this.serviceContext);
             } else {
-                logger.error(message, this.serviceContext);
+                logger.warn(message, this.serviceContext);
             }
         }
     }
@@ -68,7 +68,7 @@ export class FirestoreService {
         if (this.isCloudFunctions) {
             console.error(`[${this.serviceContext}] ${error.message}`, error);
         } else {
-            logger.logAppError(error, this.serviceContext);
+            logger.error(error, this.serviceContext);
         }
     }
 

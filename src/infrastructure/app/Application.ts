@@ -70,18 +70,6 @@ export class Application implements IApplication {
     const emailController = this.dependencyContainer.getEmailController();
     await emailController.startAllMonitoring();
 
-    // Discordにシステム起動通知を送信
-    try {
-      const discordNotifier = this.dependencyContainer.getDiscordNotifier();
-      await discordNotifier.notifyLogging(
-        'システムがメールボックス監視を開始しました。カード利用の通知を待機しています。',
-        '📨 メール監視開始',
-        'App'
-      );
-    } catch (error) {
-      logger.warn('Discord通知の送信に失敗しました', 'App');
-    }
-
     // プロセス終了時のクリーンアップ
     this.setupShutdownHooks();
 
@@ -111,42 +99,29 @@ export class Application implements IApplication {
     rethrow: false  // シャットダウン時にエラーが発生しても処理を継続する
   })
   public async shutdown(): Promise<void> {
-    logger.info('アプリケーションを終了しています...', 'App');
+    logger.info('システムが終了処理を開始しました。メールボックス監視を停止します。', 'App', {
+      notify: true,
+      title: '🔴システム終了',
+    });
 
-    try {
-      // Discordにシステム終了通知を送信
-      try {
-        const discordNotifier = this.dependencyContainer.getDiscordNotifier();
-        await discordNotifier.notifyLogging(
-          'システムが終了処理を開始しました。メールボックス監視を停止します。',
-          '🛑 システム終了',
-          'App'
-        );
-      } catch (error) {
-        logger.warn('Discord終了通知の送信に失敗しました', 'App');
-      }
+    // メール監視を停止
+    const emailController = this.dependencyContainer.getEmailController();
+    await emailController.stopMonitoring();
 
-      // メール監視を停止
-      const emailController = this.dependencyContainer.getEmailController();
-      await emailController.stopMonitoring();
-
-      // HTTPサーバーを停止
-      if (this.server) {
-        await new Promise<void>((resolve) => {
-          this.server!.close(() => {
-            logger.info('HTTPサーバーを停止しました', 'HttpServer');
-            resolve();
-          });
+    // HTTPサーバーを停止
+    if (this.server) {
+      await new Promise<void>((resolve) => {
+        this.server!.close(() => {
+          logger.info('HTTPサーバーを停止しました', 'HttpServer');
+          resolve();
         });
-      }
-
-      // 残っているタイマーをクリーンアップ
-      this.cleanupUnresolvedTimers();
-
-      logger.info('アプリケーションが正常に終了しました', 'App');
-    } catch (error) {
-      logger.error('シャットダウン中にエラーが発生しました', error, 'App');
+      });
     }
+
+    // 残っているタイマーをクリーンアップ
+    this.cleanupUnresolvedTimers();
+
+    logger.info('アプリケーションが正常に終了しました', 'App');
   }
 
   /**

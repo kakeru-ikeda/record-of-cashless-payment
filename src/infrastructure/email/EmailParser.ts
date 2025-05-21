@@ -61,7 +61,7 @@ export class EmailParser implements IEmailParser {
         { uid: rawMessage.uid },
         error instanceof Error ? error : new Error(String(error))
       );
-      logger.logAppError(appError, context);
+      logger.error(appError, context);
       return null;
     }
   }

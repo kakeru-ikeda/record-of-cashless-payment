@@ -1,3 +1,4 @@
+import { DiscordNotifier } from '../discord/DiscordNotifier';
 import { AppError, ErrorType } from '../errors/AppError';
 
 /**
@@ -47,6 +48,16 @@ export interface LoggerConfig {
 }
 
 /**
+ * ログ通知オプションのインターフェース
+ */
+export interface LogNotifyOptions {
+  notify?: boolean;       // Discord通知を行うかどうか
+  title?: string;         // 通知のタイトル
+  suppressConsole?: boolean; // コンソール出力を抑制するかどうか
+}
+
+
+/**
  * ロガークラス - アプリケーションの標準化されたログ出力を提供
  */
 export class Logger {
@@ -62,6 +73,9 @@ export class Logger {
   // エラー統計と履歴
   private errorHistory: ErrorRecord[] = [];
   private serviceErrorStats: Map<string, { count: number, times: Date[] }> = new Map();
+
+  // Discordの通知機能
+  private discordNotifier: DiscordNotifier | null = null;
 
   /**
    * コンストラクタ - シングルトンパターン
@@ -94,6 +108,21 @@ export class Logger {
 
     // エラー統計のクリーンアップタイマー設定
     setInterval(() => this.cleanupErrorStats(), this.config.errorStatsTimeWindow / 2);
+  }
+
+  /**
+   * DiscordNotifierを設定
+   */
+  public setDiscordNotifier(discordNotifier: DiscordNotifier): void {
+    this.discordNotifier = discordNotifier;
+    logger.info('DiscordNotifierが設定されました', 'Logger');
+  }
+  
+  /**
+   * Discord通知が有効かどうかを確認
+   */
+  private isDiscordNotificationEnabled(): boolean {
+    return this.discordNotifier !== null;
   }
 
   /**
@@ -163,108 +192,108 @@ export class Logger {
   }
 
   /**
-   * DEBUGレベルのログを出力
+   * DEBUGレベルのログを出力（任意でDiscord通知）
    */
-  public debug(message: string, context?: string): void {
+  public debug(message: string, context?: string, options?: LogNotifyOptions): void {
     if (this.config.level <= LogLevel.DEBUG) {
-      this.log(message, context, 'debug');
+      // コンソールログ（抑制オプションがある場合は出力しない）
+      if (!options?.suppressConsole) {
+        this.log(message, context, 'debug');
+      }
+      
+      // Discord通知（非同期で実行、プロミスは無視）
+      if (options?.notify && this.isDiscordNotificationEnabled()) {
+        this.discordNotifier!.notifyLogging(message, options.title || 'デバッグ情報', context)
+          .catch(err => console.warn(`Discord通知エラー: ${err instanceof Error ? err.message : String(err)}`));
+      }
     }
   }
 
   /**
-   * INFOレベルのログを出力
+   * INFOレベルのログを出力（任意でDiscord通知）
    */
-  public info(message: string, context?: string): void {
+  public info(message: string, context?: string, options?: LogNotifyOptions): void {
     if (this.config.level <= LogLevel.INFO) {
       // ポーリングログの抑制
-      if (this.config.suppressPolling && message.includes('ポーリング')) {
+      if (!options?.suppressConsole && this.config.suppressPolling && message.includes('ポーリング')) {
         this.handleSuppression('polling', message, context, 'info');
-        return;
+      } else if (!options?.suppressConsole) {
+        this.log(message, context, 'info');
       }
-      this.log(message, context, 'info');
+      
+      // Discord通知（非同期で実行、プロミスは無視）
+      if (options?.notify && this.isDiscordNotificationEnabled()) {
+        this.discordNotifier!.notifyLogging(message, options.title || 'お知らせ', context)
+          .catch(err => console.warn(`Discord通知エラー: ${err instanceof Error ? err.message : String(err)}`));
+      }
     }
   }
 
   /**
-   * WARNレベルのログを出力
+   * WARNレベルのログを出力（任意でDiscord通知）
    */
-  public warn(message: string, context?: string): void {
+  public warn(message: string, context?: string, options?: LogNotifyOptions): void {
     if (this.config.level <= LogLevel.WARN) {
-      this.log(message, context, 'warn');
-    }
-  }
-
-  /**
-   * ERRORレベルのログを出力
-   * @param message エラーメッセージ
-   * @param error エラーオブジェクトまたはエラーメッセージ
-   * @param context エラーのコンテキスト
-   */
-  public error(message: string, error?: Error | string | null, context?: string): void {
-    if (this.config.level <= LogLevel.ERROR) {
-      this.log(message, context, 'error');
-
-      // エラー統計の更新
-      if (context) {
-        this.updateErrorStats(context);
+      // コンソールログ
+      if (!options?.suppressConsole) {
+        this.log(message, context, 'warn');
       }
-
-      // エラー履歴に追加
-      this.addErrorRecord({
-        timestamp: new Date(),
-        service: context || 'unknown',
-        message,
-        details: error instanceof Error ? error.message : error
-      });
-
-      // エラーオブジェクトの処理
-      if (error) {
-        if (error instanceof AppError) {
-          // AppErrorの場合は専用のフォーマットを使用
-          console.error(error.toLogString());
-        } else if (error instanceof Error) {
-          // 通常のErrorオブジェクト
-          console.error(error.stack || error.message);
-        } else {
-          // 文字列の場合
-          console.error(error);
-        }
-      }
-
-      // サービスステータスを更新
-      if (context) {
-        this.updateServiceStatus(context, 'error', message);
+      
+      // Discord通知（非同期で実行、プロミスは無視）
+      if (options?.notify && this.isDiscordNotificationEnabled()) {
+        this.discordNotifier!.notifyLogging(message, options.title || '⚠️ 警告', context)
+          .catch(err => console.warn(`Discord通知エラー: ${err instanceof Error ? err.message : String(err)}`));
       }
     }
   }
 
   /**
-   * AppErrorを使ったエラーログ出力
-   * @param appError AppErrorオブジェクト
-   * @param context コンテキスト
+   * ERRORレベルのログを出力（任意でDiscord通知）
    */
-  public logAppError(appError: AppError, context?: string): void {
+  public error(
+    error: AppError | Error,
+    context?: string, 
+    options?: LogNotifyOptions
+  ): void {
+    // エラーオブジェクトがAppErrorでない場合は新規作成
+    if (!(error instanceof AppError)) {
+      error = new AppError(
+        error.message,
+        ErrorType.GENERAL,
+        {},
+        error instanceof Error ? error : undefined
+      );
+    }
+
+    // コンソールログ
     if (this.config.level <= LogLevel.ERROR) {
-      this.log(appError.message, context, 'error');
-      console.error(appError.toLogString());
+      this.log(error.message, context, 'error');
+      console.error((error as AppError).toLogString());
+    }
 
-      const serviceContext = context || 'unknown';
+    // エラー統計の更新
+    if (context) {
+      this.updateErrorStats(context);
+    }
 
-      // エラー統計の更新
-      this.updateErrorStats(serviceContext);
+    // エラー履歴に追加
+    this.addErrorRecord({
+      timestamp: new Date(),
+      service: context || 'unknown',
+      message: error.message,
+      errorType: (error as AppError).type,
+      details: (error as AppError).details
+    });
 
-      // エラー履歴に追加
-      this.addErrorRecord({
-        timestamp: new Date(),
-        service: serviceContext,
-        message: appError.message,
-        errorType: appError.type,
-        details: appError.details
-      });
+    // サービスステータスを更新
+    if (context) {
+      this.updateServiceStatus(context, 'error', error.message);
+    }
 
-      if (context) {
-        this.updateServiceStatus(context, 'error', appError.message);
-      }
+    // Discord通知（非同期で実行、プロミスは無視）
+    if (options?.notify && this.isDiscordNotificationEnabled()) {
+      this.discordNotifier!.notifyError(error as AppError, context)
+        .catch(err => console.warn(`Discord通知エラー: ${err instanceof Error ? err.message : String(err)}`));
     }
   }
 

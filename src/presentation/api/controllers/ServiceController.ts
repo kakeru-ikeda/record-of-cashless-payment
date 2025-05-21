@@ -48,7 +48,7 @@ export class ServiceController {
                     error instanceof Error ? error : undefined
                 );
             
-            logger.logAppError(appError, 'ServiceController');
+            logger.error(appError, 'ServiceController');
             
             const errorResponse = ErrorHandler.handleApiError(error, 'ServiceController.getServices');
             res.status(errorResponse.status).json(errorResponse);
@@ -121,7 +121,7 @@ export class ServiceController {
                     error instanceof Error ? error : undefined
                 );
             
-            logger.logAppError(appError, 'ServiceController');
+            logger.error(appError, 'ServiceController');
             
             const errorResponse = ErrorHandler.handleApiError(error, 'ServiceController.controlService');
             res.status(errorResponse.status).json(errorResponse);

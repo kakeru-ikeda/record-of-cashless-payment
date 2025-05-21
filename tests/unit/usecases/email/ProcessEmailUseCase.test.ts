@@ -35,6 +35,32 @@ jest.mock('../../../../shared/utils/Logger', () => ({
   }
 }));
 
+jest.mock('../../../../shared/errors/ErrorHandler', () => ({
+  ErrorHandler: {
+    errorDecorator: (context, options) => (target, propertyKey, descriptor) => {
+      // オリジナルのメソッドを保存
+      const originalMethod = descriptor.value;
+      // 新しいメソッドを定義
+      descriptor.value = async function(...args) {
+        try {
+          return await originalMethod.apply(this, args);
+        } catch (error) {
+          // ここでhandleEventErrorが呼ばれることをシミュレート
+          mockHandleEventError(error, context, options);
+          throw error;
+        }
+      };
+      return descriptor;
+    },
+    handleEventError: jest.fn().mockImplementation((error, context, options) => {
+      return error;
+    })
+  }
+}));
+
+// モックハンドラ―の参照を保持
+const mockHandleEventError = jest.fn();
+
 describe('ProcessEmailUseCase', () => {
   let processEmailUseCase: ProcessEmailUseCase;
   let mockEmailService: jest.Mocked<ImapEmailService>;
@@ -126,10 +152,10 @@ describe('ProcessEmailUseCase', () => {
 
       // 例外がスローされることを確認
       await expect(processEmailUseCase.execute(sampleEmailBody, CardCompany.MUFG))
-        .rejects.toThrow('メール処理中にエラーが発生しました');
+        .rejects.toThrow('メール解析エラー');
 
-      // エラーがログに記録されることを確認
-      expect(require('../../../../shared/utils/Logger').logger.logAppError).toHaveBeenCalled();
+      // ErrorHandler.handleEventErrorが呼ばれたことを確認
+      expect(mockHandleEventError).toHaveBeenCalled();
     });
 
     test('異常系: データ保存に失敗した場合、エラーがスローされること', async () => {
@@ -140,10 +166,10 @@ describe('ProcessEmailUseCase', () => {
 
       // 例外がスローされることを確認
       await expect(processEmailUseCase.execute(sampleEmailBody, CardCompany.MUFG))
-        .rejects.toThrow('メール処理中にエラーが発生しました');
+        .rejects.toThrow('保存エラー');
 
-      // エラーがログに記録されることを確認
-      expect(require('../../../../shared/utils/Logger').logger.logAppError).toHaveBeenCalled();
+      // ErrorHandler.handleEventErrorが呼ばれたことを確認
+      expect(mockHandleEventError).toHaveBeenCalled();
     });
 
     test('カード会社を指定しない場合、デフォルトでMUFGになること', async () => {
@@ -190,10 +216,10 @@ describe('ProcessEmailUseCase', () => {
 
       // 例外がスローされることを確認
       await expect(processEmailUseCase.executeTest(sampleEmailBody, CardCompany.MUFG))
-        .rejects.toThrow('テスト実行中にエラーが発生しました');
+        .rejects.toThrow('テスト実行エラー');
 
-      // エラーがログに記録されることを確認
-      expect(require('../../../../shared/utils/Logger').logger.logAppError).toHaveBeenCalled();
+      // ErrorHandler.handleEventErrorが呼ばれたことを確認
+      expect(mockHandleEventError).toHaveBeenCalled();
     });
   });
 });

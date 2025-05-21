@@ -23,26 +23,4 @@ export class NotifyCardUsageUseCase implements INotifyCardUsageUseCase {
     await this.discordNotifier.notify(usage);
     logger.info('Discord通知を送信しました', this.serviceContext);
   }
-  
-  /**
-   * エラー情報をDiscordに通知する
-   */
-  async notifyError(error: AppError, context: string): Promise<void> {
-    try {
-      await this.discordNotifier.notifyError(error, context);
-    } catch (notifyError) {
-      logger.warn('Discordエラー通知の送信に失敗しました', this.serviceContext);
-    }
-  }
-  
-  /**
-   * ログメッセージをDiscordに通知する
-   */
-  async notifyLogging(message: string, title: string, context: string): Promise<void> {
-    try {
-      await this.discordNotifier.notifyLogging(message, title, context);
-    } catch (notifyError) {
-      logger.warn('Discordログ通知の送信に失敗しました', this.serviceContext);
-    }
-  }
 }

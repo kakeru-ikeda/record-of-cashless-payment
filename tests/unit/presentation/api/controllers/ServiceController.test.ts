@@ -122,7 +122,7 @@ describe('ServiceController', () => {
       );
 
       // エラーがログに記録されることを確認
-      expect(require('../../../../../shared/utils/Logger').logger.logAppError).toHaveBeenCalled();
+      expect(require('../../../../../shared/utils/Logger').logger.error).toHaveBeenCalled();
     });
   });
 
