@@ -29,6 +29,7 @@ export class DependencyContainer implements IDependencyContainer {
    * 依存性を初期化
    */
   public async initialize(): Promise<void> {
+    // loggerにDiscordNotifierを設定
     logger.setDiscordNotifier(this.discordNotifier);
 
     // インフラストラクチャレイヤーの初期化
