@@ -3,6 +3,8 @@ import { Environment } from '../shared/config/Environment';
 import { logger, LogLevel } from '../shared/utils/Logger';
 import { Application } from './infrastructure/app/Application';
 import { CardCompany } from './infrastructure/email/ImapEmailService';
+import { AppError, ErrorType } from 'shared/errors/AppError';
+import e from 'express';
 
 // 環境変数の読み込み
 dotenv.config();
@@ -20,8 +22,10 @@ async function bootstrap() {
         
         // 環境変数の検証
         if (!Environment.validate()) {
-            logger.error('環境変数の検証に失敗しました', null, 'App');
-            process.exit(1);
+            throw new AppError(
+                '環境変数の設定に問題があります。必要な環境変数がすべて設定されていることを確認してください。',
+                ErrorType.ENVIRONMENT,
+            )
         }
 
         // アプリケーションのインスタンスを作成
@@ -43,7 +47,7 @@ async function bootstrap() {
             await app.runInNormalMode();
         }
     } catch (error) {
-        logger.error('アプリケーションの起動中にエラーが発生しました', error, 'App');
+        logger.error(error, 'App');
         process.exit(1);
     }
 }
@@ -67,6 +71,6 @@ function initializeLogger(): void {
 bootstrap()
     .then(() => logger.info('アプリケーションが正常に起動しました', 'App'))
     .catch(error => {
-        logger.error('予期せぬエラーが発生しました', error, 'App');
+        logger.error(error, 'App');
         process.exit(1);
     });
