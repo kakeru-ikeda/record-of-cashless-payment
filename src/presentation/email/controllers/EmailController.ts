@@ -77,12 +77,15 @@ export class EmailController {
     logger.updateServiceStatus(this.serviceContext, 'online', '全メールボックスの監視中');
     
     // 監視開始のログをDiscordに通知
-    await this.notifyCardUsageUseCase.notifyLogging(
+    logger.info(
       `メールボックス監視を開始しました。\n監視対象: ${Object.entries(this.mailboxes)
         .map(([company, box]) => `${company}: ${box}`)
         .join(', ')}`,
-      '📬 メール監視開始',
-      this.serviceContext
+      this.serviceContext,
+      { 
+        notify: true,
+        title: '📬 メール監視開始',
+      }
     );
   }
   
@@ -108,37 +111,28 @@ export class EmailController {
   /**
    * 受信したメールを処理
    */
+  @ErrorHandler.errorDecorator('EmailController', {
+    defaultMessage: 'メール処理中にエラーが発生しました',
+  })
   private async processReceivedEmail(email: ParsedEmail, context: string): Promise<void> {
-    try {
-      logger.info(`新しいメールを受信しました: ${email.subject}`, context);
-      logger.debug(`送信者: ${email.from}`, context);
-      logger.debug(`本文サンプル: ${email.body.substring(0, 100)}...`, context);
+    logger.info(`新しいメールを受信しました: ${email.subject}`, context);
+    logger.debug(`送信者: ${email.from}`, context);
+    logger.debug(`本文サンプル: ${email.body.substring(0, 100)}...`, context);
 
-      // ユースケースにメール処理を委譲
-      const result = await this.processCardCompanyEmailUseCase.execute(email);
-      
-      if (result.cardCompany && result.usageResult) {
-        // カード利用情報が取得できた場合は通知
-        await this.notifyCardUsageUseCase.notifyUsage(result.usageResult.usage);
-      } else {
-        // カード会社を特定できなかった場合
-        const warnAppError = new AppError(
-          'カード会社を特定できませんでした', 
-          ErrorType.EMAIL, 
-          { subject: email.subject, from: email.from }
-        );
-        await this.notifyCardUsageUseCase.notifyError(warnAppError, context);
-      }
-    } catch (error) {
-      // メール処理エラーをハンドリング
-      const appError = await ErrorHandler.handleEventError(error, context, {
-        defaultMessage: 'メール処理中にエラーが発生しました',
-        additionalInfo: { subject: email.subject, from: email.from },
-        suppressNotification: true // 通知はnotifyCardUsageUseCaseで行う
-      });
-      
-      // ユースケースを使って通知
-      await this.notifyCardUsageUseCase.notifyError(appError, context);
+    // ユースケースにメール処理を委譲
+    const result = await this.processCardCompanyEmailUseCase.execute(email);
+    
+    if (result.cardCompany && result.usageResult) {
+      // カード利用情報が取得できた場合は通知
+      await this.notifyCardUsageUseCase.notifyUsage(result.usageResult.usage);
+    } else {
+      // カード会社を特定できなかった場合
+      const warnAppError = new AppError(
+        'カード会社を特定できませんでした', 
+        ErrorType.EMAIL, 
+        { subject: email.subject, from: email.from }
+      );
+      throw warnAppError;
     }
   }
   
@@ -164,7 +158,10 @@ export class EmailController {
           suppressNotification: true
         });
         
-        await this.notifyCardUsageUseCase.notifyError(appError, context);
+        logger.error(appError, context, {
+          notify: true,
+          title: '🔴 メール監視停止エラー',
+        });
       }
     }
     
@@ -172,10 +169,13 @@ export class EmailController {
     logger.updateServiceStatus(this.serviceContext, 'offline', '監視停止');
     
     // 監視停止のログをDiscordに通知
-    await this.notifyCardUsageUseCase.notifyLogging(
+    logger.info(
       'すべてのメールボックスの監視を停止しました。',
-      '📭 メール監視停止',
-      this.serviceContext
+      this.serviceContext,
+      { 
+        notify: true,
+        title: '📭 メール監視停止',
+      }
     );
   }
 }
