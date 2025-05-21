@@ -345,7 +345,10 @@ export class ImapClientAdapter extends EventEmitter implements IEmailClient {
 
     try {
       await this.connect(mailboxName);
-      logger.info('reconnect(): connect() 完了', context);
+      logger.info(`IMAP再接続処理が正常に完了しました: ${mailboxName}`, context, {
+        notify: true,
+        title: `🔵 IMAP再接続成功`,
+      });
 
       // 明示的にreconnectedイベントを発火
       // connect()が成功したことを確認してから発火する
