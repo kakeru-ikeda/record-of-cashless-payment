@@ -3,6 +3,7 @@ import * as path from 'path';
 import { logger } from '../../../shared/utils/Logger';
 import { ProcessEmailUseCase } from '../../usecases/email/ProcessEmailUseCase';
 import { CardCompany } from '../email/ImapEmailService';
+import e from 'express';
 
 /**
  * テストモードの実行を担当するクラス
@@ -39,7 +40,6 @@ export class TestRunner {
       logger.info('テスト結果: ' + JSON.stringify(result), 'TestMode');
       return result;
     } catch (error) {
-      logger.error('テスト実行中にエラーが発生しました', error, 'TestMode');
       throw error;
     }
   }
