@@ -94,7 +94,7 @@ export class ImapEmailService implements IEmailService {
               { mailboxName },
               error instanceof Error ? error : new Error(String(error))
             );
-            logger.logAppError(appError, this.serviceContext);
+            logger.error(appError, this.serviceContext);
           });
       } else {
         logger.warn('前回の接続情報がないため、監視を再開できません', this.serviceContext);
@@ -131,7 +131,7 @@ export class ImapEmailService implements IEmailService {
         { mailboxName },
         error instanceof Error ? error : new Error(String(error))
       );
-      logger.logAppError(appError, context);
+      logger.error(appError, context);
       throw appError;
     }
   }
@@ -153,7 +153,7 @@ export class ImapEmailService implements IEmailService {
         {},
         error instanceof Error ? error : new Error(String(error))
       );
-      logger.logAppError(appError, context);
+      logger.error(appError, context);
     });
 
     // ポーリングタイマーの設定
@@ -179,7 +179,7 @@ export class ImapEmailService implements IEmailService {
             {},
             error instanceof Error ? error : new Error(String(error))
           );
-          logger.logAppError(appError, context);
+          logger.error(appError, context);
         }
       }
     }, 1 * 60 * 1000); // 1分ごと
@@ -219,7 +219,7 @@ export class ImapEmailService implements IEmailService {
           { uid },
           error instanceof Error ? error : new Error(String(error))
         );
-        logger.logAppError(appError, context);
+        logger.error(appError, context);
       }
     }
   }
@@ -251,7 +251,7 @@ export class ImapEmailService implements IEmailService {
         { cardCompany },
         error instanceof Error ? error : new Error(String(error))
       );
-      logger.logAppError(appError, this.serviceContext);
+      logger.error(appError, this.serviceContext);
 
       // エラー時は空のオブジェクトを返す
       return {

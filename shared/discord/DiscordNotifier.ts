@@ -165,7 +165,7 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
 
             // WebhookのURLが有効かチェック
             if (!webhookUrl.startsWith('https://discord.com/api/webhooks/')) {
-                logger.error(`${notificationType}用のDiscord WebhookのURLが無効です`, null, this.serviceContext);
+                logger.warn(`${notificationType}用のDiscord WebhookのURLが無効です`, this.serviceContext);
                 return false;
             }
 
@@ -182,7 +182,7 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
                     ErrorType.DISCORD,
                     { statusCode: response.status }
                 );
-                logger.logAppError(appError, this.serviceContext);
+                logger.error(appError, this.serviceContext);
                 return false;
             }
         } catch (error) {
@@ -192,7 +192,7 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
                 { notificationType },
                 error instanceof Error ? error : undefined
             );
-            logger.logAppError(appError, this.serviceContext);
+            logger.error(appError, this.serviceContext);
             return false;
         }
     }
@@ -248,7 +248,7 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
                 { notificationType: 'カード利用通知' },
                 error instanceof Error ? error : undefined
             );
-            logger.logAppError(appError, this.serviceContext);
+            logger.error(appError, this.serviceContext);
             return false;
         }
     }
@@ -329,7 +329,7 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
                 { reportType: 'weekly', alertLevel: data.alertLevel },
                 error instanceof Error ? error : undefined
             );
-            logger.logAppError(appError, this.serviceContext);
+            logger.error(appError, this.serviceContext);
             return false;
         }
     }
@@ -382,7 +382,7 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
                 { reportType: 'daily', date: data.date },
                 error instanceof Error ? error : undefined
             );
-            logger.logAppError(appError, this.serviceContext);
+            logger.error(appError, this.serviceContext);
             return false;
         }
     }
@@ -463,7 +463,7 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
                 { reportType: 'monthly', alertLevel: data.alertLevel },
                 error instanceof Error ? error : undefined
             );
-            logger.logAppError(appError, this.serviceContext);
+            logger.error(appError, this.serviceContext);
             return false;
         }
     }
@@ -574,7 +574,7 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
             return this.sendDiscordNotification(webhookUrl, embeds, 'エラーログ');
         } catch (err) {
             // ここでログ送信に失敗した場合はコンソールに出力するのみ（無限ループ防止）
-            logger.error(
+            logger.warn(
                 `エラー通知の送信中に例外が発生しました: ${err instanceof Error ? err.message : '不明なエラー'}`,
                 this.serviceContext
             );
@@ -630,7 +630,7 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
             return this.sendDiscordNotification(webhookUrl, embeds, 'ログメッセージ');
         } catch (err) {
             // ここでログ送信に失敗した場合はコンソールに出力するのみ（無限ループ防止）
-            logger.error(
+            logger.warn(
                 `ログメッセージの送信中に例外が発生しました: ${err instanceof Error ? err.message : '不明なエラー'}`,
                 this.serviceContext
             );

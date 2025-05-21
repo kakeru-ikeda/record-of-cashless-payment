@@ -52,7 +52,7 @@ export class CardUsageExtractor implements ICardUsageExtractor {
           ErrorType.VALIDATION,
           { cardCompany }
         );
-        logger.logAppError(appError, context);
+        logger.error(appError, context);
         throw appError;
     }
   }
