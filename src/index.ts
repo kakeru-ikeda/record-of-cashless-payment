@@ -4,7 +4,6 @@ import { logger, LogLevel } from '../shared/utils/Logger';
 import { Application } from './infrastructure/app/Application';
 import { CardCompany } from './infrastructure/email/ImapEmailService';
 import { AppError, ErrorType } from 'shared/errors/AppError';
-import e from 'express';
 
 // 環境変数の読み込み
 dotenv.config();
