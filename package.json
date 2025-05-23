@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc --outDir dist",
-    "start": "npx ts-node src/index.ts",
+    "start": "npx ts-node -r ./tsconfig-paths-bootstrap.js src/index.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
@@ -31,6 +31,7 @@
     "supertest": "^7.1.1",
     "ts-jest": "^29.3.1",
     "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.7.2"
   },
   "dependencies": {
@@ -42,6 +43,14 @@
     "imapflow": "^1.0.186",
     "inbox": "^1.1.59",
     "mailparser": "^3.7.2",
+    "module-alias": "^2.2.3",
     "quoted-printable": "^1.0.1"
+  },
+  "_moduleAliases": {
+    "@domain": "dist/src/domain",
+    "@infrastructure": "dist/src/infrastructure",
+    "@usecase": "dist/src/usecase",
+    "@interface": "dist/src/interface",
+    "@shared": "dist/shared"
   }
 }

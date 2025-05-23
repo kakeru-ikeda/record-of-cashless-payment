@@ -8,6 +8,23 @@
         "resolveJsonModule": true,
         "outDir": "dist",
         "baseUrl": ".",
+        "paths": {
+            "@domain/*": [
+                "src/domain/*"
+            ],
+            "@infrastructure/*": [
+                "src/infrastructure/*"
+            ],
+            "@usecase/*": [
+                "src/usecase/*"
+            ],
+            "@interface/*": [
+                "src/interface/*"
+            ],
+            "@shared/*": [
+                "shared/*"
+            ]
+        },
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true
     },
