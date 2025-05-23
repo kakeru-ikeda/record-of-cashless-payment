@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { logger } from '../../../../shared/infrastructure/logging/Logger';
 import { AppError, ErrorType } from '../../../../shared/infrastructure/errors/AppError';
 import { ErrorHandler } from '../../../../shared/infrastructure/errors/ErrorHandler';
-import { ResponseHelper } from '../../../../shared/utils/ResponseHelper';
+import { ResponseHelper } from '../../../../shared/presentation/responses/ResponseHelper';
 import { MonitoringView } from '../views/MonitoringView';
 
 /**

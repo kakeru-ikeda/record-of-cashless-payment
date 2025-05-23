@@ -1,5 +1,5 @@
 import { AppError, ErrorType } from './AppError';
-import { ResponseHelper } from '../../utils/ResponseHelper';
+import { ResponseHelper } from '../../presentation/responses/ResponseHelper';
 import { logger } from '../logging/Logger';
 
 /**

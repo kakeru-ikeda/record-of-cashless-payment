@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { ServiceController } from '../controllers/ServiceController';
-import { authMiddleware } from '../../../../shared/firebase/AuthMiddleware';
+import { authMiddleware } from '../../../../shared/presentation/middlewares/AuthMiddleware';
 
 /**
  * サービス管理ルーター
@@ -19,10 +19,10 @@ export class ServiceRoutes {
     private initializeRoutes(): void {
         // すべてのエンドポイントに認証ミドルウェアを適用
         this.router.use(authMiddleware);
-        
+
         // サービス一覧取得
         this.router.get('/', this.serviceController.getServices);
-        
+
         // サービス制御（起動・停止・再起動）
         this.router.post('/:id', this.serviceController.controlService);
     }

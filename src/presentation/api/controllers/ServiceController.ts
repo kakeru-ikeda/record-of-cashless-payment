@@ -3,7 +3,7 @@ import { logger } from '../../../../shared/infrastructure/logging/Logger';
 import { EmailController } from '../../email/controllers/EmailController';
 import { AppError, ErrorType } from '../../../../shared/infrastructure/errors/AppError';
 import { ErrorHandler } from '../../../../shared/infrastructure/errors/ErrorHandler';
-import { ResponseHelper } from '../../../../shared/utils/ResponseHelper';
+import { ResponseHelper } from '../../../../shared/presentation/responses/ResponseHelper';
 
 /**
  * サービス管理コントローラー
