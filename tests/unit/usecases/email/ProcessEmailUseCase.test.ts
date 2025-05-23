@@ -1,9 +1,10 @@
 import { ProcessEmailUseCase } from '../../../../src/usecases/email/ProcessEmailUseCase';
-import { ImapEmailService, CardCompany } from '../../../../src/infrastructure/email/ImapEmailService';
+import { ImapEmailService } from '../../../../src/infrastructure/email/ImapEmailService';
 import { ICardUsageRepository } from '../../../../src/domain/repositories/ICardUsageRepository';
 import { DiscordNotifier } from '../../../../shared/infrastructure/discord/DiscordNotifier';
 import { CardUsageNotification } from '../../../../shared/domain/entities/CardUsageNotification';
 import * as admin from 'firebase-admin';
+import { CardCompany } from '../../../../src/domain/entities/card/CardTypes';
 
 // 依存コンポーネントをモック化
 jest.mock('../../../../src/infrastructure/email/ImapEmailService');
@@ -45,21 +46,21 @@ jest.mock('../../../../shared/infrastructure/errors/ErrorHandler', () => ({
         try {
           return await originalMethod.apply(this, args);
         } catch (error) {
-          // ここでhandleEventErrorが呼ばれることをシミュレート
-          mockHandleEventError(error, context, options);
+          // ここでhandleが呼ばれることをシミュレート
+          mockhandle(error, context, options);
           throw error;
         }
       };
       return descriptor;
     },
-    handleEventError: jest.fn().mockImplementation((error, context, options) => {
+    handle: jest.fn().mockImplementation((error, context, options) => {
       return error;
     })
   }
 }));
 
 // モックハンドラ―の参照を保持
-const mockHandleEventError = jest.fn();
+const mockhandle = jest.fn();
 
 describe('ProcessEmailUseCase', () => {
   let processEmailUseCase: ProcessEmailUseCase;
@@ -154,8 +155,8 @@ describe('ProcessEmailUseCase', () => {
       await expect(processEmailUseCase.execute(sampleEmailBody, CardCompany.MUFG))
         .rejects.toThrow('メール解析エラー');
 
-      // ErrorHandler.handleEventErrorが呼ばれたことを確認
-      expect(mockHandleEventError).toHaveBeenCalled();
+      // ErrorHandler.handleが呼ばれたことを確認
+      expect(mockhandle).toHaveBeenCalled();
     });
 
     test('異常系: データ保存に失敗した場合、エラーがスローされること', async () => {
@@ -168,8 +169,8 @@ describe('ProcessEmailUseCase', () => {
       await expect(processEmailUseCase.execute(sampleEmailBody, CardCompany.MUFG))
         .rejects.toThrow('保存エラー');
 
-      // ErrorHandler.handleEventErrorが呼ばれたことを確認
-      expect(mockHandleEventError).toHaveBeenCalled();
+      // ErrorHandler.handleが呼ばれたことを確認
+      expect(mockhandle).toHaveBeenCalled();
     });
 
     test('カード会社を指定しない場合、デフォルトでMUFGになること', async () => {
@@ -218,8 +219,8 @@ describe('ProcessEmailUseCase', () => {
       await expect(processEmailUseCase.executeTest(sampleEmailBody, CardCompany.MUFG))
         .rejects.toThrow('テスト実行エラー');
 
-      // ErrorHandler.handleEventErrorが呼ばれたことを確認
-      expect(mockHandleEventError).toHaveBeenCalled();
+      // ErrorHandler.handleが呼ばれたことを確認
+      expect(mockhandle).toHaveBeenCalled();
     });
   });
 });

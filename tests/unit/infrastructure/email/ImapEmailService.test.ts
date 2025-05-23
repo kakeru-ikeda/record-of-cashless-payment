@@ -1,8 +1,9 @@
 import { ImapEmailService } from '../../../../src/infrastructure/email/ImapEmailService';
 import { ImapClientAdapter } from '../../../../src/infrastructure/email/ImapClientAdapter';
 import { EmailParser, ParsedEmail } from '../../../../src/infrastructure/email/EmailParser';
-import { CardUsageExtractor, CardCompany } from '../../../../src/infrastructure/email/CardUsageExtractor';
+import { CardUsageExtractor } from '../../../../src/infrastructure/email/CardUsageExtractor';
 import { CardUsageNotification } from '../../../../shared/domain/entities/CardUsageNotification';
+import { CardCompany } from '../../../../src/domain/entities/card/CardTypes';
 
 // 依存コンポーネントをモック
 jest.mock('../../../../src/infrastructure/email/ImapClientAdapter');

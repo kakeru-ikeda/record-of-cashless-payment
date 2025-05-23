@@ -6,7 +6,7 @@ import { FirestoreService } from '../../../../shared/infrastructure/database/Fir
 import { DateUtil } from '../../../../shared/utils/DateUtil';
 import { Environment } from '../../../../shared/infrastructure/config/Environment';
 import { CardUsageMapper } from '../../../../shared/domain/mappers/CardUsageMapper';
-import { AppError } from '../../../../shared/infrastructure/errors/AppError';
+import { AppError } from '../../../../shared/errors/AppError';
 
 // モック
 jest.mock('../../../../shared/infrastructure/database/FirestoreService');

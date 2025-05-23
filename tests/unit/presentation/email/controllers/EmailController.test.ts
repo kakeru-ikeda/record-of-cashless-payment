@@ -1,8 +1,9 @@
 import { EmailController } from '../../../../../src/presentation/email/controllers/EmailController';
-import { ImapEmailService, CardCompany } from '../../../../../src/infrastructure/email/ImapEmailService';
+import { ImapEmailService } from '../../../../../src/infrastructure/email/ImapEmailService';
 import { ProcessCardCompanyEmailUseCase } from '../../../../../src/usecases/email/ProcessCardCompanyEmailUseCase';
 import { NotifyCardUsageUseCase } from '../../../../../src/usecases/notification/NotifyCardUsageUseCase';
 import { ParsedEmail } from '../../../../../src/infrastructure/email/EmailParser';
+import { CardCompany } from '../../../../../src/domain/entities/card/CardTypes';
 
 // 依存コンポーネントをモック
 jest.mock('../../../../../src/infrastructure/email/ImapEmailService');
@@ -38,7 +39,7 @@ jest.mock('../../../../../shared/infrastructure/errors/ErrorHandler', () => ({
       _propertyKey: string | symbol,
       descriptor: PropertyDescriptor
     ) => descriptor,
-    handleEventError: jest.fn(),
+    handle: jest.fn(),
     extractErrorInfoFromArgs: jest.fn()
   }
 }));

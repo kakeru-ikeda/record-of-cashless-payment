@@ -1,5 +1,6 @@
-import { CardUsageExtractor, CardCompany } from '../../../../src/infrastructure/email/CardUsageExtractor';
-import { AppError } from '../../../../shared/infrastructure/errors/AppError';
+import { CardUsageExtractor } from '../../../../src/infrastructure/email/CardUsageExtractor';
+import { AppError } from '../../../../shared/errors/AppError';
+import { CardCompany } from '../../../../src/domain/entities/card/CardTypes';
 
 // Loggerをモック化
 jest.mock('../../../../shared/infrastructure/logging/Logger', () => {

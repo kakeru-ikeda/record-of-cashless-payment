@@ -15,7 +15,7 @@ jest.mock('../../../../shared/infrastructure/errors/ErrorHandler', () => ({
       _propertyKey: string | symbol,
       descriptor: PropertyDescriptor
     ) => descriptor,
-    handleEventError: jest.fn(),
+    handle: jest.fn(),
     extractErrorInfoFromArgs: jest.fn(),
     initialize: jest.fn()
   }

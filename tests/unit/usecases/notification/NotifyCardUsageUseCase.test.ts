@@ -1,7 +1,7 @@
 import { NotifyCardUsageUseCase } from '../../../../src/usecases/notification/NotifyCardUsageUseCase';
 import { DiscordNotifier } from '../../../../shared/infrastructure/discord/DiscordNotifier';
 import { CardUsageNotification } from '../../../../shared/domain/entities/CardUsageNotification';
-import { AppError, ErrorType } from '../../../../shared/infrastructure/errors/AppError';
+import { AppError, ErrorType } from '../../../../shared/errors/AppError';
 
 // Loggerをモック化
 jest.mock('../../../../shared/infrastructure/logging/Logger', () => ({
@@ -23,7 +23,7 @@ jest.mock('../../../../shared/infrastructure/errors/ErrorHandler', () => ({
       _propertyKey: string | symbol,
       descriptor: PropertyDescriptor
     ) => descriptor,
-    handleEventError: jest.fn(),
+    handle: jest.fn(),
     extractErrorInfoFromArgs: jest.fn()
   }
 }));

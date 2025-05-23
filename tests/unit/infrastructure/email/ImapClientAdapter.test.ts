@@ -1,11 +1,11 @@
 import { ImapClientAdapter, ImapConnectionConfig } from '../../../../src/infrastructure/email/ImapClientAdapter';
-import { AppError } from '../../../../shared/infrastructure/errors/AppError';
+import { AppError } from '../../../../shared/errors/AppError';
 import { EventEmitter } from 'events';
 
 // ErrorHandlerをモック化
 jest.mock('../../../../shared/infrastructure/errors/ErrorHandler', () => ({
   ErrorHandler: {
-    handleEventError: jest.fn().mockImplementation(async (err) => err),
+    handle: jest.fn().mockImplementation(async (err) => err),
     errorDecorator: jest.fn().mockImplementation((context, options = {}) => {
       return function (_target: any, _propertyKey: any, descriptor: { value: (...args: any[]) => Promise<any>; }) {
         const originalMethod = descriptor.value;
