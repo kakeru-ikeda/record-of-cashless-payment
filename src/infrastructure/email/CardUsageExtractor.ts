@@ -1,5 +1,5 @@
-import { logger } from '../../../shared/utils/Logger';
-import { AppError, ErrorType } from '../../../shared/errors/AppError';
+import { logger } from '../../../shared/infrastructure/logging/Logger';
+import { AppError, ErrorType } from '../../../shared/infrastructure/errors/AppError';
 import { ICardUsageExtractor } from '../../domain/interfaces/email/ICardUsageExtractor';
 
 /**

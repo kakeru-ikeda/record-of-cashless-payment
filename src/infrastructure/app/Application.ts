@@ -2,10 +2,10 @@ import { Server } from 'http';
 import { HttpAppConfig } from '../config/HttpAppConfig';
 import { DependencyContainer } from '../config/DependencyContainer';
 import { TestRunner } from '../test/TestRunner';
-import { logger } from '../../../shared/utils/Logger';
+import { logger } from '../../../shared/infrastructure/logging/Logger';
 import { CardCompany } from '../email/ImapEmailService';
 import { IApplication } from '../../domain/application/IApplication';
-import { ErrorHandler } from '../../../shared/errors/ErrorHandler';
+import { ErrorHandler } from '../../../shared/infrastructure/errors/ErrorHandler';
 
 /**
  * アプリケーションのライフサイクル管理を担当するクラス

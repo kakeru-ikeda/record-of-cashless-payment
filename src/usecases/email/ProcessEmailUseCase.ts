@@ -4,8 +4,8 @@ import { CardUsageNotification } from '../../../shared/domain/entities/CardUsage
 import { ICardUsageRepository } from '../../domain/repositories/ICardUsageRepository';
 import { IProcessEmailUseCase } from '../../../src/domain/usecases/email/IProcessEmailUseCase';
 import { ImapEmailService, CardCompany } from '../../infrastructure/email/ImapEmailService';
-import { logger } from '../../../shared/utils/Logger';
-import { ErrorHandler } from '../../../shared/errors/ErrorHandler';
+import { logger } from '../../../shared/infrastructure/logging/Logger';
+import { ErrorHandler } from '../../../shared/infrastructure/errors/ErrorHandler';
 
 /**
  * メール処理のユースケース

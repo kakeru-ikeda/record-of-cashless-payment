@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import { logger } from '../../../../shared/utils/Logger';
-import { AppError, ErrorType } from '../../../../shared/errors/AppError';
-import { ErrorHandler } from '../../../../shared/errors/ErrorHandler';
+import { logger } from '../../../../shared/infrastructure/logging/Logger';
+import { AppError, ErrorType } from '../../../../shared/infrastructure/errors/AppError';
+import { ErrorHandler } from '../../../../shared/infrastructure/errors/ErrorHandler';
 import { ResponseHelper } from '../../../../shared/utils/ResponseHelper';
 import { MonitoringView } from '../views/MonitoringView';
 
@@ -10,14 +10,14 @@ import { MonitoringView } from '../views/MonitoringView';
  */
 export class MonitoringController {
   private readonly monitoringView: MonitoringView;
-  
+
   /**
    * コンストラクタ
    */
   constructor() {
     this.monitoringView = new MonitoringView();
   }
-  
+
   /**
    * シンプルなヘルスチェック - サーバーが稼働中かを確認
    */
@@ -35,7 +35,7 @@ export class MonitoringController {
     try {
       // Loggerクラスからサービスステータスマップにアクセスするためのメソッドを呼び出す
       const serviceStatuses = (logger as any).services || new Map();
-      
+
       // レスポンスデータを作成
       const servicesData = Array.from(serviceStatuses.values()).map((service: any) => ({
         name: service.name,
@@ -45,25 +45,25 @@ export class MonitoringController {
         errorCount: service.errorCount || 0,
         lastErrorTime: service.lastErrorTime?.toISOString()
       }));
-      
+
       const response = ResponseHelper.success('サービスステータスを取得しました', {
         timestamp: new Date().toISOString(),
         services: servicesData
       });
-      
+
       res.status(response.status).json(response);
     } catch (error) {
       const appError = error instanceof AppError
         ? error
         : new AppError(
-            'サービスステータス取得中にエラーが発生しました',
-            ErrorType.GENERAL,
-            { endpoint: 'getServiceStatus' },
-            error instanceof Error ? error : undefined
-          );
-      
+          'サービスステータス取得中にエラーが発生しました',
+          ErrorType.GENERAL,
+          { endpoint: 'getServiceStatus' },
+          error instanceof Error ? error : undefined
+        );
+
       logger.error(appError, 'MonitoringController');
-      
+
       const errorResponse = ErrorHandler.handleApiError(error, 'MonitoringController.getServiceStatus');
       res.status(errorResponse.status).json(errorResponse);
     }
@@ -76,7 +76,7 @@ export class MonitoringController {
     try {
       // Loggerのエラー履歴にアクセス
       const errorHistory = (logger as any).errorHistory || [];
-      
+
       // エラーデータを作成
       const errorsData = errorHistory.map((error: any) => ({
         timestamp: error.timestamp?.toISOString(),
@@ -84,25 +84,25 @@ export class MonitoringController {
         message: error.message,
         details: error.details
       }));
-      
+
       const response = ResponseHelper.success('エラーログを取得しました', {
         timestamp: new Date().toISOString(),
         errors: errorsData
       });
-      
+
       res.status(response.status).json(response);
     } catch (error) {
       const appError = error instanceof AppError
         ? error
         : new AppError(
-            'エラーログ取得中にエラーが発生しました',
-            ErrorType.GENERAL,
-            { endpoint: 'getErrorLogs' },
-            error instanceof Error ? error : undefined
-          );
-      
+          'エラーログ取得中にエラーが発生しました',
+          ErrorType.GENERAL,
+          { endpoint: 'getErrorLogs' },
+          error instanceof Error ? error : undefined
+        );
+
       logger.error(appError, 'MonitoringController');
-      
+
       const errorResponse = ErrorHandler.handleApiError(error, 'MonitoringController.getErrorLogs');
       res.status(errorResponse.status).json(errorResponse);
     }
@@ -116,7 +116,7 @@ export class MonitoringController {
       // サービスステータスデータを取得
       const serviceStatuses = (logger as any).services || new Map();
       const errorHistory = (logger as any).errorHistory || [];
-      
+
       // サービスデータを準備
       const servicesData = Array.from(serviceStatuses.values()).map((service: any) => ({
         name: service.name,
@@ -126,7 +126,7 @@ export class MonitoringController {
         errorCount: service.errorCount || 0,
         lastErrorTime: service.lastErrorTime?.toISOString()
       }));
-      
+
       // エラーデータを準備
       const errorsData = errorHistory.map((error: any) => ({
         timestamp: error.timestamp?.toISOString(),
@@ -134,10 +134,10 @@ export class MonitoringController {
         message: error.message,
         details: error.details
       }));
-      
+
       // ビューを使用してHTMLをレンダリング
       const renderedHtml = this.monitoringView.renderDashboard(servicesData, errorsData);
-      
+
       // HTMLとして送信
       res.setHeader('Content-Type', 'text/html');
       res.send(renderedHtml);
@@ -145,14 +145,14 @@ export class MonitoringController {
       const appError = error instanceof AppError
         ? error
         : new AppError(
-            'ダッシュボードレンダリング中にエラーが発生しました',
-            ErrorType.GENERAL,
-            { endpoint: 'renderDashboard' },
-            error instanceof Error ? error : undefined
-          );
-      
+          'ダッシュボードレンダリング中にエラーが発生しました',
+          ErrorType.GENERAL,
+          { endpoint: 'renderDashboard' },
+          error instanceof Error ? error : undefined
+        );
+
       logger.error(appError, 'MonitoringController');
-      
+
       const errorResponse = ResponseHelper.error(500, 'ダッシュボードレンダリング中にエラーが発生しました');
       res.status(errorResponse.status).send('Error rendering dashboard');
     }

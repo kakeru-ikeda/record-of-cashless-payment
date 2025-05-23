@@ -1,7 +1,7 @@
 import { simpleParser } from 'mailparser';
 import { htmlToText } from 'html-to-text';
-import { logger } from '../../../shared/utils/Logger';
-import { AppError, ErrorType } from '../../../shared/errors/AppError';
+import { logger } from '../../../shared/infrastructure/logging/Logger';
+import { AppError, ErrorType } from '../../../shared/infrastructure/errors/AppError';
 import { RawEmailMessage } from './ImapClientAdapter';
 import { IEmailParser } from '../../domain/interfaces/email/IEmailParser';
 
@@ -22,11 +22,11 @@ export interface ParsedEmail {
  */
 export class EmailParser implements IEmailParser {
   private readonly serviceContext: string;
-  
+
   constructor() {
     this.serviceContext = 'EmailParser';
   }
-  
+
   /**
    * 生のメールデータをパースして構造化された形式に変換
    * @param rawMessage 生のメールデータ
@@ -34,19 +34,19 @@ export class EmailParser implements IEmailParser {
    */
   async parseEmail(rawMessage: RawEmailMessage): Promise<ParsedEmail | null> {
     const context = `${this.serviceContext}:${rawMessage.uid}`;
-    
+
     try {
       // メールのパース
       const parsed = await simpleParser(rawMessage.source);
-      
+
       // HTMLメールかテキストメールかを確認してボディを抽出
       let body = parsed.text || '';
-      
+
       // HTMLからプレーンテキストに変換
       if (parsed.html) {
         body = this.convertHtmlToPlainText(parsed.html);
       }
-      
+
       return {
         subject: parsed.subject || '',
         from: parsed.from?.text || '',
@@ -65,7 +65,7 @@ export class EmailParser implements IEmailParser {
       return null;
     }
   }
-  
+
   /**
    * HTMLをプレーンテキストに変換
    * @param html HTMLテキスト

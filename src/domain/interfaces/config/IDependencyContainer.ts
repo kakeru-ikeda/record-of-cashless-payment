@@ -5,7 +5,7 @@
 import { EmailController } from "../../../presentation/email/controllers/EmailController";
 import { ImapEmailService } from "../../../infrastructure/email/ImapEmailService";
 import { FirestoreCardUsageRepository } from "../../../infrastructure/firebase/FirestoreCardUsageRepository";
-import { DiscordWebhookNotifier } from "../../../../shared/discord/DiscordNotifier";
+import { DiscordWebhookNotifier } from "../../../../shared/infrastructure/discord/DiscordNotifier";
 import { ProcessEmailUseCase } from "../../../usecases/email/ProcessEmailUseCase";
 import { IProcessCardCompanyEmailUseCase } from "../../usecases/email/IProcessCardCompanyEmailUseCase";
 import { INotifyCardUsageUseCase } from "../../usecases/notification/INotifyCardUsageUseCase";

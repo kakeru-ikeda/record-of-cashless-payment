@@ -1,6 +1,6 @@
-import { logger } from '../../../shared/utils/Logger';
-import { Environment } from '../../../shared/config/Environment';
-import { AppError, ErrorType } from '../../../shared/errors/AppError';
+import { logger } from '../../../shared/infrastructure/logging/Logger';
+import { Environment } from '../../../shared/infrastructure/config/Environment';
+import { AppError, ErrorType } from '../../../shared/infrastructure/errors/AppError';
 import { ImapClientAdapter, ImapConnectionConfig } from './ImapClientAdapter';
 import { EmailParser, ParsedEmail } from './EmailParser';
 import { CardUsageExtractor, CardCompany, CardUsageInfo } from './CardUsageExtractor';
@@ -22,7 +22,7 @@ export class ImapEmailService implements IEmailService {
   private processedUids = new Set<string>();
   private isMonitoring = false;
   private readonly serviceContext: string;
-  
+
   // 再接続のために最後の接続情報を保持
   private _lastConnectedMailbox: string | null = null;
   private _lastCallback: ((email: ParsedEmail) => Promise<void>) | null = null;
@@ -59,10 +59,10 @@ export class ImapEmailService implements IEmailService {
     // 接続イベントの監視
     this.imapClient.on('connectionLost', (mailboxName) => {
       logger.warn(`接続が切断されました: ${mailboxName}`, this.serviceContext);
-      
+
       // 接続状態を更新
       this.isMonitoring = false;
-      
+
       // ポーリングタイマーが動いていれば停止（再接続後に再設定する）
       if (this.pollingTimer) {
         clearInterval(this.pollingTimer);
@@ -79,12 +79,12 @@ export class ImapEmailService implements IEmailService {
 
     this.imapClient.on('reconnected', (mailboxName) => {
       logger.info(`再接続に成功しました: ${mailboxName}`, this.serviceContext);
-      
+
       // 再接続後に監視を再開
       if (this._lastConnectedMailbox && this._lastCallback) {
         logger.info(`メール監視を再開します: ${mailboxName}`, this.serviceContext);
         this.startMonitoring(this._lastCallback, `${this.serviceContext}:${this._lastConnectedMailbox}`);
-        
+
         // 再接続後に即時メール確認を実行
         this.pollForNewMessages(this._lastCallback, `${this.serviceContext}:${this._lastConnectedMailbox}`)
           .catch(error => {
@@ -118,7 +118,7 @@ export class ImapEmailService implements IEmailService {
       // 接続情報を保存（再接続時に使用）
       this._lastConnectedMailbox = mailboxName;
       this._lastCallback = callback;
-      
+
       // IMAPクライアントで接続
       await this.imapClient.connect(mailboxName);
 

@@ -1,7 +1,7 @@
 import { ImapFlow } from 'imapflow';
-import { logger } from '../../../shared/utils/Logger';
-import { AppError, ErrorType } from '../../../shared/errors/AppError';
-import { ErrorHandler } from '../../../shared/errors/ErrorHandler';
+import { logger } from '../../../shared/infrastructure/logging/Logger';
+import { AppError, ErrorType } from '../../../shared/infrastructure/errors/AppError';
+import { ErrorHandler } from '../../../shared/infrastructure/errors/ErrorHandler';
 import { EventEmitter } from 'events';
 import { IEmailClient, ImapConnectionConfig as IImapConnectionConfig } from '../../domain/interfaces/email/IEmailClient';
 

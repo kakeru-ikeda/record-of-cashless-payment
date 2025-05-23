@@ -2,7 +2,7 @@ import express, { Application } from 'express';
 import { MonitoringRoutes } from '../../presentation/api/routes/MonitoringRoutes';
 import { ServiceRoutes } from '../../presentation/api/routes/ServiceRoutes';
 import { ServiceController } from '../../presentation/api/controllers/ServiceController';
-import { logger } from '../../../shared/utils/Logger';
+import { logger } from '../../../shared/infrastructure/logging/Logger';
 import { EmailController } from '../../presentation/email/controllers/EmailController';
 import { IHttpAppConfig } from '../../domain/interfaces/config/IHttpAppConfig';
 

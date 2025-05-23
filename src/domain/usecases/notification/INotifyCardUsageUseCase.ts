@@ -1,5 +1,4 @@
 import { CardUsageNotification } from '../../../../shared/domain/entities/CardUsageNotification';
-import { AppError } from '../../../../shared/errors/AppError';
 
 export interface INotifyCardUsageUseCase {
   /**

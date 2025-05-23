@@ -1,5 +1,3 @@
-import { ServiceStatus } from '../../../../shared/utils/Logger';
-
 /**
  * モニタリングダッシュボード向けのビュークラス
  */
@@ -18,16 +16,16 @@ export class MonitoringView {
     // サービスデータとエラーデータをJSON文字列化
     const servicesJson = JSON.stringify(servicesData);
     const errorsJson = JSON.stringify(errorsData);
-    
+
     // テンプレートにデータを埋め込む
     const rendered = this.getHtmlTemplate()
       .replace('{{servicesData}}', servicesJson)
       .replace('{{errorsData}}', errorsJson)
       .replace('{{timestamp}}', new Date().toISOString());
-    
+
     return rendered;
   }
-  
+
   /**
    * HTMLテンプレートを取得します
    */

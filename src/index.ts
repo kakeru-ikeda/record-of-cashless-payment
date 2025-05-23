@@ -1,9 +1,9 @@
 import * as dotenv from 'dotenv';
-import { Environment } from '../shared/config/Environment';
-import { logger, LogLevel } from '../shared/utils/Logger';
+import { Environment } from '../shared/infrastructure/config/Environment';
+import { logger, LogLevel } from '../shared/infrastructure/logging/Logger';
 import { Application } from './infrastructure/app/Application';
 import { CardCompany } from './infrastructure/email/ImapEmailService';
-import { AppError, ErrorType } from '../shared/errors/AppError';
+import { AppError, ErrorType } from '../shared/infrastructure/errors/AppError';
 
 // 環境変数の読み込み
 dotenv.config();
@@ -15,10 +15,10 @@ async function bootstrap() {
     try {
         // Logger初期化 - 環境変数から設定を読み込む
         initializeLogger();
-        
+
         // 起動メッセージ
         logger.info('アプリケーションを起動しています...', 'App');
-        
+
         // 環境変数の検証
         if (!Environment.validate()) {
             throw new AppError(
@@ -29,7 +29,7 @@ async function bootstrap() {
 
         // アプリケーションのインスタンスを作成
         const app = new Application();
-        
+
         // アプリケーションを初期化
         await app.initialize();
 
@@ -56,10 +56,10 @@ async function bootstrap() {
  */
 function initializeLogger(): void {
     logger.setConfig({
-        level: Environment.LOG_LEVEL === 'DEBUG' ? LogLevel.DEBUG : 
-              Environment.LOG_LEVEL === 'WARN' ? LogLevel.WARN : 
-              Environment.LOG_LEVEL === 'ERROR' ? LogLevel.ERROR : 
-              Environment.LOG_LEVEL === 'NONE' ? LogLevel.NONE : LogLevel.INFO,
+        level: Environment.LOG_LEVEL === 'DEBUG' ? LogLevel.DEBUG :
+            Environment.LOG_LEVEL === 'WARN' ? LogLevel.WARN :
+                Environment.LOG_LEVEL === 'ERROR' ? LogLevel.ERROR :
+                    Environment.LOG_LEVEL === 'NONE' ? LogLevel.NONE : LogLevel.INFO,
         suppressPolling: Environment.SUPPRESS_POLLING_LOGS,
         compactMode: Environment.COMPACT_LOGS,
         statusRefreshInterval: Environment.STATUS_REFRESH_INTERVAL

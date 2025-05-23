@@ -1,6 +1,6 @@
 import { AppError, ErrorType } from './AppError';
-import { ResponseHelper } from '../utils/ResponseHelper';
-import { logger } from '../utils/Logger';
+import { ResponseHelper } from '../../utils/ResponseHelper';
+import { logger } from '../logging/Logger';
 
 /**
  * エラーハンドリングのためのユーティリティクラス
@@ -38,8 +38,8 @@ export class ErrorHandler {
      * @returns 正規化されたAppError
      */
     static async handleEventError(
-        error: any, 
-        context: string, 
+        error: any,
+        context: string,
         options?: {
             suppressNotification?: boolean;
             additionalInfo?: Record<string, unknown>;
@@ -69,37 +69,37 @@ export class ErrorHandler {
         defaultMessage?: string; // カスタムエラーメッセージ
         rethrow?: boolean;  // エラーを再スローするかどうか
     }) {
-        return function(
+        return function (
             _target: any,
             _propertyKey: string | symbol,
             descriptor: PropertyDescriptor
         ): PropertyDescriptor {
             const originalMethod = descriptor.value;
             if (!originalMethod) return descriptor;
-            
-            descriptor.value = async function(...args: any[]): Promise<any> {
+
+            descriptor.value = async function (...args: any[]): Promise<any> {
                 try {
                     return await originalMethod.apply(this, args);
                 } catch (error) {
                     // エラー情報を抽出（引数から必要な情報を取り出す）
                     const additionalInfo = ErrorHandler.extractErrorInfoFromArgs(args);
-                    
+
                     // 拡張されたエラーハンドラを使用
                     const appError = await ErrorHandler.handleEventError(error, context, {
                         ...options,
                         additionalInfo
                     });
-                    
+
                     // 設定に応じてエラーを再スロー
                     if (options?.rethrow !== false) {
                         throw appError;
                     }
-                    
+
                     // エラーがスローされない場合は未定義を返す
                     return undefined;
                 }
             };
-            
+
             return descriptor;
         };
     }
@@ -109,7 +109,7 @@ export class ErrorHandler {
      */
     static extractErrorInfoFromArgs(args: any[]): Record<string, unknown> {
         const info: Record<string, unknown> = {};
-        
+
         // 引数からエラー情報に関連しそうなものを抽出
         for (const arg of args) {
             if (arg && typeof arg === 'object') {
@@ -120,17 +120,17 @@ export class ErrorHandler {
                     // 本文は長すぎる場合があるので先頭部分のみ
                     info.bodyPreview = arg.body.substring(0, 100);
                 }
-                
+
                 // カード会社情報
                 if ('cardCompany' in arg) info.cardCompany = arg.cardCompany;
-                
+
                 // その他の情報
                 if ('id' in arg) info.id = arg.id;
                 if ('uid' in arg) info.uid = arg.uid;
                 if ('mailboxName' in arg) info.mailboxName = arg.mailboxName;
             }
         }
-        
+
         return info;
     }
 
@@ -179,8 +179,8 @@ export class ErrorHandler {
         if (typeof error === 'object' && error !== null) {
             const message = customMessage || error.message || JSON.stringify(error);
             return new AppError(
-                message, 
-                ErrorType.GENERAL, 
+                message,
+                ErrorType.GENERAL,
                 additionalDetails ? { ...error, ...additionalDetails } : error
             );
         }

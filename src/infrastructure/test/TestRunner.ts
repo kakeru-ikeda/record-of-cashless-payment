@@ -1,9 +1,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { logger } from '../../../shared/utils/Logger';
+import { logger } from '../../../shared/infrastructure/logging/Logger';
 import { ProcessEmailUseCase } from '../../usecases/email/ProcessEmailUseCase';
 import { CardCompany } from '../email/ImapEmailService';
-import e from 'express';
 
 /**
  * テストモードの実行を担当するクラス
@@ -26,12 +25,12 @@ export class TestRunner {
       // サンプルメールファイルを読み込む
       const sampleMailPath = path.resolve(__dirname, '../../../../samplemail.txt');
       logger.info('サンプルメールを読み込んでいます: ' + sampleMailPath, 'TestMode');
-      
+
       // ファイルが存在するか確認
       if (!fs.existsSync(sampleMailPath)) {
         throw new Error(`サンプルメールファイルが見つかりません: ${sampleMailPath}`);
       }
-      
+
       const sampleMailContent = fs.readFileSync(sampleMailPath, 'utf8');
       logger.info(`${cardCompany}のサンプルメールでテスト実行します...`, 'TestMode');
 
