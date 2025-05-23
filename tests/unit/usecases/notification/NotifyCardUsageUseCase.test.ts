@@ -1,10 +1,10 @@
 import { NotifyCardUsageUseCase } from '../../../../src/usecases/notification/NotifyCardUsageUseCase';
-import { DiscordNotifier } from '../../../../shared/discord/DiscordNotifier';
+import { DiscordNotifier } from '../../../../shared/infrastructure/discord/DiscordNotifier';
 import { CardUsageNotification } from '../../../../shared/domain/entities/CardUsageNotification';
-import { AppError, ErrorType } from '../../../../shared/errors/AppError';
+import { AppError, ErrorType } from '../../../../shared/infrastructure/errors/AppError';
 
 // Loggerをモック化
-jest.mock('../../../../shared/utils/Logger', () => ({
+jest.mock('../../../../shared/infrastructure/logging/Logger', () => ({
   logger: {
     info: jest.fn(),
     debug: jest.fn(),
@@ -16,7 +16,7 @@ jest.mock('../../../../shared/utils/Logger', () => ({
 }));
 
 // ErrorHandlerをモック化
-jest.mock('../../../../shared/errors/ErrorHandler', () => ({
+jest.mock('../../../../shared/infrastructure/errors/ErrorHandler', () => ({
   ErrorHandler: {
     errorDecorator: () => () => (
       _target: any,

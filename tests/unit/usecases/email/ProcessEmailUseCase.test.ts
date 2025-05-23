@@ -1,13 +1,13 @@
 import { ProcessEmailUseCase } from '../../../../src/usecases/email/ProcessEmailUseCase';
 import { ImapEmailService, CardCompany } from '../../../../src/infrastructure/email/ImapEmailService';
 import { ICardUsageRepository } from '../../../../src/domain/repositories/ICardUsageRepository';
-import { DiscordNotifier } from '../../../../shared/discord/DiscordNotifier';
+import { DiscordNotifier } from '../../../../shared/infrastructure/discord/DiscordNotifier';
 import { CardUsageNotification } from '../../../../shared/domain/entities/CardUsageNotification';
 import * as admin from 'firebase-admin';
 
 // 依存コンポーネントをモック化
 jest.mock('../../../../src/infrastructure/email/ImapEmailService');
-jest.mock('../../../../shared/discord/DiscordNotifier');
+jest.mock('../../../../shared/infrastructure/discord/DiscordNotifier');
 
 // firebase-adminのTimestampをモック化
 jest.mock('firebase-admin', () => {
@@ -24,7 +24,7 @@ jest.mock('firebase-admin', () => {
 });
 
 // Loggerをモック化
-jest.mock('../../../../shared/utils/Logger', () => ({
+jest.mock('../../../../shared/infrastructure/logging/Logger', () => ({
   logger: {
     info: jest.fn(),
     debug: jest.fn(),
@@ -35,13 +35,13 @@ jest.mock('../../../../shared/utils/Logger', () => ({
   }
 }));
 
-jest.mock('../../../../shared/errors/ErrorHandler', () => ({
+jest.mock('../../../../shared/infrastructure/errors/ErrorHandler', () => ({
   ErrorHandler: {
     errorDecorator: (context, options) => (target, propertyKey, descriptor) => {
       // オリジナルのメソッドを保存
       const originalMethod = descriptor.value;
       // 新しいメソッドを定義
-      descriptor.value = async function(...args) {
+      descriptor.value = async function (...args) {
         try {
           return await originalMethod.apply(this, args);
         } catch (error) {

@@ -1,8 +1,8 @@
 import { CardUsageExtractor, CardCompany } from '../../../../src/infrastructure/email/CardUsageExtractor';
-import { AppError, ErrorType } from '../../../../shared/errors/AppError';
+import { AppError } from '../../../../shared/infrastructure/errors/AppError';
 
 // Loggerをモック化
-jest.mock('../../../../shared/utils/Logger', () => {
+jest.mock('../../../../shared/infrastructure/logging/Logger', () => {
   return {
     logger: {
       info: jest.fn(),
@@ -43,7 +43,7 @@ describe('CardUsageExtractor', () => {
       expect(result.card_name).toBe('Ｄ　三菱ＵＦＪ－ＪＣＢデビット');
       expect(result.amount).toBe(1234);
       expect(result.where_to_use).toBe('コンビニエンスストア東京');
-      
+
       // 日付変換が正しく行われていることを検証（イレギュラーな日付のため一部柔軟に）
       const extractedDate = new Date(result.datetime_of_use);
       expect(extractedDate.getFullYear()).toBe(2025);
@@ -68,7 +68,7 @@ describe('CardUsageExtractor', () => {
       expect(result.card_name).toBe('Ｄ　三菱ＵＦＪ－ＪＣＢデビット');
       expect(result.amount).toBe(0);
       expect(result.where_to_use).toBe('');
-      
+
       // 日付はデフォルト値（現在時刻のISO文字列）
       expect(result.datetime_of_use).toBeDefined();
     });
@@ -111,7 +111,7 @@ describe('CardUsageExtractor', () => {
       expect(result.card_name).toBe('三井住友カード');
       expect(result.amount).toBe(2468);
       expect(result.where_to_use).toBe('スーパーマーケット');
-      
+
       // 日付変換が正しく行われていることを検証
       const extractedDate = new Date(result.datetime_of_use);
       expect(extractedDate.getFullYear()).toBe(2025);
@@ -133,7 +133,7 @@ describe('CardUsageExtractor', () => {
       expect(result.card_name).toBe('三井住友カード'); // デフォルト値
       expect(result.amount).toBe(0);
       expect(result.where_to_use).toBe('不明');
-      
+
       // 日付はデフォルト値（現在時刻のISO文字列）
       expect(result.datetime_of_use).toBeDefined();
     });
@@ -141,7 +141,7 @@ describe('CardUsageExtractor', () => {
 
   test('未対応のカード会社の場合、例外がスローされること', () => {
     const emailBody = 'テスト本文';
-    
+
     // @ts-ignore - テスト用に非対応の値を渡す
     expect(() => extractor.extractFromEmailBody(emailBody, 'UNKNOWN'))
       .toThrow(AppError);

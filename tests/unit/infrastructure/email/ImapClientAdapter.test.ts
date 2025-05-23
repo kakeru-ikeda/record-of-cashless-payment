@@ -1,9 +1,9 @@
 import { ImapClientAdapter, ImapConnectionConfig } from '../../../../src/infrastructure/email/ImapClientAdapter';
-import { AppError } from '../../../../shared/errors/AppError';
+import { AppError } from '../../../../shared/infrastructure/errors/AppError';
 import { EventEmitter } from 'events';
 
 // ErrorHandlerをモック化
-jest.mock('../../../../shared/errors/ErrorHandler', () => ({
+jest.mock('../../../../shared/infrastructure/errors/ErrorHandler', () => ({
   ErrorHandler: {
     handleEventError: jest.fn().mockImplementation(async (err) => err),
     errorDecorator: jest.fn().mockImplementation((context, options = {}) => {
@@ -69,7 +69,7 @@ jest.mock('imapflow', () => ({
 }));
 
 // Loggerをモック化
-jest.mock('../../../../shared/utils/Logger', () => ({
+jest.mock('../../../../shared/infrastructure/logging/Logger', () => ({
   logger: {
     info: jest.fn(),
     debug: jest.fn(),

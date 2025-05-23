@@ -6,7 +6,7 @@ import { Request, Response } from 'express';
 jest.mock('../../../../../src/presentation/email/controllers/EmailController');
 
 // Loggerをモック化
-jest.mock('../../../../../shared/utils/Logger', () => ({
+jest.mock('../../../../../shared/infrastructure/logging/Logger', () => ({
   logger: {
     info: jest.fn(),
     debug: jest.fn(),
@@ -122,7 +122,7 @@ describe('ServiceController', () => {
       );
 
       // エラーがログに記録されることを確認
-      expect(require('../../../../../shared/utils/Logger').logger.error).toHaveBeenCalled();
+      expect(require('../../../../../shared/infrastructure/logging/Logger').logger.error).toHaveBeenCalled();
     });
   });
 

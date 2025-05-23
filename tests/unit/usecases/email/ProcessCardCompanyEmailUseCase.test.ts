@@ -5,7 +5,7 @@ import { CardCompany } from '../../../../src/infrastructure/email/CardUsageExtra
 import { CardUsageNotification } from '../../../../shared/domain/entities/CardUsageNotification';
 
 // Loggerをモック化
-jest.mock('../../../../shared/utils/Logger', () => ({
+jest.mock('../../../../shared/infrastructure/logging/Logger', () => ({
   logger: {
     info: jest.fn(),
     debug: jest.fn(),
@@ -17,7 +17,7 @@ jest.mock('../../../../shared/utils/Logger', () => ({
 }));
 
 // ErrorHandlerをモック化
-jest.mock('../../../../shared/errors/ErrorHandler', () => ({
+jest.mock('../../../../shared/infrastructure/errors/ErrorHandler', () => ({
   ErrorHandler: {
     errorDecorator: () => () => (
       _target: any,
