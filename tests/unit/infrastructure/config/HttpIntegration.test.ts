@@ -6,7 +6,7 @@ import { ServiceRoutes } from '../../../../src/presentation/api/routes/ServiceRo
 import { EmailController } from '../../../../src/presentation/email/controllers/EmailController';
 
 // 認証ミドルウェアをモック化して常に認証を通すようにする
-jest.mock('../../../../shared/firebase/AuthMiddleware', () => ({
+jest.mock('../../../../shared/presentation/middlewares/AuthMiddleware', () => ({
   authMiddleware: (req: any, res: any, next: any) => next()
 }));
 
