@@ -1,24 +1,7 @@
 import { logger } from '../../../shared/infrastructure/logging/Logger';
 import { AppError, ErrorType } from '../../../shared/infrastructure/errors/AppError';
 import { ICardUsageExtractor } from '../../domain/interfaces/email/ICardUsageExtractor';
-
-/**
- * カード会社の種類
- */
-export enum CardCompany {
-  MUFG = 'MUFG',        // 三菱UFJ銀行
-  SMBC = 'SMBC'         // 三井住友カード
-}
-
-/**
- * カード利用情報の型定義
- */
-export interface CardUsageInfo {
-  card_name: string;
-  datetime_of_use: string;
-  amount: number;
-  where_to_use: string;
-}
+import { CardCompany, CardUsageInfo } from '../../domain/entities/card/CardTypes';
 
 /**
  * カード利用情報の抽出を専門に行うクラス
