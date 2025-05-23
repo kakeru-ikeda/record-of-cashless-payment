@@ -1,5 +1,5 @@
 
-import { CardUsage } from '../entities/CardUsage';
+import { CardUsage } from '@domain/entities/CardUsage';
 
 /**
  * カード利用情報のリポジトリインターフェース
@@ -11,7 +11,7 @@ export interface ICardUsageRepository {
    * @returns 保存された情報のID
    */
   save(cardUsage: CardUsage): Promise<string>;
-  
+
   /**
    * カード利用情報をタイムスタンプから取得する
    * @param timestamp タイムスタンプ

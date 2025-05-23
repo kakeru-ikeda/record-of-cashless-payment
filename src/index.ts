@@ -1,10 +1,10 @@
 import 'module-alias/register';
 import * as dotenv from 'dotenv';
-import { Environment } from '../shared/infrastructure/config/Environment';
-import { logger, LogLevel } from '../shared/infrastructure/logging/Logger';
-import { Application } from './infrastructure/app/Application';
+import { Environment } from '@shared/infrastructure/config/Environment';
+import { logger, LogLevel } from '@shared/infrastructure/logging/Logger';
+import { Application } from '@infrastructure/app/Application';
 import { CardCompany } from '@domain/entities/card/CardTypes';
-import { AppError, ErrorType } from '../shared/infrastructure/errors/AppError';
+import { AppError, ErrorType } from '@shared/errors/AppError';
 
 // 環境変数の読み込み
 dotenv.config();

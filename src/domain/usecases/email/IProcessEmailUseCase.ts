@@ -1,5 +1,5 @@
-import { CardUsageNotification } from '../../../../shared/domain/entities/CardUsageNotification';
-import { CardCompany } from '../../../infrastructure/email/ImapEmailService';
+import { CardUsageNotification } from '@shared/domain/entities/CardUsageNotification';
+import { CardCompany } from '@domain/entities/card/CardTypes';
 
 /**
  * メール処理のユースケースインターフェース
@@ -13,7 +13,7 @@ export interface IProcessEmailUseCase {
    * @returns 処理されたカード利用情報と保存パス
    */
   execute(emailBody: string, cardCompany: CardCompany): Promise<{
-    usage: CardUsageNotification, 
+    usage: CardUsageNotification,
     savedPath: string
   }>;
 

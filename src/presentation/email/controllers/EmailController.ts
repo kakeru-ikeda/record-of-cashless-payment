@@ -1,11 +1,12 @@
-import { ImapEmailService, CardCompany } from '../../../infrastructure/email/ImapEmailService';
+import { ImapEmailService } from '../../../infrastructure/email/ImapEmailService';
 import { ParsedEmail } from '../../../infrastructure/email/EmailParser';
 import { Environment } from '../../../../shared/infrastructure/config/Environment';
 import { logger } from '../../../../shared/infrastructure/logging/Logger';
-import { AppError, ErrorType } from '../../../../shared/infrastructure/errors/AppError';
+import { AppError, ErrorType } from '@shared/errors/AppError';
 import { ErrorHandler } from '../../../../shared/infrastructure/errors/ErrorHandler';
 import { IProcessCardCompanyEmailUseCase } from '../../../domain/usecases/email/IProcessCardCompanyEmailUseCase';
 import { INotifyCardUsageUseCase } from '../../../domain/usecases/notification/INotifyCardUsageUseCase';
+import { CardCompany } from '@domain/entities/card/CardTypes';
 
 /**
  * メール処理のコントローラー
@@ -66,7 +67,7 @@ export class EmailController {
         await this.startMonitoringForMailbox(mailboxName, cardCompany as CardCompany, mailboxService);
       } catch (error) {
         // 個別のメールボックスのエラーは全体の処理を止めない
-        await ErrorHandler.handleEventError(error, this.serviceContext, {
+        await ErrorHandler.handle(error, this.serviceContext, {
           defaultMessage: `${cardCompany}のメールボックス監視の開始に失敗しました`,
           additionalInfo: { cardCompany, mailboxName }
         });
@@ -152,7 +153,7 @@ export class EmailController {
         await service.close();
         logger.info(`${key}のメール監視を停止しました`, context);
       } catch (error) {
-        const appError = await ErrorHandler.handleEventError(error, context, {
+        const appError = await ErrorHandler.handle(error, context, {
           defaultMessage: `${key}のメール監視停止中にエラーが発生しました`,
           additionalInfo: { serviceKey: key },
           suppressNotification: true

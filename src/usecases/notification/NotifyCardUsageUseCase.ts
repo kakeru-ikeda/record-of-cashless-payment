@@ -1,8 +1,8 @@
-import { INotifyCardUsageUseCase } from '../../domain/usecases/notification/INotifyCardUsageUseCase';
-import { CardUsageNotification } from '../../../shared/domain/entities/CardUsageNotification';
-import { DiscordNotifier } from '../../../shared/infrastructure/discord/DiscordNotifier';
-import { logger } from '../../../shared/infrastructure/logging/Logger';
-import { ErrorHandler } from '../../../shared/infrastructure/errors/ErrorHandler';
+import { INotifyCardUsageUseCase } from '@domain/usecases/notification/INotifyCardUsageUseCase';
+import { CardUsageNotification } from '@shared/domain/entities/CardUsageNotification';
+import { DiscordNotifier } from '@shared/infrastructure/discord/DiscordNotifier';
+import { logger } from '@shared/infrastructure/logging/Logger';
+import { ErrorHandler } from '@shared/infrastructure/errors/ErrorHandler';
 
 export class NotifyCardUsageUseCase implements INotifyCardUsageUseCase {
   private readonly serviceContext = 'NotifyCardUsageUseCase';

@@ -1,12 +1,12 @@
 import axios from 'axios';
-import { CardUsageNotification } from '../../domain/entities/CardUsageNotification';
+import { CardUsageNotification } from '@shared/domain/entities/CardUsageNotification';
 import {
     WeeklyReportNotification,
     DailyReportNotification,
     MonthlyReportNotification,
-} from '../../domain/entities/ReportNotifications';
-import { logger } from '../logging/Logger';
-import { AppError, ErrorType } from '../errors/AppError';
+} from '@shared/domain/entities/ReportNotifications';
+import { logger } from '@shared/infrastructure/logging/Logger';
+import { AppError, ErrorType } from '@shared/errors/AppError';
 
 /**
  * 通知の種類を表す列挙型

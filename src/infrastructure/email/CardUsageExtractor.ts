@@ -1,7 +1,7 @@
-import { logger } from '../../../shared/infrastructure/logging/Logger';
-import { AppError, ErrorType } from '../../../shared/infrastructure/errors/AppError';
-import { ICardUsageExtractor } from '../../domain/interfaces/email/ICardUsageExtractor';
-import { CardCompany, CardUsageInfo } from '../../domain/entities/card/CardTypes';
+import { logger } from '@shared/infrastructure/logging/Logger';
+import { AppError, ErrorType } from '@shared/errors/AppError';
+import { ICardUsageExtractor } from '@domain/interfaces/email/ICardUsageExtractor';
+import { CardCompany, CardUsageInfo } from '@domain/entities/card/CardTypes';
 
 /**
  * カード利用情報の抽出を専門に行うクラス

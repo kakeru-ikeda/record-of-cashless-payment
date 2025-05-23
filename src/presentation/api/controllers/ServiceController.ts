@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
-import { logger } from '../../../../shared/infrastructure/logging/Logger';
-import { EmailController } from '../../email/controllers/EmailController';
-import { AppError, ErrorType } from '../../../../shared/infrastructure/errors/AppError';
-import { ErrorHandler } from '../../../../shared/infrastructure/errors/ErrorHandler';
-import { ResponseHelper } from '../../../../shared/presentation/responses/ResponseHelper';
+import { logger } from '@shared/infrastructure/logging/Logger';
+import { EmailController } from '@presentation/email/controllers/EmailController';
+import { AppError, ErrorType } from '@shared/errors/AppError';
+import { ResponseHelper } from '@shared/presentation/responses/ResponseHelper';
+import { ErrorResponseAdapter } from '@shared/presentation/errors/ErrorResponseAdapter';
 
 /**
  * サービス管理コントローラー
@@ -50,7 +50,7 @@ export class ServiceController {
 
             logger.error(appError, 'ServiceController');
 
-            const errorResponse = ErrorHandler.handleApiError(error, 'ServiceController.getServices');
+            const errorResponse = ErrorResponseAdapter.toResponse(appError);
             res.status(errorResponse.status).json(errorResponse);
         }
     };
@@ -123,7 +123,7 @@ export class ServiceController {
 
             logger.error(appError, 'ServiceController');
 
-            const errorResponse = ErrorHandler.handleApiError(error, 'ServiceController.controlService');
+            const errorResponse = ErrorResponseAdapter.toResponse(appError);
             res.status(errorResponse.status).json(errorResponse);
         }
     };

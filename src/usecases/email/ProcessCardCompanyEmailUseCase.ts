@@ -1,11 +1,14 @@
-import { CardCompany } from '../../infrastructure/email/CardUsageExtractor';
-import { ParsedEmail } from '../../infrastructure/email/EmailParser';
-import { IProcessCardCompanyEmailUseCase } from '../../domain/usecases/email/IProcessCardCompanyEmailUseCase';
-import { ProcessEmailUseCase } from './ProcessEmailUseCase';
-import { logger } from '../../../shared/infrastructure/logging/Logger';
-import { ErrorHandler } from '../../../shared/infrastructure/errors/ErrorHandler';
-import { CardUsageNotification } from 'shared/domain/entities/CardUsageNotification';
+import { CardCompany } from '@domain/entities/card/CardTypes';
+import { ParsedEmail } from '@infrastructure/email/EmailParser';
+import { IProcessCardCompanyEmailUseCase } from '@domain/usecases/email/IProcessCardCompanyEmailUseCase';
+import { ProcessEmailUseCase } from '@usecase/email/ProcessEmailUseCase';
+import { logger } from '@shared/infrastructure/logging/Logger';
+import { ErrorHandler } from '@shared/infrastructure/errors/ErrorHandler';
+import { CardUsageNotification } from '@shared/domain/entities/CardUsageNotification';
 
+/**
+ * メールからカード会社を判定し、カード利用情報を処理するユースケース
+ */
 export class ProcessCardCompanyEmailUseCase implements IProcessCardCompanyEmailUseCase {
   private readonly serviceContext = 'ProcessCardCompanyEmailUseCase';
 

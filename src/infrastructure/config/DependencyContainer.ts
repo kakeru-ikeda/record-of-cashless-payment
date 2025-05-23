@@ -1,15 +1,15 @@
-import { ImapEmailService } from '../email/ImapEmailService';
-import { FirestoreCardUsageRepository } from '../firebase/FirestoreCardUsageRepository';
-import { DiscordWebhookNotifier } from '../../../shared/infrastructure/discord/DiscordNotifier';
-import { ProcessEmailUseCase } from '../../usecases/email/ProcessEmailUseCase';
-import { EmailController } from '../../presentation/email/controllers/EmailController';
-import { Environment } from '../../../shared/infrastructure/config/Environment';
-import { logger } from '../../../shared/infrastructure/logging/Logger';
-import { ProcessCardCompanyEmailUseCase } from '../../usecases/email/ProcessCardCompanyEmailUseCase';
-import { NotifyCardUsageUseCase } from '../../usecases/notification/NotifyCardUsageUseCase';
-import { IProcessCardCompanyEmailUseCase } from '../../domain/usecases/email/IProcessCardCompanyEmailUseCase';
-import { INotifyCardUsageUseCase } from '../../domain/usecases/notification/INotifyCardUsageUseCase';
-import { IDependencyContainer } from '../../domain/interfaces/config/IDependencyContainer';
+import { ImapEmailService } from '@infrastructure/email/ImapEmailService';
+import { FirestoreCardUsageRepository } from '@infrastructure/firebase/FirestoreCardUsageRepository';
+import { DiscordWebhookNotifier } from '@shared/infrastructure/discord/DiscordNotifier';
+import { ProcessEmailUseCase } from '@usecase/email/ProcessEmailUseCase';
+import { ProcessCardCompanyEmailUseCase } from '@usecase/email/ProcessCardCompanyEmailUseCase';
+import { NotifyCardUsageUseCase } from '@usecase/notification/NotifyCardUsageUseCase';
+import { EmailController } from '@presentation/email/controllers/EmailController';
+import { Environment } from '@shared/infrastructure/config/Environment';
+import { logger } from '@shared/infrastructure/logging/Logger';
+import { IProcessCardCompanyEmailUseCase } from '@domain/usecases/email/IProcessCardCompanyEmailUseCase';
+import { INotifyCardUsageUseCase } from '@domain/usecases/notification/INotifyCardUsageUseCase';
+import { IDependencyContainer } from '@domain/interfaces/config/IDependencyContainer';
 
 /**
  * アプリケーションの依存性を管理するコンテナクラス

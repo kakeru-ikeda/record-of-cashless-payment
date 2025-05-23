@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
-import { logger } from '../logging/Logger';
+import { logger } from '@shared/infrastructure/logging/Logger';
 
 // .envファイルを読み込む（存在する場合）
 dotenv.config();

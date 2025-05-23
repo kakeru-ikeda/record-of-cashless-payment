@@ -3,9 +3,9 @@
  * IMAP接続・管理を抽象化し、メール取得などの低レベル操作を定義
  */
 import { EventEmitter } from "events";
-import { RawEmailMessage } from "../../../infrastructure/email/ImapClientAdapter";
+import { RawEmailMessage } from "@infrastructure/email/ImapClientAdapter";
 
-export interface ImapConnectionConfig {
+export interface IImapConnectionConfig {
     host: string;
     port: number;
     secure: boolean;

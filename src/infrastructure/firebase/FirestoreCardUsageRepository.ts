@@ -1,11 +1,11 @@
 import { Firestore } from 'firebase-admin/firestore';
-import { CardUsage } from '../../domain/entities/CardUsage';
-import { ICardUsageRepository } from '../../domain/repositories/ICardUsageRepository';
-import { Environment } from '../../../shared/infrastructure/config/Environment';
-import { DateUtil } from '../../../shared/utils/DateUtil';
-import { FirestoreService } from '../../../shared/infrastructure/database/FirestoreService';
-import { ErrorHandler } from '../../../shared/infrastructure/errors/ErrorHandler';
-import { logger } from '../../../shared/infrastructure/logging/Logger';
+import { CardUsage } from '@domain/entities/CardUsage';
+import { ICardUsageRepository } from '@domain/repositories/ICardUsageRepository';
+import { Environment } from '@shared/infrastructure/config/Environment';
+import { DateUtil } from '@shared/utils/DateUtil';
+import { FirestoreService } from '@shared/infrastructure/database/FirestoreService';
+import { ErrorHandler } from '@shared/infrastructure/errors/ErrorHandler';
+import { logger } from '@shared/infrastructure/logging/Logger';
 
 /**
  * Firestoreを使用したカード利用情報リポジトリの実装

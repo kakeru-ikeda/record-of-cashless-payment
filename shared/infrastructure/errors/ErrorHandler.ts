@@ -1,6 +1,5 @@
-import { AppError, ErrorType } from './AppError';
-import { ResponseHelper } from '../../presentation/responses/ResponseHelper';
-import { logger } from '../logging/Logger';
+import { AppError, ErrorType } from '@shared/errors/AppError';
+import { logger } from '@shared/infrastructure/logging/Logger';
 
 /**
  * エラーハンドリングのためのユーティリティクラス
@@ -8,36 +7,13 @@ import { logger } from '../logging/Logger';
  */
 export class ErrorHandler {
     /**
-     * エラーをキャッチして適切に処理する
-     * @param error 発生したエラー
-     * @param context エラーが発生したコンテキスト情報
-     * @returns 標準化されたレスポンスオブジェクト
-     */
-    static handleApiError(error: any, context: string = '不明なコンテキスト'): ReturnType<typeof ResponseHelper.error> {
-        // すでにAppErrorインスタンスならそのまま使用
-        const appError = error instanceof AppError
-            ? error
-            : this.convertToAppError(error);
-
-        // エラーをログに出力
-        this.logError(appError, context);
-
-        // エラーに対応するレスポンスを生成
-        return ResponseHelper.error(
-            appError.statusCode,
-            appError.message,
-            process.env.NODE_ENV !== 'production' ? appError.details : undefined
-        );
-    }
-
-    /**
      * イベント処理のエラーをハンドリング (Discord通知サポート)
      * @param error 発生したエラー
      * @param context エラーが発生したコンテキスト情報
      * @param options 追加オプション
      * @returns 正規化されたAppError
      */
-    static async handleEventError(
+    static async handle(
         error: any,
         context: string,
         options?: {
@@ -85,7 +61,7 @@ export class ErrorHandler {
                     const additionalInfo = ErrorHandler.extractErrorInfoFromArgs(args);
 
                     // 拡張されたエラーハンドラを使用
-                    const appError = await ErrorHandler.handleEventError(error, context, {
+                    const appError = await ErrorHandler.handle(error, context, {
                         ...options,
                         additionalInfo
                     });
@@ -307,44 +283,5 @@ ${appError.toLogString()}
         } else {
             console.warn(errorLog);
         }
-    }
-
-    /**
-     * エラーを非同期関数内で安全に処理するためのラッパー
-     * @param fn 実行する非同期関数
-     * @param context エラーコンテキスト
-     * @returns 処理結果またはエラーレスポンス
-     */
-    static async handleAsync<T>(
-        fn: () => Promise<T>,
-        context: string = '不明なコンテキスト'
-    ): Promise<T | ReturnType<typeof ResponseHelper.error>> {
-        try {
-            return await fn();
-        } catch (error) {
-            return this.handleApiError(error, context);
-        }
-    }
-
-    /**
-     * 特定のエラータイプに対するエラーインスタンスを作成する
-     * @param type エラータイプ
-     * @param message エラーメッセージ
-     * @param details エラー詳細（オプション）
-     * @returns AppErrorインスタンス
-     */
-    static createError(type: ErrorType, message: string, details?: any): AppError {
-        return new AppError(message, type, details);
-    }
-
-    /**
-     * 特定の例外をスローする
-     * @param type エラータイプ
-     * @param message エラーメッセージ
-     * @param details エラー詳細（オプション）
-     * @throws AppError
-     */
-    static throwError(type: ErrorType, message: string, details?: any): never {
-        throw this.createError(type, message, details);
     }
 }

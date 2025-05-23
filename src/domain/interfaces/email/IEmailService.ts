@@ -1,6 +1,6 @@
-import { ParsedEmail } from '../../../infrastructure/email/EmailParser';
-import { CardUsageNotification } from '../../../../shared/domain/entities/CardUsageNotification';
-import { CardCompany } from '../../../infrastructure/email/CardUsageExtractor';
+import { ParsedEmail } from '@infrastructure/email/EmailParser';
+import { CardUsageNotification } from '@shared/domain/entities/CardUsageNotification';
+import { CardCompany } from '@domain/entities/card/CardTypes';
 
 /**
  * メールサービスのインターフェース

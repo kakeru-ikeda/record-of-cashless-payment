@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { ServiceController } from '../controllers/ServiceController';
-import { authMiddleware } from '../../../../shared/presentation/middlewares/AuthMiddleware';
+import { ServiceController } from '@presentation/api/controllers/ServiceController';
+import { authMiddleware } from '@shared/presentation/middlewares/AuthMiddleware';
 
 /**
  * サービス管理ルーター

@@ -2,13 +2,13 @@
  * アプリケーションの依存性を管理するインターフェース
  * サービス、リポジトリ、ユースケース、コントローラーの初期化と提供を担当
  */
-import { EmailController } from "../../../presentation/email/controllers/EmailController";
-import { ImapEmailService } from "../../../infrastructure/email/ImapEmailService";
-import { FirestoreCardUsageRepository } from "../../../infrastructure/firebase/FirestoreCardUsageRepository";
-import { DiscordWebhookNotifier } from "../../../../shared/infrastructure/discord/DiscordNotifier";
-import { ProcessEmailUseCase } from "../../../usecases/email/ProcessEmailUseCase";
-import { IProcessCardCompanyEmailUseCase } from "../../usecases/email/IProcessCardCompanyEmailUseCase";
-import { INotifyCardUsageUseCase } from "../../usecases/notification/INotifyCardUsageUseCase";
+import { EmailController } from "@presentation/email/controllers/EmailController";
+import { ImapEmailService } from "@infrastructure/email/ImapEmailService";
+import { FirestoreCardUsageRepository } from "@infrastructure/firebase/FirestoreCardUsageRepository";
+import { DiscordWebhookNotifier } from "@shared/infrastructure/discord/DiscordNotifier";
+import { ProcessEmailUseCase } from "@usecase/email/ProcessEmailUseCase";
+import { IProcessCardCompanyEmailUseCase } from "@domain/usecases/email/IProcessCardCompanyEmailUseCase";
+import { INotifyCardUsageUseCase } from "@domain/usecases/notification/INotifyCardUsageUseCase";
 
 export interface IDependencyContainer {
     /**

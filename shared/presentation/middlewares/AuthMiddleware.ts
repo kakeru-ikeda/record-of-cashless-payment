@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import * as admin from 'firebase-admin';
-import { ResponseHelper } from '../responses/ResponseHelper';
+import { ResponseHelper } from '@shared/presentation/responses/ResponseHelper';
 
 /**
  * Firebase IDトークンを検証する認証ミドルウェア

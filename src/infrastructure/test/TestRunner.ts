@@ -1,8 +1,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { logger } from '../../../shared/infrastructure/logging/Logger';
-import { ProcessEmailUseCase } from '../../usecases/email/ProcessEmailUseCase';
-import { CardCompany } from '../email/ImapEmailService';
+import { logger } from '@shared/infrastructure/logging/Logger';
+import { ProcessEmailUseCase } from '@usecase/email/ProcessEmailUseCase';
+import { CardCompany } from '@domain/entities/card/CardTypes';
 
 /**
  * テストモードの実行を担当するクラス

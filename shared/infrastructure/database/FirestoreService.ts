@@ -1,8 +1,8 @@
 import * as admin from 'firebase-admin';
 import { Firestore } from 'firebase-admin/firestore';
 import * as fs from 'fs';
-import { AppError, ErrorType } from '../errors/AppError';
-import { logger } from '../logging/Logger';
+import { AppError, ErrorType } from '@shared/errors/AppError';
+import { logger } from '@shared/infrastructure/logging/Logger';
 
 /**
  * Firestoreサービスクラス

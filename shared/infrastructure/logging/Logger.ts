@@ -1,5 +1,10 @@
-import { DiscordNotifier } from '../discord/DiscordNotifier';
-import { AppError, ErrorType } from '../errors/AppError';
+import { DiscordNotifier } from '@shared/infrastructure/discord/DiscordNotifier';
+import { AppError, ErrorType } from '@shared/errors/AppError';
+
+/**
+ * 本来は DiscordNotifier をアダプターとして利用するべきだが、
+ * 通知責務と密接に結びついているため、Logger に統合する。
+ */
 
 /**
  * ログレベルの列挙型

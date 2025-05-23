@@ -1,4 +1,4 @@
-import { CardUsageNotification } from '../../../../shared/domain/entities/CardUsageNotification';
+import { CardUsageNotification } from '@shared/domain/entities/CardUsageNotification';
 
 export interface INotifyCardUsageUseCase {
   /**

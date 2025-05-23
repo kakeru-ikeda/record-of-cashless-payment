@@ -1,14 +1,15 @@
-import { logger } from '../../../shared/infrastructure/logging/Logger';
-import { Environment } from '../../../shared/infrastructure/config/Environment';
-import { AppError, ErrorType } from '../../../shared/infrastructure/errors/AppError';
-import { ImapClientAdapter, ImapConnectionConfig } from './ImapClientAdapter';
-import { EmailParser, ParsedEmail } from './EmailParser';
-import { CardUsageExtractor, CardCompany, CardUsageInfo } from './CardUsageExtractor';
-import { IEmailService } from '../../domain/interfaces/email/IEmailService';
-import { CardUsage } from '../../domain/entities/CardUsage';
-import { CardUsageNotification } from '../../../shared/domain/entities/CardUsageNotification';
-import { CardUsageMapper } from '../../../shared/domain/mappers/CardUsageMapper';
+import { logger } from '@shared/infrastructure/logging/Logger';
+import { Environment } from '@shared/infrastructure/config/Environment';
+import { AppError, ErrorType } from '@shared/errors/AppError';
+import { ImapClientAdapter, ImapConnectionConfig } from '@infrastructure/email/ImapClientAdapter';
+import { EmailParser, ParsedEmail } from '@infrastructure/email/EmailParser';
+import { CardUsageExtractor } from '@infrastructure/email/CardUsageExtractor';
+import { IEmailService } from '@domain/interfaces/email/IEmailService';
+import { CardUsage } from '@domain/entities/CardUsage';
+import { CardUsageNotification } from '@shared/domain/entities/CardUsageNotification';
+import { CardUsageMapper } from '@shared/domain/mappers/CardUsageMapper';
 import { Timestamp } from 'firebase-admin/firestore';
+import { CardCompany, CardUsageInfo } from '@domain/entities/card/CardTypes';
 
 /**
  * IMAP接続とメール処理のサービス
@@ -291,6 +292,3 @@ export class ImapEmailService implements IEmailService {
     logger.updateServiceStatus(this.serviceContext, 'offline', '接続を閉じました');
   }
 }
-
-// 既存のコードとの互換性のため、CardCompanyをエクスポート
-export { CardCompany } from './CardUsageExtractor';
