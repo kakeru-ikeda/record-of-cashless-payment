@@ -1,6 +1,5 @@
-import { AppError, ErrorType } from './AppError';
-import { ResponseHelper } from '../utils/ResponseHelper';
-import { logger } from '../utils/Logger';
+import { AppError, ErrorType } from '@shared/errors/AppError';
+import { logger } from '@shared/infrastructure/logging/Logger';
 
 /**
  * エラーハンドリングのためのユーティリティクラス
@@ -8,38 +7,15 @@ import { logger } from '../utils/Logger';
  */
 export class ErrorHandler {
     /**
-     * エラーをキャッチして適切に処理する
-     * @param error 発生したエラー
-     * @param context エラーが発生したコンテキスト情報
-     * @returns 標準化されたレスポンスオブジェクト
-     */
-    static handleApiError(error: any, context: string = '不明なコンテキスト'): ReturnType<typeof ResponseHelper.error> {
-        // すでにAppErrorインスタンスならそのまま使用
-        const appError = error instanceof AppError
-            ? error
-            : this.convertToAppError(error);
-
-        // エラーをログに出力
-        this.logError(appError, context);
-
-        // エラーに対応するレスポンスを生成
-        return ResponseHelper.error(
-            appError.statusCode,
-            appError.message,
-            process.env.NODE_ENV !== 'production' ? appError.details : undefined
-        );
-    }
-
-    /**
      * イベント処理のエラーをハンドリング (Discord通知サポート)
      * @param error 発生したエラー
      * @param context エラーが発生したコンテキスト情報
      * @param options 追加オプション
      * @returns 正規化されたAppError
      */
-    static async handleEventError(
-        error: any, 
-        context: string, 
+    static async handle(
+        error: any,
+        context: string,
         options?: {
             suppressNotification?: boolean;
             additionalInfo?: Record<string, unknown>;
@@ -69,37 +45,37 @@ export class ErrorHandler {
         defaultMessage?: string; // カスタムエラーメッセージ
         rethrow?: boolean;  // エラーを再スローするかどうか
     }) {
-        return function(
+        return function (
             _target: any,
             _propertyKey: string | symbol,
             descriptor: PropertyDescriptor
         ): PropertyDescriptor {
             const originalMethod = descriptor.value;
             if (!originalMethod) return descriptor;
-            
-            descriptor.value = async function(...args: any[]): Promise<any> {
+
+            descriptor.value = async function (...args: any[]): Promise<any> {
                 try {
                     return await originalMethod.apply(this, args);
                 } catch (error) {
                     // エラー情報を抽出（引数から必要な情報を取り出す）
                     const additionalInfo = ErrorHandler.extractErrorInfoFromArgs(args);
-                    
+
                     // 拡張されたエラーハンドラを使用
-                    const appError = await ErrorHandler.handleEventError(error, context, {
+                    const appError = await ErrorHandler.handle(error, context, {
                         ...options,
                         additionalInfo
                     });
-                    
+
                     // 設定に応じてエラーを再スロー
                     if (options?.rethrow !== false) {
                         throw appError;
                     }
-                    
+
                     // エラーがスローされない場合は未定義を返す
                     return undefined;
                 }
             };
-            
+
             return descriptor;
         };
     }
@@ -109,7 +85,7 @@ export class ErrorHandler {
      */
     static extractErrorInfoFromArgs(args: any[]): Record<string, unknown> {
         const info: Record<string, unknown> = {};
-        
+
         // 引数からエラー情報に関連しそうなものを抽出
         for (const arg of args) {
             if (arg && typeof arg === 'object') {
@@ -120,17 +96,17 @@ export class ErrorHandler {
                     // 本文は長すぎる場合があるので先頭部分のみ
                     info.bodyPreview = arg.body.substring(0, 100);
                 }
-                
+
                 // カード会社情報
                 if ('cardCompany' in arg) info.cardCompany = arg.cardCompany;
-                
+
                 // その他の情報
                 if ('id' in arg) info.id = arg.id;
                 if ('uid' in arg) info.uid = arg.uid;
                 if ('mailboxName' in arg) info.mailboxName = arg.mailboxName;
             }
         }
-        
+
         return info;
     }
 
@@ -179,8 +155,8 @@ export class ErrorHandler {
         if (typeof error === 'object' && error !== null) {
             const message = customMessage || error.message || JSON.stringify(error);
             return new AppError(
-                message, 
-                ErrorType.GENERAL, 
+                message,
+                ErrorType.GENERAL,
                 additionalDetails ? { ...error, ...additionalDetails } : error
             );
         }
@@ -307,44 +283,5 @@ ${appError.toLogString()}
         } else {
             console.warn(errorLog);
         }
-    }
-
-    /**
-     * エラーを非同期関数内で安全に処理するためのラッパー
-     * @param fn 実行する非同期関数
-     * @param context エラーコンテキスト
-     * @returns 処理結果またはエラーレスポンス
-     */
-    static async handleAsync<T>(
-        fn: () => Promise<T>,
-        context: string = '不明なコンテキスト'
-    ): Promise<T | ReturnType<typeof ResponseHelper.error>> {
-        try {
-            return await fn();
-        } catch (error) {
-            return this.handleApiError(error, context);
-        }
-    }
-
-    /**
-     * 特定のエラータイプに対するエラーインスタンスを作成する
-     * @param type エラータイプ
-     * @param message エラーメッセージ
-     * @param details エラー詳細（オプション）
-     * @returns AppErrorインスタンス
-     */
-    static createError(type: ErrorType, message: string, details?: any): AppError {
-        return new AppError(message, type, details);
-    }
-
-    /**
-     * 特定の例外をスローする
-     * @param type エラータイプ
-     * @param message エラーメッセージ
-     * @param details エラー詳細（オプション）
-     * @throws AppError
-     */
-    static throwError(type: ErrorType, message: string, details?: any): never {
-        throw this.createError(type, message, details);
     }
 }

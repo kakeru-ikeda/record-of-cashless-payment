@@ -4,7 +4,7 @@
  */
 import { Application } from "express";
 import { Server } from "http";
-import { EmailController } from "../../../presentation/email/controllers/EmailController";
+import { EmailController } from "@presentation/email/controllers/EmailController";
 
 export interface IHttpAppConfig {
     /**

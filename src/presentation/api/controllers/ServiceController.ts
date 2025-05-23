@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
-import { logger } from '../../../../shared/utils/Logger';
-import { EmailController } from '../../email/controllers/EmailController';
-import { AppError, ErrorType } from '../../../../shared/errors/AppError';
-import { ErrorHandler } from '../../../../shared/errors/ErrorHandler';
-import { ResponseHelper } from '../../../../shared/utils/ResponseHelper';
+import { logger } from '@shared/infrastructure/logging/Logger';
+import { EmailController } from '@presentation/email/controllers/EmailController';
+import { AppError, ErrorType } from '@shared/errors/AppError';
+import { ResponseHelper } from '@shared/presentation/responses/ResponseHelper';
+import { ErrorResponseAdapter } from '@shared/presentation/errors/ErrorResponseAdapter';
 
 /**
  * サービス管理コントローラー
@@ -47,10 +47,10 @@ export class ServiceController {
                     { endpoint: 'getServices' },
                     error instanceof Error ? error : undefined
                 );
-            
+
             logger.error(appError, 'ServiceController');
-            
-            const errorResponse = ErrorHandler.handleApiError(error, 'ServiceController.getServices');
+
+            const errorResponse = ErrorResponseAdapter.toResponse(appError);
             res.status(errorResponse.status).json(errorResponse);
         }
     };
@@ -80,7 +80,7 @@ export class ServiceController {
                         await this.emailController.startAllMonitoring();
                         logger.info('メール監視サービスを開始しました', 'ServiceController');
                         break;
-                    
+
                     case 'stop':
                         if (!this.emailController.isMonitoring()) {
                             throw new AppError('メール監視サービスは既に停止しています', ErrorType.VALIDATION, { serviceId });
@@ -88,7 +88,7 @@ export class ServiceController {
                         await this.emailController.stopMonitoring();
                         logger.info('メール監視サービスを停止しました', 'ServiceController');
                         break;
-                    
+
                     case 'restart':
                         await this.emailController.stopMonitoring();
                         await new Promise(resolve => setTimeout(resolve, 1000)); // 1秒待機
@@ -102,7 +102,7 @@ export class ServiceController {
                     id: 'email-monitoring',
                     status: this.emailController.isMonitoring() ? 'active' : 'inactive'
                 };
-                
+
                 const response = ResponseHelper.success(message, data);
                 res.status(response.status).json(response);
             } else {
@@ -114,16 +114,16 @@ export class ServiceController {
                 : new AppError(
                     'サービス制御中にエラーが発生しました',
                     ErrorType.GENERAL,
-                    { 
+                    {
                         serviceId: req.params.id,
-                        action: req.body.action 
+                        action: req.body.action
                     },
                     error instanceof Error ? error : undefined
                 );
-            
+
             logger.error(appError, 'ServiceController');
-            
-            const errorResponse = ErrorHandler.handleApiError(error, 'ServiceController.controlService');
+
+            const errorResponse = ErrorResponseAdapter.toResponse(appError);
             res.status(errorResponse.status).json(errorResponse);
         }
     };

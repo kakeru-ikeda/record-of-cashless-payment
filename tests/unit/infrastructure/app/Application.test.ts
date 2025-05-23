@@ -3,7 +3,7 @@ import { HttpAppConfig } from '../../../../src/infrastructure/config/HttpAppConf
 import { DependencyContainer } from '../../../../src/infrastructure/config/DependencyContainer';
 import { EmailController } from '../../../../src/presentation/email/controllers/EmailController';
 import { TestRunner } from '../../../../src/infrastructure/test/TestRunner';
-import { CardCompany } from '../../../../src/infrastructure/email/ImapEmailService';
+import { CardCompany } from '../../../../src/domain/entities/card/CardTypes';
 import { ProcessEmailUseCase } from '../../../../src/usecases/email/ProcessEmailUseCase';
 import { Server } from 'http';
 
@@ -14,7 +14,7 @@ jest.mock('../../../../src/presentation/email/controllers/EmailController');
 jest.mock('../../../../src/infrastructure/test/TestRunner');
 
 // Loggerをモック化
-jest.mock('../../../../shared/utils/Logger', () => ({
+jest.mock('../../../../shared/infrastructure/logging/Logger', () => ({
   logger: {
     info: jest.fn(),
     debug: jest.fn(),
@@ -197,7 +197,7 @@ describe('Application', () => {
       jest.runAllTimers();
 
       // renderStatusDashboardが呼ばれることを確認
-      expect(require('../../../../shared/utils/Logger').logger.renderStatusDashboard).toHaveBeenCalled();
+      expect(require('../../../../shared/infrastructure/logging/Logger').logger.renderStatusDashboard).toHaveBeenCalled();
 
       // 環境変数をリセット
       delete process.env.COMPACT_LOGS;

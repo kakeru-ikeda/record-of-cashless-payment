@@ -1,15 +1,15 @@
 import { EmailController } from '../../../../../src/presentation/email/controllers/EmailController';
-import { ImapEmailService, CardCompany } from '../../../../../src/infrastructure/email/ImapEmailService';
+import { ImapEmailService } from '../../../../../src/infrastructure/email/ImapEmailService';
 import { ProcessCardCompanyEmailUseCase } from '../../../../../src/usecases/email/ProcessCardCompanyEmailUseCase';
 import { NotifyCardUsageUseCase } from '../../../../../src/usecases/notification/NotifyCardUsageUseCase';
 import { ParsedEmail } from '../../../../../src/infrastructure/email/EmailParser';
-import { ErrorHandler } from '../../../../../shared/errors/ErrorHandler';
+import { CardCompany } from '../../../../../src/domain/entities/card/CardTypes';
 
 // 依存コンポーネントをモック
 jest.mock('../../../../../src/infrastructure/email/ImapEmailService');
 jest.mock('../../../../../src/usecases/email/ProcessCardCompanyEmailUseCase');
 jest.mock('../../../../../src/usecases/notification/NotifyCardUsageUseCase');
-jest.mock('../../../../../shared/config/Environment', () => ({
+jest.mock('../../../../../shared/infrastructure/config/Environment', () => ({
   Environment: {
     IMAP_SERVER: 'imap.example.com',
     IMAP_USER: 'user@example.com',
@@ -20,7 +20,7 @@ jest.mock('../../../../../shared/config/Environment', () => ({
 }));
 
 // Loggerをモック化
-jest.mock('../../../../../shared/utils/Logger', () => ({
+jest.mock('../../../../../shared/infrastructure/logging/Logger', () => ({
   logger: {
     info: jest.fn(),
     debug: jest.fn(),
@@ -32,14 +32,14 @@ jest.mock('../../../../../shared/utils/Logger', () => ({
 }));
 
 // ErrorHandlerをモック化
-jest.mock('../../../../../shared/errors/ErrorHandler', () => ({
+jest.mock('../../../../../shared/infrastructure/errors/ErrorHandler', () => ({
   ErrorHandler: {
     errorDecorator: () => () => (
       _target: any,
       _propertyKey: string | symbol,
       descriptor: PropertyDescriptor
     ) => descriptor,
-    handleEventError: jest.fn(),
+    handle: jest.fn(),
     extractErrorInfoFromArgs: jest.fn()
   }
 }));
@@ -179,7 +179,7 @@ describe('EmailController', () => {
 
       // エラーが発生してもSMBCの接続は行われる
       expect(emailCallbacks['SMBC']).toBeDefined();
-      
+
       // 監視フラグはtrueになる
       expect(emailController.isMonitoring()).toBe(true);
     });
@@ -261,7 +261,7 @@ describe('EmailController', () => {
 
       // コールバックを取得して手動で実行
       const callback = emailCallbacks['MUFG'];
-      
+
       // AppErrorがスローされることを期待する
       await expect(callback(sampleParsedEmail)).rejects.toThrow('カード会社を特定できませんでした');
 
@@ -278,10 +278,10 @@ describe('EmailController', () => {
 
       // コールバックを取得
       const callback = emailCallbacks['MUFG'];
-      
+
       // 例外がスローされることを期待するように変更
       await expect(callback(sampleParsedEmail)).rejects.toThrow('処理エラー');
-      
+
       // 利用通知は呼ばれないことを確認
       expect(mockNotifyCardUsageUseCase.notifyUsage).not.toHaveBeenCalled();
     });
@@ -295,10 +295,10 @@ describe('EmailController', () => {
 
       // コールバックを取得
       const callback = emailCallbacks['MUFG'];
-      
+
       // 例外がスローされることを期待するように変更
       await expect(callback(sampleParsedEmail)).rejects.toThrow('通知エラー');
-      
+
       // notifyUsageが呼ばれたことを確認
       expect(mockNotifyCardUsageUseCase.notifyUsage).toHaveBeenCalled();
     });

@@ -6,7 +6,7 @@ import { Request, Response } from 'express';
 jest.mock('../../../../../src/presentation/api/views/MonitoringView');
 
 // Loggerをモック
-jest.mock('../../../../../shared/utils/Logger', () => ({
+jest.mock('../../../../../shared/infrastructure/logging/Logger', () => ({
   logger: {
     services: new Map([
       ['TestService', {
@@ -45,7 +45,7 @@ describe('MonitoringController', () => {
     statusMock = jest.fn().mockReturnThis();
     sendMock = jest.fn();
     setHeaderMock = jest.fn();
-    
+
     mockRequest = {};
     mockResponse = {
       json: jsonMock,
@@ -53,11 +53,11 @@ describe('MonitoringController', () => {
       send: sendMock,
       setHeader: setHeaderMock
     };
-    
+
     // モックビューの設定
     mockView = new MonitoringView() as jest.Mocked<MonitoringView>;
     mockView.renderDashboard.mockReturnValue('<html>...</html>');
-    
+
     // コントローラーの作成
     monitoringController = new MonitoringController();
     // プライベートプロパティのモック置き換え
@@ -67,7 +67,7 @@ describe('MonitoringController', () => {
   describe('healthCheck', () => {
     test('正常なレスポンスを返すこと', () => {
       monitoringController.healthCheck(mockRequest as Request, mockResponse as Response);
-      
+
       // ステータスコードが200であることを確認
       expect(statusMock).toHaveBeenCalledWith(200);
       // JSONレスポンスが正しい形式であることを確認
@@ -86,7 +86,7 @@ describe('MonitoringController', () => {
   describe('getServiceStatus', () => {
     test('サービスステータスを正しく取得すること', () => {
       monitoringController.getServiceStatus(mockRequest as Request, mockResponse as Response);
-      
+
       // ステータスコードが200であることを確認
       expect(statusMock).toHaveBeenCalledWith(200);
       // JSONレスポンスが正しい形式であることを確認
@@ -110,7 +110,7 @@ describe('MonitoringController', () => {
   describe('renderDashboard', () => {
     test('ビューを使用してHTMLを生成して返すこと', () => {
       monitoringController.renderDashboard(mockRequest as Request, mockResponse as Response);
-      
+
       // ビューのrenderDashboardメソッドが呼ばれることを確認
       expect(mockView.renderDashboard).toHaveBeenCalled();
       // Content-Typeヘッダーが設定されることを確認

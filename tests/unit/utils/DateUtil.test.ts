@@ -1,4 +1,4 @@
-import { DateUtil } from '../../../../shared/utils/DateUtil';
+import { DateUtil } from '../../../shared/utils/DateUtil';
 
 describe('DateUtil', () => {
     // オリジナルのDateオブジェクトを保存

@@ -3,9 +3,9 @@ import { AppError } from '../../../../shared/errors/AppError';
 import { EventEmitter } from 'events';
 
 // ErrorHandlerをモック化
-jest.mock('../../../../shared/errors/ErrorHandler', () => ({
+jest.mock('../../../../shared/infrastructure/errors/ErrorHandler', () => ({
   ErrorHandler: {
-    handleEventError: jest.fn().mockImplementation(async (err) => err),
+    handle: jest.fn().mockImplementation(async (err) => err),
     errorDecorator: jest.fn().mockImplementation((context, options = {}) => {
       return function (_target: any, _propertyKey: any, descriptor: { value: (...args: any[]) => Promise<any>; }) {
         const originalMethod = descriptor.value;
@@ -69,7 +69,7 @@ jest.mock('imapflow', () => ({
 }));
 
 // Loggerをモック化
-jest.mock('../../../../shared/utils/Logger', () => ({
+jest.mock('../../../../shared/infrastructure/logging/Logger', () => ({
   logger: {
     info: jest.fn(),
     debug: jest.fn(),

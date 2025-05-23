@@ -2,21 +2,21 @@ import * as admin from 'firebase-admin';
 import { Firestore } from 'firebase-admin/firestore';
 import { FirestoreCardUsageRepository } from '../../../../src/infrastructure/firebase/FirestoreCardUsageRepository';
 import { CardUsage } from '../../../../src/domain/entities/CardUsage';
-import { FirestoreService } from '../../../../shared/firebase/FirestoreService';
+import { FirestoreService } from '../../../../shared/infrastructure/database/FirestoreService';
 import { DateUtil } from '../../../../shared/utils/DateUtil';
-import { Environment } from '../../../../shared/config/Environment';
+import { Environment } from '../../../../shared/infrastructure/config/Environment';
 import { CardUsageMapper } from '../../../../shared/domain/mappers/CardUsageMapper';
 import { AppError } from '../../../../shared/errors/AppError';
 
 // モック
-jest.mock('../../../../shared/firebase/FirestoreService');
-jest.mock('../../../../shared/config/Environment');
+jest.mock('../../../../shared/infrastructure/database/FirestoreService');
+jest.mock('../../../../shared/infrastructure/config/Environment');
 jest.mock('../../../../shared/utils/DateUtil');
 jest.mock('../../../../shared/domain/mappers/CardUsageMapper');
 jest.mock('firebase-admin/firestore');
 
 // Loggerをモック化
-jest.mock('../../../../shared/utils/Logger', () => ({
+jest.mock('../../../../shared/infrastructure/logging/Logger', () => ({
   logger: {
     info: jest.fn(),
     debug: jest.fn(),

@@ -6,12 +6,12 @@ import { ServiceRoutes } from '../../../../src/presentation/api/routes/ServiceRo
 import { EmailController } from '../../../../src/presentation/email/controllers/EmailController';
 
 // 認証ミドルウェアをモック化して常に認証を通すようにする
-jest.mock('../../../../shared/firebase/AuthMiddleware', () => ({
+jest.mock('../../../../shared/presentation/middlewares/AuthMiddleware', () => ({
   authMiddleware: (req: any, res: any, next: any) => next()
 }));
 
 // Loggerをモック化
-jest.mock('../../../../shared/utils/Logger', () => {
+jest.mock('../../../../shared/infrastructure/logging/Logger', () => {
   // サービスのモックデータを作成
   const mockServices = new Map();
   mockServices.set('TestService', {
@@ -21,7 +21,7 @@ jest.mock('../../../../shared/utils/Logger', () => {
     lastUpdated: new Date(),
     errorCount: 0
   });
-  
+
   // エラー履歴のモックデータを作成
   const mockErrorHistory = [
     {
@@ -55,22 +55,22 @@ describe('HTTP統合テスト', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Expressアプリケーションの初期化
     app = express();
     app.use(express.json());
-    
+
     // EmailControllerのモック設定
     mockEmailController = {
       isMonitoring: jest.fn().mockReturnValue(false),
       startAllMonitoring: jest.fn().mockResolvedValue(undefined),
       stopMonitoring: jest.fn().mockResolvedValue(undefined)
     } as unknown as jest.Mocked<EmailController>;
-    
+
     // モニタリングルートの設定
     const monitoringRoutes = new MonitoringRoutes();
     app.use('/monitoring', monitoringRoutes.getRouter());
-    
+
     // サービスルートの設定
     const serviceController = new ServiceController();
     serviceController.setEmailController(mockEmailController);
@@ -81,7 +81,7 @@ describe('HTTP統合テスト', () => {
   describe('モニタリングエンドポイント', () => {
     test('GET /monitoring/health: 正常なヘルスチェックレスポンスを返すこと', async () => {
       const response = await request(app).get('/monitoring/health');
-      
+
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('success', true);
       expect(response.body).toHaveProperty('message', 'Server is running');
@@ -90,7 +90,7 @@ describe('HTTP統合テスト', () => {
 
     test('GET /monitoring/status: サービスステータス情報を返すこと', async () => {
       const response = await request(app).get('/monitoring/status');
-      
+
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('success', true);
       expect(response.body).toHaveProperty('data');
@@ -100,7 +100,7 @@ describe('HTTP統合テスト', () => {
 
     test('GET /monitoring/errors: エラーログ情報を返すこと', async () => {
       const response = await request(app).get('/monitoring/errors');
-      
+
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('success', true);
       expect(response.body).toHaveProperty('data');
@@ -110,7 +110,7 @@ describe('HTTP統合テスト', () => {
 
     test('GET /monitoring/dashboard: HTMLダッシュボードを返すこと', async () => {
       const response = await request(app).get('/monitoring/dashboard');
-      
+
       expect(response.status).toBe(200);
       expect(response.headers['content-type']).toMatch(/text\/html/);
     });
@@ -119,7 +119,7 @@ describe('HTTP統合テスト', () => {
   describe('サービス管理エンドポイント', () => {
     test('GET /api/services: サービス一覧を返すこと', async () => {
       const response = await request(app).get('/api/services');
-      
+
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('success', true);
       expect(response.body).toHaveProperty('data');
@@ -130,7 +130,7 @@ describe('HTTP統合テスト', () => {
       const response = await request(app)
         .post('/api/services/email-monitoring')
         .send({ action: 'start' });
-      
+
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('success', true);
       expect(mockEmailController.startAllMonitoring).toHaveBeenCalled();
@@ -139,11 +139,11 @@ describe('HTTP統合テスト', () => {
     test('POST /api/services/email-monitoring: サービスの停止操作が正常に処理されること', async () => {
       // サービスが実行中の状態をシミュレート
       mockEmailController.isMonitoring.mockReturnValue(true);
-      
+
       const response = await request(app)
         .post('/api/services/email-monitoring')
         .send({ action: 'stop' });
-      
+
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('success', true);
       expect(mockEmailController.stopMonitoring).toHaveBeenCalled();
@@ -152,11 +152,11 @@ describe('HTTP統合テスト', () => {
     test('POST /api/services/email-monitoring: サービスの再起動操作が正常に処理されること', async () => {
       // サービスが実行中の状態をシミュレート
       mockEmailController.isMonitoring.mockReturnValue(true);
-      
+
       const response = await request(app)
         .post('/api/services/email-monitoring')
         .send({ action: 'restart' });
-      
+
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('success', true);
       expect(mockEmailController.stopMonitoring).toHaveBeenCalled();
@@ -167,7 +167,7 @@ describe('HTTP統合テスト', () => {
       const response = await request(app)
         .post('/api/services/email-monitoring')
         .send({ action: 'invalid-action' });
-      
+
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('success', false);
     });
@@ -176,7 +176,7 @@ describe('HTTP統合テスト', () => {
       const response = await request(app)
         .post('/api/services/unknown-service')
         .send({ action: 'start' });
-      
+
       expect(response.status).toBe(404);
       expect(response.body).toHaveProperty('success', false);
     });

@@ -1,8 +1,9 @@
 import { ImapEmailService } from '../../../../src/infrastructure/email/ImapEmailService';
 import { ImapClientAdapter } from '../../../../src/infrastructure/email/ImapClientAdapter';
 import { EmailParser, ParsedEmail } from '../../../../src/infrastructure/email/EmailParser';
-import { CardUsageExtractor, CardCompany } from '../../../../src/infrastructure/email/CardUsageExtractor';
+import { CardUsageExtractor } from '../../../../src/infrastructure/email/CardUsageExtractor';
 import { CardUsageNotification } from '../../../../shared/domain/entities/CardUsageNotification';
+import { CardCompany } from '../../../../src/domain/entities/card/CardTypes';
 
 // 依存コンポーネントをモック
 jest.mock('../../../../src/infrastructure/email/ImapClientAdapter');
@@ -10,7 +11,7 @@ jest.mock('../../../../src/infrastructure/email/EmailParser');
 jest.mock('../../../../src/infrastructure/email/CardUsageExtractor');
 
 // Loggerをモック化
-jest.mock('../../../../shared/utils/Logger', () => {
+jest.mock('../../../../shared/infrastructure/logging/Logger', () => {
   return {
     logger: {
       info: jest.fn(),
@@ -90,7 +91,7 @@ describe('ImapEmailService', () => {
         clearInterval((emailService as any).pollingTimer);
         (emailService as any).pollingTimer = null;
       }
-      
+
       // ImapClientAdapter のタイマーも確実にクリア
       if (mockImapClient) {
         // 明示的に internal タイマーをクリアする
@@ -98,12 +99,12 @@ describe('ImapEmailService', () => {
           clearInterval((mockImapClient as any).keepAliveTimer);
           (mockImapClient as any).keepAliveTimer = null;
         }
-        
+
         if ((mockImapClient as any).reconnectTimer) {
           clearTimeout((mockImapClient as any).reconnectTimer);
           (mockImapClient as any).reconnectTimer = null;
         }
-        
+
         await emailService.close();
       }
     }
@@ -239,78 +240,78 @@ describe('ImapEmailService', () => {
       expect(mockImapClient.close).toHaveBeenCalled();
     });
   });
-  
+
   describe('reconnection', () => {
     test('connectionLostイベント時に監視が停止されること', async () => {
       // モック用のコールバック関数
       const mockCallback = jest.fn().mockResolvedValue(undefined);
-      
+
       // まず接続
       await emailService.connect('INBOX', mockCallback);
-      
+
       // connectionLostイベントハンドラを取得
       const connectionLostHandler = (mockImapClient.on as jest.Mock).mock.calls.find(
         call => call[0] === 'connectionLost'
       )[1];
-      
+
       // ポーリングタイマーを設定（内部実装に依存）
-      (emailService as any).pollingTimer = setTimeout(() => {}, 1000);
+      (emailService as any).pollingTimer = setTimeout(() => { }, 1000);
       (emailService as any).isMonitoring = true;
-      
+
       // イベントハンドラを手動で呼び出し
       connectionLostHandler('INBOX');
-      
+
       // 監視状態がfalseになることを確認
       expect((emailService as any).isMonitoring).toBe(false);
-      
+
       // ポーリングタイマーがクリアされていることを確認
       expect((emailService as any).pollingTimer).toBeNull();
     });
-    
+
     test('reconnectedイベント時に監視が再開されること', async () => {
       // モック用のコールバック関数
       const mockCallback = jest.fn().mockResolvedValue(undefined);
-      
+
       // まず接続（これによって_lastConnectedMailboxと_lastCallbackが設定される）
       await emailService.connect('INBOX', mockCallback);
-      
+
       // startMonitoringメソッドをスパイ
       const startMonitoringSpy = jest.spyOn(emailService as any, 'startMonitoring');
-      
+
       // reconnectedイベントハンドラを取得
       const reconnectedHandler = (mockImapClient.on as jest.Mock).mock.calls.find(
         call => call[0] === 'reconnected'
       )[1];
-      
+
       // 監視状態を無効化（接続切断をシミュレート）
       (emailService as any).isMonitoring = false;
-      
+
       // イベントハンドラを手動で呼び出し
       reconnectedHandler('INBOX');
-      
+
       // 監視が再開されることを確認
       expect(startMonitoringSpy).toHaveBeenCalled();
       expect(startMonitoringSpy).toHaveBeenCalledWith(mockCallback, expect.stringContaining('INBOX'));
     });
-    
+
     test('reconnectedイベント時に即時メール確認が実行されること', async () => {
       // モック用のコールバック関数
       const mockCallback = jest.fn().mockResolvedValue(undefined);
-      
+
       // まず接続
       await emailService.connect('INBOX', mockCallback);
-      
+
       // pollForNewMessagesメソッドをスパイ
       const pollForNewMessagesSpy = jest.spyOn(emailService as any, 'pollForNewMessages');
-      
+
       // reconnectedイベントハンドラを取得
       const reconnectedHandler = (mockImapClient.on as jest.Mock).mock.calls.find(
         call => call[0] === 'reconnected'
       )[1];
-      
+
       // イベントハンドラを手動で呼び出し
       reconnectedHandler('INBOX');
-      
+
       // 即時メール確認が実行されることを確認
       expect(pollForNewMessagesSpy).toHaveBeenCalled();
       expect(pollForNewMessagesSpy).toHaveBeenCalledWith(mockCallback, expect.stringContaining('INBOX'));

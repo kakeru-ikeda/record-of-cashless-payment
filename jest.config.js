@@ -17,7 +17,12 @@ module.exports = {
   },
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
-    '^chalk$': '<rootDir>/tests/mocks/chalkMock.js'
+    '^chalk$': '<rootDir>/tests/mocks/chalkMock.js',
+    '^@domain/(.*)$': '<rootDir>/src/domain/$1',
+    '^@infrastructure/(.*)$': '<rootDir>/src/infrastructure/$1',
+    '^@usecase/(.*)$': '<rootDir>/src/usecases/$1',
+    '^@presentation/(.*)$': '<rootDir>/src/presentation/$1',
+    '^@shared/(.*)$': '<rootDir>/shared/$1'
   },
   setupFilesAfterEnv: ['./tests/jest.setup.js'],
   // タイムアウト処理の改善

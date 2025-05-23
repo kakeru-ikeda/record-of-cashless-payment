@@ -1,17 +1,16 @@
-import { INotifyCardUsageUseCase } from '../../domain/usecases/notification/INotifyCardUsageUseCase';
-import { CardUsageNotification } from '../../../shared/domain/entities/CardUsageNotification';
-import { AppError } from '../../../shared/errors/AppError';
-import { DiscordNotifier } from '../../../shared/discord/DiscordNotifier';
-import { logger } from '../../../shared/utils/Logger';
-import { ErrorHandler } from '../../../shared/errors/ErrorHandler';
+import { INotifyCardUsageUseCase } from '@domain/usecases/notification/INotifyCardUsageUseCase';
+import { CardUsageNotification } from '@shared/domain/entities/CardUsageNotification';
+import { DiscordNotifier } from '@shared/infrastructure/discord/DiscordNotifier';
+import { logger } from '@shared/infrastructure/logging/Logger';
+import { ErrorHandler } from '@shared/infrastructure/errors/ErrorHandler';
 
 export class NotifyCardUsageUseCase implements INotifyCardUsageUseCase {
   private readonly serviceContext = 'NotifyCardUsageUseCase';
-  
+
   constructor(
     private readonly discordNotifier: DiscordNotifier
-  ) {}
-  
+  ) { }
+
   /**
    * カード利用情報をDiscordに通知する
    */

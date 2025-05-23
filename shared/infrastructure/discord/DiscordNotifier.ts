@@ -1,12 +1,12 @@
 import axios from 'axios';
-import { CardUsageNotification } from '../domain/entities/CardUsageNotification';
+import { CardUsageNotification } from '@shared/domain/entities/CardUsageNotification';
 import {
     WeeklyReportNotification,
     DailyReportNotification,
     MonthlyReportNotification,
-} from '../domain/entities/ReportNotifications';
-import { logger } from '../utils/Logger';
-import { AppError, ErrorType } from '../errors/AppError';
+} from '@shared/domain/entities/ReportNotifications';
+import { logger } from '@shared/infrastructure/logging/Logger';
+import { AppError, ErrorType } from '@shared/errors/AppError';
 
 /**
  * 通知の種類を表す列挙型
@@ -52,7 +52,7 @@ export interface DiscordNotifier {
      * @returns 通知の成功または失敗を表すブール値
      */
     notifyMonthlyReport(data: MonthlyReportNotification): Promise<boolean>;
-    
+
     /**
      * エラー情報を通知する
      * @param error AppErrorオブジェクト
@@ -477,11 +477,11 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
     async notifyError(error: AppError, context?: string): Promise<boolean> {
         try {
             const webhookUrl = this.getWebhookUrl(NotificationType.ERROR_LOG);
-            
+
             // エラータイプに応じた色とアイコンを設定
             let color: number;
             let errorIcon: string;
-            
+
             switch (error.type) {
                 case ErrorType.VALIDATION:
                     color = 16766720; // オレンジ色
@@ -514,13 +514,13 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
                     errorIcon = '❌';
                     break;
             }
-            
+
             // 現在の日時を取得
             const timestamp = new Date().toISOString();
-            
+
             // コンテキスト情報があれば設定
             const serviceContext = context || this.serviceContext;
-            
+
             const embeds = [
                 {
                     title: `${errorIcon} エラー発生: ${error.type}`,
@@ -550,7 +550,7 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
                     ]
                 }
             ];
-            
+
             // 追加情報があれば追加
             if (error.details) {
                 const detailsText = JSON.stringify(error.details, null, 2);
@@ -560,7 +560,7 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
                     inline: false
                 });
             }
-            
+
             // スタックトレースがあれば追加（最大1000文字まで）
             if (error.originalError?.stack) {
                 const stackTrace = error.originalError.stack.substring(0, 1000);
@@ -570,7 +570,7 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
                     inline: false
                 });
             }
-            
+
             return this.sendDiscordNotification(webhookUrl, embeds, 'エラーログ');
         } catch (err) {
             // ここでログ送信に失敗した場合はコンソールに出力するのみ（無限ループ防止）
@@ -592,16 +592,16 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
     async notifyLogging(message: string, title?: string, context?: string): Promise<boolean> {
         try {
             const webhookUrl = this.getWebhookUrl(NotificationType.ERROR_LOG);
-            
+
             // 現在の日時を取得
             const timestamp = new Date().toISOString();
-            
+
             // コンテキスト情報があれば設定
             const serviceContext = context || this.serviceContext;
-            
+
             // タイトルがなければデフォルトのタイトルを設定
             const messageTitle = title || 'システムログ';
-            
+
             const embeds = [
                 {
                     title: `📝 ${messageTitle}`,
@@ -626,7 +626,7 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
                     ]
                 }
             ];
-            
+
             return this.sendDiscordNotification(webhookUrl, embeds, 'ログメッセージ');
         } catch (err) {
             // ここでログ送信に失敗した場合はコンソールに出力するのみ（無限ループ防止）

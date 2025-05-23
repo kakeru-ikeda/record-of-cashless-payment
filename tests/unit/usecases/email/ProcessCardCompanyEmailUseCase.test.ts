@@ -1,11 +1,11 @@
 import { ProcessCardCompanyEmailUseCase } from '../../../../src/usecases/email/ProcessCardCompanyEmailUseCase';
 import { ProcessEmailUseCase } from '../../../../src/usecases/email/ProcessEmailUseCase';
 import { ParsedEmail } from '../../../../src/infrastructure/email/EmailParser';
-import { CardCompany } from '../../../../src/infrastructure/email/CardUsageExtractor';
 import { CardUsageNotification } from '../../../../shared/domain/entities/CardUsageNotification';
+import { CardCompany } from '../../../../src/domain/entities/card/CardTypes';
 
 // Loggerをモック化
-jest.mock('../../../../shared/utils/Logger', () => ({
+jest.mock('../../../../shared/infrastructure/logging/Logger', () => ({
   logger: {
     info: jest.fn(),
     debug: jest.fn(),
@@ -17,14 +17,14 @@ jest.mock('../../../../shared/utils/Logger', () => ({
 }));
 
 // ErrorHandlerをモック化
-jest.mock('../../../../shared/errors/ErrorHandler', () => ({
+jest.mock('../../../../shared/infrastructure/errors/ErrorHandler', () => ({
   ErrorHandler: {
     errorDecorator: () => () => (
       _target: any,
       _propertyKey: string | symbol,
       descriptor: PropertyDescriptor
     ) => descriptor,
-    handleEventError: jest.fn(),
+    handle: jest.fn(),
     extractErrorInfoFromArgs: jest.fn()
   }
 }));

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import * as admin from 'firebase-admin';
-import { ResponseHelper } from '../utils/ResponseHelper';
+import { ResponseHelper } from '@shared/presentation/responses/ResponseHelper';
 
 /**
  * Firebase IDトークンを検証する認証ミドルウェア
@@ -58,7 +58,7 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
     next();
   } catch (error) {
     console.error('認証エラー:', error);
-    
+
     // エラータイプに基づいて適切なレスポンスを返す
     if (error instanceof Error) {
       // トークン有効期限切れ
@@ -67,35 +67,35 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
         res.status(response.status).json(response);
         return;
       }
-      
+
       // トークン無効化
       if (error.message.includes('auth/id-token-revoked')) {
         const response = ResponseHelper.invalidToken('認証トークンが無効化されています');
         res.status(response.status).json(response);
         return;
       }
-      
+
       // 不正なトークン
       if (error.message.includes('auth/invalid-id-token')) {
         const response = ResponseHelper.invalidToken('不正な認証トークンです');
         res.status(response.status).json(response);
         return;
       }
-      
+
       // ユーザーが無効化されている
       if (error.message.includes('auth/user-disabled')) {
         const response = ResponseHelper.forbidden('このユーザーアカウントは無効化されています');
         res.status(response.status).json(response);
         return;
       }
-      
+
       // ユーザーが存在しない
       if (error.message.includes('auth/user-not-found')) {
         const response = ResponseHelper.unauthorized('このユーザーは存在しません');
         res.status(response.status).json(response);
         return;
       }
-      
+
       // トークンフォーマットエラー
       if (error.message.includes('auth/argument-error')) {
         const response = ResponseHelper.invalidToken('トークンの形式が正しくありません');
@@ -103,7 +103,7 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
         return;
       }
     }
-    
+
     // その他の認証エラー
     const response = ResponseHelper.unauthorized('認証に失敗しました');
     res.status(response.status).json(response);
@@ -143,16 +143,16 @@ export const requireRoles = (requiredRoles: string[]) => {
       // Firestoreからユーザーのロール情報を取得（例）
       // 実際の実装は、ユーザーロールの保存方法によって異なります
       const userRecord = await admin.auth().getUser(req.user.uid);
-      
+
       // カスタムクレームからロール情報を取得
       const userRoles = userRecord.customClaims?.roles as string[] || [];
-      
+
       // リクエストオブジェクトにユーザーロールを追加
       req.user.roles = userRoles;
-      
+
       // 必要なロールが一つでもあるかチェック
       const hasRequiredRole = requiredRoles.some(role => userRoles.includes(role));
-      
+
       if (hasRequiredRole) {
         next();
       } else {

@@ -24,7 +24,7 @@ jest.mock('express', () => {
 });
 
 // Loggerをモック化
-jest.mock('../../../../shared/utils/Logger', () => ({
+jest.mock('../../../../shared/infrastructure/logging/Logger', () => ({
   logger: {
     info: jest.fn(),
     debug: jest.fn(),
@@ -49,7 +49,7 @@ describe('AppConfig', () => {
 
     // Expressのモックアプリケーション
     mockExpressApp = require('express')();
-    
+
     // Serverのモック
     mockServer = {
       address: jest.fn().mockReturnValue({ port: 3000 })
@@ -94,7 +94,7 @@ describe('AppConfig', () => {
       delete process.env.PORT;
       httpAppConfig = new HttpAppConfig();
       const server = httpAppConfig.startServer();
-      
+
       expect(mockExpressApp.listen).toHaveBeenCalledWith(3000, expect.any(Function));
     });
 
@@ -102,9 +102,9 @@ describe('AppConfig', () => {
       process.env.PORT = '4000';
       httpAppConfig = new HttpAppConfig();
       const server = httpAppConfig.startServer();
-      
+
       expect(mockExpressApp.listen).toHaveBeenCalledWith(4000, expect.any(Function));
-      
+
       // 環境変数をリセット
       delete process.env.PORT;
     });
@@ -116,12 +116,12 @@ describe('AppConfig', () => {
 
       // MonitoringRoutesのインスタンスが作成されることを確認
       expect(MonitoringRoutes).toHaveBeenCalled();
-      
+
       // ルーターが正しいパスでマウントされることを確認
       expect(mockExpressApp.use).toHaveBeenCalledWith('/monitoring', 'monitoring-router');
-      
+
       // ログに記録されることを確認
-      expect(require('../../../../shared/utils/Logger').logger.updateServiceStatus)
+      expect(require('../../../../shared/infrastructure/logging/Logger').logger.updateServiceStatus)
         .toHaveBeenCalledWith('Monitoring', 'online', 'モニタリングAPI有効');
     });
   });
@@ -133,15 +133,15 @@ describe('AppConfig', () => {
       // ServiceControllerとServiceRoutesのインスタンスが作成されることを確認
       expect(ServiceController).toHaveBeenCalled();
       expect(ServiceRoutes).toHaveBeenCalledWith(mockServiceController);
-      
+
       // EmailControllerが設定されることを確認
       expect(mockServiceController.setEmailController).toHaveBeenCalledWith(mockEmailController);
-      
+
       // ルーターが正しいパスでマウントされることを確認
       expect(mockExpressApp.use).toHaveBeenCalledWith('/api/services', 'service-router');
-      
+
       // ログに記録されることを確認
-      expect(require('../../../../shared/utils/Logger').logger.updateServiceStatus)
+      expect(require('../../../../shared/infrastructure/logging/Logger').logger.updateServiceStatus)
         .toHaveBeenCalledWith('ServiceManagementAPI', 'online', 'サービス管理API有効');
     });
   });
@@ -152,14 +152,14 @@ describe('AppConfig', () => {
 
       // listenメソッドが呼ばれることを確認
       expect(mockExpressApp.listen).toHaveBeenCalled();
-      
+
       // サーバーオブジェクトが返されることを確認
       expect(server).toBe(mockServer);
-      
+
       // ログに記録されることを確認
-      expect(require('../../../../shared/utils/Logger').logger.info)
+      expect(require('../../../../shared/infrastructure/logging/Logger').logger.info)
         .toHaveBeenCalledWith(expect.stringContaining('HTTPサーバーがポート'), 'HttpServer');
-      expect(require('../../../../shared/utils/Logger').logger.updateServiceStatus)
+      expect(require('../../../../shared/infrastructure/logging/Logger').logger.updateServiceStatus)
         .toHaveBeenCalledWith('HttpServer', 'online');
     });
   });

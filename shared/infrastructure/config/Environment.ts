@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
-import { logger } from '../utils/Logger';
+import { logger } from '@shared/infrastructure/logging/Logger';
 
 // .envファイルを読み込む（存在する場合）
 dotenv.config();
@@ -42,7 +42,7 @@ export class Environment {
     // Cloud Functions関連の設定
     static readonly IS_CLOUD_FUNCTIONS = process.env.FUNCTIONS_EMULATOR === 'true'
         || process.env.FUNCTION_TARGET != null;
-        
+
     // ログ関連の設定
     static readonly LOG_LEVEL = process.env.LOG_LEVEL || 'INFO';
     static readonly COMPACT_LOGS = process.env.COMPACT_LOGS === 'true';

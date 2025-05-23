@@ -1,11 +1,12 @@
 import * as admin from 'firebase-admin';
-import { CardUsage } from '../../domain/entities/CardUsage';
-import { CardUsageNotification } from '../../../shared/domain/entities/CardUsageNotification';
-import { ICardUsageRepository } from '../../domain/repositories/ICardUsageRepository';
-import { IProcessEmailUseCase } from '../../../src/domain/usecases/email/IProcessEmailUseCase';
-import { ImapEmailService, CardCompany } from '../../infrastructure/email/ImapEmailService';
-import { logger } from '../../../shared/utils/Logger';
-import { ErrorHandler } from '../../../shared/errors/ErrorHandler';
+import { CardUsage } from '@domain/entities/CardUsage';
+import { CardUsageNotification } from '@shared/domain/entities/CardUsageNotification';
+import { ICardUsageRepository } from '@domain/repositories/ICardUsageRepository';
+import { IProcessEmailUseCase } from '@domain/usecases/email/IProcessEmailUseCase';
+import { ImapEmailService } from '@infrastructure/email/ImapEmailService';
+import { logger } from '@shared/infrastructure/logging/Logger';
+import { ErrorHandler } from '@shared/infrastructure/errors/ErrorHandler';
+import { CardCompany } from '@domain/entities/card/CardTypes';
 
 /**
  * メール処理のユースケース

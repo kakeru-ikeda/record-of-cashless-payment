@@ -1,9 +1,9 @@
 import { ImapFlow } from 'imapflow';
-import { logger } from '../../../shared/utils/Logger';
-import { AppError, ErrorType } from '../../../shared/errors/AppError';
-import { ErrorHandler } from '../../../shared/errors/ErrorHandler';
+import { logger } from '@shared/infrastructure/logging/Logger';
+import { AppError, ErrorType } from '@shared/errors/AppError';
+import { ErrorHandler } from '@shared/infrastructure/errors/ErrorHandler';
 import { EventEmitter } from 'events';
-import { IEmailClient, ImapConnectionConfig as IImapConnectionConfig } from '../../domain/interfaces/email/IEmailClient';
+import { IEmailClient, IImapConnectionConfig } from '@domain/interfaces/email/IEmailClient';
 
 /**
  * IMAP接続管理のための型定義
@@ -82,7 +82,7 @@ export class ImapClientAdapter extends EventEmitter implements IEmailClient {
         );
 
         // ErrorHandlerを使用してエラーを処理（初期エラーは通知を抑制）
-        await ErrorHandler.handleEventError(appError, context, {
+        await ErrorHandler.handle(appError, context, {
           suppressNotification: true, // 頻繁に発生する可能性があるので通知を抑制
           additionalInfo: { mailboxName: this.currentMailbox }
         });
@@ -126,7 +126,7 @@ export class ImapClientAdapter extends EventEmitter implements IEmailClient {
       return this.client;
     } catch (error) {
       // ErrorHandlerを使用してエラーを処理
-      const appError = await ErrorHandler.handleEventError(
+      const appError = await ErrorHandler.handle(
         new AppError(
           'IMAP接続中にエラーが発生しました',
           ErrorType.EMAIL,
@@ -399,7 +399,7 @@ export class ImapClientAdapter extends EventEmitter implements IEmailClient {
           );
 
           // ErrorHandlerを使用してエラーを処理
-          await ErrorHandler.handleEventError(appError, context, {
+          await ErrorHandler.handle(appError, context, {
             suppressNotification: true, // 通常のKeepAliveエラーは通知を抑制
             additionalInfo: { mailboxName: this.currentMailbox }
           });
@@ -431,7 +431,7 @@ export class ImapClientAdapter extends EventEmitter implements IEmailClient {
     // 再接続試行回数が閾値を超えたらDiscord通知を行う
     if (this.reconnectAttempts >= 3) {
       // 重大な接続問題として通知
-      ErrorHandler.handleEventError(
+      ErrorHandler.handle(
         new AppError(
           '複数回の再接続に失敗しました',
           ErrorType.EMAIL,
@@ -496,7 +496,7 @@ export class ImapClientAdapter extends EventEmitter implements IEmailClient {
           null,
           error instanceof Error ? error : new Error(String(error))
         );
-        await ErrorHandler.handleEventError(appError, context, {
+        await ErrorHandler.handle(appError, context, {
           suppressNotification: true // クローズ時のエラーは通知しない
         });
       } finally {

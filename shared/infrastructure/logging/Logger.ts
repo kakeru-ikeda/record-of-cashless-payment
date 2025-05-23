@@ -1,5 +1,10 @@
-import { DiscordNotifier } from '../discord/DiscordNotifier';
-import { AppError, ErrorType } from '../errors/AppError';
+import { DiscordNotifier } from '@shared/infrastructure/discord/DiscordNotifier';
+import { AppError, ErrorType } from '@shared/errors/AppError';
+
+/**
+ * 本来は DiscordNotifier をアダプターとして利用するべきだが、
+ * 通知責務と密接に結びついているため、Logger に統合する。
+ */
 
 /**
  * ログレベルの列挙型
@@ -117,7 +122,7 @@ export class Logger {
     this.discordNotifier = discordNotifier;
     logger.info('DiscordNotifierが設定されました', 'Logger');
   }
-  
+
   /**
    * Discord通知が有効かどうかを確認
    */
@@ -200,7 +205,7 @@ export class Logger {
       if (!options?.suppressConsole) {
         this.log(message, context, 'debug');
       }
-      
+
       // Discord通知（非同期で実行、プロミスは無視）
       if (options?.notify && this.isDiscordNotificationEnabled()) {
         this.discordNotifier!.notifyLogging(message, options.title || 'デバッグ情報', context)
@@ -220,7 +225,7 @@ export class Logger {
       } else if (!options?.suppressConsole) {
         this.log(message, context, 'info');
       }
-      
+
       // Discord通知（非同期で実行、プロミスは無視）
       if (options?.notify && this.isDiscordNotificationEnabled()) {
         this.discordNotifier!.notifyLogging(message, options.title || 'お知らせ', context)
@@ -238,7 +243,7 @@ export class Logger {
       if (!options?.suppressConsole) {
         this.log(message, context, 'warn');
       }
-      
+
       // Discord通知（非同期で実行、プロミスは無視）
       if (options?.notify && this.isDiscordNotificationEnabled()) {
         this.discordNotifier!.notifyLogging(message, options.title || '⚠️ 警告', context)
@@ -252,7 +257,7 @@ export class Logger {
    */
   public error(
     error: AppError | Error,
-    context?: string, 
+    context?: string,
     options?: LogNotifyOptions
   ): void {
     // エラーオブジェクトがAppErrorでない場合は新規作成
