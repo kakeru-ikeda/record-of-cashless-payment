@@ -16,7 +16,7 @@
                 "src/infrastructure/*"
             ],
             "@usecase/*": [
-                "src/usecase/*"
+                "src/usecases/*"
             ],
             "@interface/*": [
                 "src/interface/*"

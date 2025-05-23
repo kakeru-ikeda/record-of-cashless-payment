@@ -49,7 +49,7 @@
   "_moduleAliases": {
     "@domain": "dist/src/domain",
     "@infrastructure": "dist/src/infrastructure",
-    "@usecase": "dist/src/usecase",
+    "@usecase": "dist/src/usecases",
     "@interface": "dist/src/interface",
     "@shared": "dist/shared"
   }
