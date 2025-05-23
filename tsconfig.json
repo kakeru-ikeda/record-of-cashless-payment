@@ -18,8 +18,8 @@
             "@usecase/*": [
                 "src/usecases/*"
             ],
-            "@interface/*": [
-                "src/interface/*"
+            "@presentation/*": [
+                "src/presentation/*"
             ],
             "@shared/*": [
                 "shared/*"

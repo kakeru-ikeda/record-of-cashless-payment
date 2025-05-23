@@ -50,7 +50,7 @@
     "@domain": "dist/src/domain",
     "@infrastructure": "dist/src/infrastructure",
     "@usecase": "dist/src/usecases",
-    "@interface": "dist/src/interface",
+    "@presentation": "dist/src/presentation",
     "@shared": "dist/shared"
   }
 }
