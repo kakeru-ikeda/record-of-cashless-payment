@@ -26,6 +26,23 @@ jest.mock('../../../../shared/infrastructure/logging/Logger', () => ({
   }
 }));
 
+// process._getActiveHandles をモック化
+const mockActiveHandles: any[] = [];
+// Node.jsのプロセスオブジェクトを拡張
+declare global {
+  namespace NodeJS {
+    interface Process {
+      _getActiveHandles?: () => any[];
+    }
+  }
+}
+
+Object.defineProperty(process, '_getActiveHandles', {
+  value: jest.fn().mockReturnValue(mockActiveHandles),
+  configurable: true,
+  writable: true
+});
+
 describe('Application', () => {
   let application: Application;
   let mockHttpAppConfig: jest.Mocked<HttpAppConfig>;
@@ -33,10 +50,21 @@ describe('Application', () => {
   let mockEmailController: jest.Mocked<EmailController>;
   let mockTestRunner: jest.Mocked<TestRunner>;
   let mockServer: Partial<Server>;
+  let originalExit: typeof process.exit;
+  let mockExit: jest.Mock;
+  let originalSetTimeout: typeof setTimeout;
 
   beforeEach(() => {
-    // すべてのモックをリセット
     jest.clearAllMocks();
+
+    // process.exit をモック化
+    originalExit = process.exit;
+    mockExit = jest.fn() as jest.Mock;
+    process.exit = mockExit as unknown as typeof process.exit;
+
+    // タイムアウトのモック - モックの代わりにspyOnを使用
+    jest.useFakeTimers();
+    jest.spyOn(global, 'setTimeout');
 
     // モックサーバー
     mockServer = {
@@ -89,6 +117,13 @@ describe('Application', () => {
 
     // Applicationのインスタンスを作成
     application = new Application();
+  });
+
+  afterEach(() => {
+    // テスト後にモックタイマーをリセット
+    jest.useRealTimers();
+    // process.exit を元に戻す
+    process.exit = originalExit;
   });
 
   describe('initialize', () => {
@@ -175,32 +210,145 @@ describe('Application', () => {
     });
   });
 
+  describe('setupShutdownHooks', () => {
+    test('SIGINTシグナルでshutdownが呼び出されること', async () => {
+      // shutdownメソッドをスパイ
+      const shutdownSpy = jest.spyOn(application, 'shutdown').mockResolvedValue();
+
+      // アプリケーションを初期化して実行
+      await application.initialize();
+      await application.runInNormalMode();
+
+      // SIGINTイベントをエミュレート
+      process.emit('SIGINT');
+
+      // shutdownが呼ばれたことを確認
+      expect(shutdownSpy).toHaveBeenCalled();
+    });
+
+    test('SIGTERMシグナルでshutdownが呼び出されること', async () => {
+      // shutdownメソッドをスパイ
+      const shutdownSpy = jest.spyOn(application, 'shutdown').mockResolvedValue();
+
+      // アプリケーションを初期化して実行
+      await application.initialize();
+      await application.runInNormalMode();
+
+      // SIGTERMイベントをエミュレート
+      process.emit('SIGTERM');
+
+      // shutdownが呼ばれたことを確認
+      expect(shutdownSpy).toHaveBeenCalled();
+    });
+  });
+
+  describe('cleanupUnresolvedTimers', () => {
+    test('未解決のタイマーをクリーンアップすること', async () => {
+      // アクティブハンドルにモックタイマーを追加
+      const mockTimeout = { constructor: { name: 'Timeout' } };
+      const mockInterval = { constructor: { name: 'Interval' } };
+      mockActiveHandles.push(mockTimeout, mockInterval);
+
+      // clearTimeoutとclearIntervalをモック
+      global.clearTimeout = jest.fn();
+      global.clearInterval = jest.fn();
+
+      // shutdownを呼び出してクリーンアップをトリガー
+      await application.shutdown();
+
+      // タイマーが正しくクリアされたことを確認
+      expect(global.clearTimeout).toHaveBeenCalledWith(mockTimeout);
+      expect(global.clearInterval).toHaveBeenCalledWith(mockInterval);
+
+      // タイマーが設定されたことを確認
+      expect(setTimeout).toHaveBeenCalledWith(expect.any(Function), 10000);
+
+      // タイマーを進めてプロセス終了を確認
+      jest.advanceTimersByTime(10000);
+      expect(mockExit).toHaveBeenCalledWith(0);
+
+      // テスト後にクリア
+      mockActiveHandles.length = 0;
+    });
+
+    test('_getActiveHandlesが存在しない場合も正常に動作すること', async () => {
+      // _getActiveHandlesを一時的に削除
+      const originalGetActiveHandles = process._getActiveHandles;
+      delete process._getActiveHandles;
+
+      // shutdownを呼び出してクリーンアップをトリガー
+      await application.shutdown();
+
+      // タイマーが設定されたことを確認
+      expect(setTimeout).toHaveBeenCalledWith(expect.any(Function), 10000);
+
+      // タイマーを進めてプロセス終了を確認
+      jest.advanceTimersByTime(10000);
+      expect(mockExit).toHaveBeenCalledWith(0);
+
+      // 後処理：_getActiveHandlesを復元
+      if (originalGetActiveHandles) {
+        process._getActiveHandles = originalGetActiveHandles;
+      }
+    });
+
+    test('cleanupUnresolvedTimersでエラーが発生しても処理が継続されること', async () => {
+      // モックをリセット
+      jest.clearAllMocks();
+
+      // _getActiveHandlesをモック化してエラーをスローするようにする
+      if (process._getActiveHandles) {
+        const originalGetActiveHandles = process._getActiveHandles;
+        process._getActiveHandles = jest.fn().mockImplementation(() => {
+          throw new Error('_getActiveHandles error');
+        });
+
+        try {
+          // シャットダウンを実行
+          // シャットダウンが例外をスローしないことだけを確認する
+          await expect(application.shutdown()).resolves.not.toThrow();
+
+          // ここでは特定のメソッド呼び出しを検証せず、
+          // エラーが適切に処理されたことだけを確認する
+        } finally {
+          // 元に戻す
+          process._getActiveHandles = originalGetActiveHandles;
+        }
+      }
+    });
+  });
+
   describe('renderStatusDashboardIfCompactMode', () => {
-    beforeEach(() => {
-      // タイマーをモック化
-      jest.useFakeTimers();
-    });
-
-    afterEach(() => {
-      // テスト後にモックタイマーをリセット
-      jest.useRealTimers();
-    });
-
-    test('コンパクトモードの場合、ステータスダッシュボードが表示されること', async () => {
+    test('コンパクトモードの場合、一定時間後にステータスダッシュボードが表示されること', async () => {
       // コンパクトモードを有効化
       process.env.COMPACT_LOGS = 'true';
 
       // 通常モードで実行
       await application.runInNormalMode();
 
-      // タイマーを実行（全ての非同期タイマーを実行）
-      jest.runAllTimers();
+      // タイマーが設定されたことを確認
+      expect(setTimeout).toHaveBeenCalledWith(expect.any(Function), 1000);
+
+      // タイマーを進めて確認
+      jest.advanceTimersByTime(1000);
 
       // renderStatusDashboardが呼ばれることを確認
       expect(require('../../../../shared/infrastructure/logging/Logger').logger.renderStatusDashboard).toHaveBeenCalled();
 
       // 環境変数をリセット
       delete process.env.COMPACT_LOGS;
+    });
+
+    test('コンパクトモードでない場合、ステータスダッシュボードが表示されないこと', async () => {
+      // コンパクトモードを無効化
+      delete process.env.COMPACT_LOGS;
+
+      // 通常モードで実行
+      await application.runInNormalMode();
+
+      // renderStatusDashboardが1000ms後に呼ばれないことを確認
+      jest.advanceTimersByTime(1000);
+      expect(require('../../../../shared/infrastructure/logging/Logger').logger.renderStatusDashboard).not.toHaveBeenCalled();
     });
   });
 });
