@@ -92,6 +92,86 @@ describe('CardUsageExtractor', () => {
       // 金額のカンマが除去されて数値になっていることを検証
       expect(result.amount).toBe(12345);
     });
+
+    test('日付変換エラー: Date オブジェクトがエラーをスローする場合のテスト', () => {
+      // Date のコンストラクタをモック化して一度だけエラーをスローさせる
+      const originalDate = global.Date;
+      const mockDateConstructor = jest.fn()
+        .mockImplementationOnce(() => {
+          throw new Error('日付変換エラーのテスト');
+        })
+        .mockImplementation((...args: ConstructorParameters<typeof Date>) => {
+          return new originalDate(...args);
+        });
+
+      global.Date = mockDateConstructor as any;
+
+      const emailBody = `
+カード名称：Ｄ　三菱ＵＦＪ－ＪＣＢデビット
+デビットカード取引確認メール
+
+【ご利用日時(日本時間)】 2025年5月10日 15:30:00
+【ご利用金額】 1,234円
+【ご利用先】 コンビニエンスストア東京
+【カード番号末尾4桁】 1234
+    `;
+
+      // カード情報を抽出
+      const result = extractor.extractFromEmailBody(emailBody, CardCompany.MUFG);
+
+      // 日付変換エラー時のフォールバック処理が実行されたことを検証
+      expect(result.datetime_of_use).toBeDefined();
+
+      // その他のフィールドが正しく抽出されていることを検証
+      expect(result.card_name).toBe('Ｄ　三菱ＵＦＪ－ＪＣＢデビット');
+      expect(result.amount).toBe(1234);
+      expect(result.where_to_use).toBe('コンビニエンスストア東京');
+
+      // モックをリストア
+      global.Date = originalDate;
+    });
+
+    test('異常系: 金額だけがない場合のテスト', () => {
+      // 金額情報が欠けているメール本文
+      const emailBody = `
+カード名称：Ｄ　三菱ＵＦＪ－ＪＣＢデビット
+デビットカード取引確認メール
+
+【ご利用日時(日本時間)】 2025年5月10日 15:30:00
+【ご利用先】 コンビニエンスストア東京
+【カード番号末尾4桁】 1234
+    `;
+
+      // カード情報を抽出
+      const result = extractor.extractFromEmailBody(emailBody, CardCompany.MUFG);
+
+      // 金額がデフォルト値になっていることを検証
+      expect(result.amount).toBe(0);
+      expect(result.card_name).toBe('Ｄ　三菱ＵＦＪ－ＪＣＢデビット');
+      expect(result.where_to_use).toBe('コンビニエンスストア東京');
+      expect(result.datetime_of_use).toBeDefined();
+    });
+
+    test('異常系: 利用先だけがない場合のテスト', () => {
+      // 利用先情報が欠けているメール本文
+      const emailBody = `
+カード名称：Ｄ　三菱ＵＦＪ－ＪＣＢデビット
+デビットカード取引確認メール
+
+【ご利用日時(日本時間)】 2025年5月10日 15:30:00
+【ご利用金額】 1,234円
+【カード番号末尾4桁】 1234
+    `;
+
+      // カード情報を抽出
+      const result = extractor.extractFromEmailBody(emailBody, CardCompany.MUFG);
+
+      // 利用先がデフォルト値になっていることを検証
+      expect(result.where_to_use).toBe('');
+      expect(result.card_name).toBe('Ｄ　三菱ＵＦＪ－ＪＣＢデビット');
+      expect(result.amount).toBe(1234);
+      expect(result.datetime_of_use).toBeDefined();
+    });
   });
 
   describe('SMBC（三井住友カード）のメール解析', () => {
@@ -138,13 +218,137 @@ describe('CardUsageExtractor', () => {
       // 日付はデフォルト値（現在時刻のISO文字列）
       expect(result.datetime_of_use).toBeDefined();
     });
+
+    test('日付変換エラー: Date オブジェクトがエラーをスローする場合のテスト', () => {
+      // Date のコンストラクタをモック化して一度だけエラーをスローさせる
+      const originalDate = global.Date;
+      const mockDateConstructor = jest.fn()
+        .mockImplementationOnce(() => {
+          throw new Error('日付変換エラーのテスト');
+        })
+        .mockImplementation((...args: ConstructorParameters<typeof Date>) => {
+          return new originalDate(...args);
+        });
+
+      global.Date = mockDateConstructor as any;
+
+      const emailBody = `
+三井住友カード 様
+
+三井住友カードの利用のお知らせ
+ご利用日時：2025/05/10 15:30 スーパーマーケット 2,468円
+    `;
+
+      // カード情報を抽出
+      const result = extractor.extractFromEmailBody(emailBody, CardCompany.SMBC);
+
+      // 日付変換エラー時のフォールバック処理が実行されたことを検証
+      expect(result.datetime_of_use).toBeDefined();
+
+      // その他のフィールドが正しく抽出されていることを検証
+      expect(result.card_name).toBe('三井住友カード');
+      expect(result.amount).toBe(2468);
+      expect(result.where_to_use).toBe('スーパーマーケット');
+
+      // モックをリストア
+      global.Date = originalDate;
+    });
+
+    test('異常系: 金額のフォーマットが異常な場合のテスト', () => {
+      // 金額のフォーマットが異なるメール本文
+      const emailBody = `
+三井住友カード 様
+
+三井住友カードの利用のお知らせ
+ご利用日時：2025/05/10 15:30 スーパーマーケット 金額不正
+    `;
+
+      // カード情報を抽出
+      const result = extractor.extractFromEmailBody(emailBody, CardCompany.SMBC);
+
+      // 金額がデフォルト値になっていることを検証
+      expect(result.amount).toBe(0);
+      expect(result.card_name).toBe('三井住友カード');
+      expect(result.where_to_use).toBe('不明');
+      expect(result.datetime_of_use).toBeDefined();
+    });
+
+    test('異常系: 日付のフォーマットが異常な場合のテスト', () => {
+      // 日付のフォーマットが異なるメール本文
+      const emailBody = `
+三井住友カード 様
+
+三井住友カードの利用のお知らせ
+ご利用日時：不正な日付形式 スーパーマーケット 2,468円
+    `;
+
+      // カード情報を抽出
+      const result = extractor.extractFromEmailBody(emailBody, CardCompany.SMBC);
+
+      // 日付がデフォルト値になり、他の情報は正しく抽出されていることを検証
+      expect(result.datetime_of_use).toBeDefined();
+      expect(result.card_name).toBe('三井住友カード');
+      expect(result.amount).toBe(2468);
+      expect(result.where_to_use).toBe('スーパーマーケット');
+    });
+
+    test('異常系: カード名が取得できない場合のテスト', () => {
+      // カード名が取得できないメール本文
+      const emailBody = `
+利用のお知らせ
+ご利用日時：2025/05/10 15:30 スーパーマーケット 2,468円
+    `;
+
+      // カード情報を抽出
+      const result = extractor.extractFromEmailBody(emailBody, CardCompany.SMBC);
+
+      // カード名がデフォルト値になっていることを検証
+      expect(result.card_name).toBe('三井住友カード'); // デフォルト値
+      expect(result.amount).toBe(2468);
+      expect(result.where_to_use).toBe('スーパーマーケット');
+      expect(result.datetime_of_use).toBeDefined();
+    });
   });
 
-  test('未対応のカード会社の場合、例外がスローされること', () => {
+  describe('日付変換処理の特殊ケース', () => {
+    test('MUFGの日付文字列のフォーマット変換テスト', () => {
+      // 特殊なフォーマットの日付を含むメール本文
+      const emailBody = `
+カード名称：Ｄ　三菱ＵＦＪ－ＪＣＢデビット
+デビットカード取引確認メール
+
+【ご利用日時(日本時間)】 2025年5月1日 5:3:1
+【ご利用金額】 1,234円
+【ご利用先】 コンビニエンスストア東京
+【カード番号末尾4桁】 1234
+    `;
+
+      // カード情報を抽出
+      const result = extractor.extractFromEmailBody(emailBody, CardCompany.MUFG);
+
+      // 日付変換が正しく処理されることを検証
+      expect(result.datetime_of_use).toBeDefined();
+
+      // 正しい日付に変換されていることを確認
+      const extractedDate = new Date(result.datetime_of_use);
+      expect(extractedDate.getFullYear()).toBe(2025);
+      expect(extractedDate.getMonth()).toBe(4); // 5月は4
+      expect(extractedDate.getDate()).toBe(1);
+    });
+  });
+
+  test('未対応のカード会社の場合、AppError例外がスローされ適切なエラータイプが設定されること', () => {
     const emailBody = 'テスト本文';
 
-    // @ts-ignore - テスト用に非対応の値を渡す
-    expect(() => extractor.extractFromEmailBody(emailBody, 'UNKNOWN'))
-      .toThrow(AppError);
+    try {
+      // @ts-ignore - テスト用に非対応の値を渡す
+      extractor.extractFromEmailBody(emailBody, 'UNKNOWN');
+      fail('例外が発生するはずです');
+    } catch (error) {
+      expect(error).toBeInstanceOf(AppError);
+      const appError = error as AppError;
+      expect(appError.type).toBe('VALIDATION_ERROR');
+      expect(appError.message).toContain('未対応のカード会社');
+    }
   });
 });
