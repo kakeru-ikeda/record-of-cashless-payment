@@ -1,5 +1,6 @@
 import { DiscordNotifier } from '@shared/infrastructure/discord/DiscordNotifier';
 import { AppError, ErrorType } from '@shared/errors/AppError';
+import { ILogger, LogNotifyOptions, ServiceStatus } from '@shared/domain/interfaces/ILogger';
 
 /**
  * 本来は DiscordNotifier をアダプターとして利用するべきだが、
@@ -15,18 +16,6 @@ export enum LogLevel {
   WARN = 2,
   ERROR = 3,
   NONE = 4
-}
-
-/**
- * サービス状態の型定義
- */
-export interface ServiceStatus {
-  name: string;
-  status: 'online' | 'offline' | 'error' | 'warning';
-  message?: string;
-  lastUpdated: Date;
-  errorCount?: number; // エラーの発生回数
-  lastErrorTime?: Date; // 最後にエラーが発生した時間
 }
 
 /**
@@ -52,20 +41,11 @@ export interface LoggerConfig {
   errorStatsTimeWindow: number; // エラー統計の時間枠（ミリ秒）
 }
 
-/**
- * ログ通知オプションのインターフェース
- */
-export interface LogNotifyOptions {
-  notify?: boolean;       // Discord通知を行うかどうか
-  title?: string;         // 通知のタイトル
-  suppressConsole?: boolean; // コンソール出力を抑制するかどうか
-}
-
 
 /**
  * ロガークラス - アプリケーションの標準化されたログ出力を提供
  */
-export class Logger {
+export class Logger implements ILogger {
   private static instance: Logger;
   private config: LoggerConfig;
   private services: Map<string, ServiceStatus> = new Map();
@@ -564,46 +544,6 @@ export class Logger {
       'warning': '警告'
     };
     return statusTexts[status] || '';
-  }
-
-  /**
-   * AppErrorからエラータイプに対応するエラーメッセージを生成
-   */
-  public createAppError(message: string, type: ErrorType, details?: any, originalError?: Error): AppError {
-    return new AppError(message, type, details, originalError);
-  }
-
-  /**
-   * エラー統計のリセット
-   */
-  public resetErrorStats(): void {
-    this.serviceErrorStats.clear();
-    this.errorHistory = [];
-
-    // サービスのエラー統計もクリア
-    for (const [name, service] of this.services.entries()) {
-      if (service.errorCount) {
-        service.errorCount = 0;
-        service.lastErrorTime = undefined;
-        this.services.set(name, service);
-      }
-    }
-  }
-
-  /**
-   * サービスステータスの一覧を取得
-   * モニタリングAPIから利用するためのパブリックメソッド
-   */
-  public getServiceStatuses(): ServiceStatus[] {
-    return Array.from(this.services.values());
-  }
-
-  /**
-   * エラー履歴を取得
-   * モニタリングAPIから利用するためのパブリックメソッド
-   */
-  public getErrorHistory(): ErrorRecord[] {
-    return [...this.errorHistory];
   }
 }
 
