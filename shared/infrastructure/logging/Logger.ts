@@ -1,5 +1,6 @@
 import { DiscordNotifier } from '@shared/infrastructure/discord/DiscordNotifier';
 import { AppError, ErrorType } from '@shared/errors/AppError';
+import { ILogger, LogNotifyOptions, ServiceStatus } from '@shared/domain/interfaces/ILogger';
 
 /**
  * 本来は DiscordNotifier をアダプターとして利用するべきだが、
@@ -15,18 +16,6 @@ export enum LogLevel {
   WARN = 2,
   ERROR = 3,
   NONE = 4
-}
-
-/**
- * サービス状態の型定義
- */
-export interface ServiceStatus {
-  name: string;
-  status: 'online' | 'offline' | 'error' | 'warning';
-  message?: string;
-  lastUpdated: Date;
-  errorCount?: number; // エラーの発生回数
-  lastErrorTime?: Date; // 最後にエラーが発生した時間
 }
 
 /**
@@ -52,20 +41,11 @@ export interface LoggerConfig {
   errorStatsTimeWindow: number; // エラー統計の時間枠（ミリ秒）
 }
 
-/**
- * ログ通知オプションのインターフェース
- */
-export interface LogNotifyOptions {
-  notify?: boolean;       // Discord通知を行うかどうか
-  title?: string;         // 通知のタイトル
-  suppressConsole?: boolean; // コンソール出力を抑制するかどうか
-}
-
 
 /**
  * ロガークラス - アプリケーションの標準化されたログ出力を提供
  */
-export class Logger {
+export class Logger implements ILogger {
   private static instance: Logger;
   private config: LoggerConfig;
   private services: Map<string, ServiceStatus> = new Map();
@@ -74,6 +54,7 @@ export class Logger {
   private suppressionInterval: number = 60000; // 1分間
   private dashboardTimer: NodeJS.Timeout | null = null;
   private dashboardRendered: boolean = false;
+  private errorStatsTimer: NodeJS.Timeout | null = null; // エラー統計用タイマーの参照を保持
 
   // エラー統計と履歴
   private errorHistory: ErrorRecord[] = [];
@@ -105,14 +86,17 @@ export class Logger {
       errorStatsTimeWindow: parseInt(process.env.ERROR_STATS_TIME_WINDOW || '3600000', 10) // デフォルト1時間
     };
 
-    // ステータスダッシュボード定期更新
-    if (this.config.compactMode) {
-      // 既存のタイマーを停止してから新しいタイマーを設定
-      this.setupDashboardRefresh();
-    }
+    // テスト環境ではタイマーを設定しない
+    if (process.env.NODE_ENV !== 'test') {
+      // ステータスダッシュボード定期更新
+      if (this.config.compactMode) {
+        // 既存のタイマーを停止してから新しいタイマーを設定
+        this.setupDashboardRefresh();
+      }
 
-    // エラー統計のクリーンアップタイマー設定
-    setInterval(() => this.cleanupErrorStats(), this.config.errorStatsTimeWindow / 2);
+      // エラー統計のクリーンアップタイマー設定
+      this.errorStatsTimer = setInterval(() => this.cleanupErrorStats(), this.config.errorStatsTimeWindow / 2);
+    }
   }
 
   /**
@@ -185,14 +169,34 @@ export class Logger {
   }
 
   /**
+   * テスト用のロガーインスタンスを取得
+   * タイマーを設定しないインスタンスを返す
+   */
+  public static getTestInstance(): Logger {
+    // テスト環境であることを明示
+    process.env.NODE_ENV = 'test';
+
+    // 既存のインスタンスをリセット
+    if (Logger.instance) {
+      Logger.instance.clearTimers();
+      Logger.instance = undefined;
+    }
+
+    return Logger.getInstance();
+  }
+
+  /**
    * 設定を更新
    */
   public setConfig(config: Partial<LoggerConfig>): void {
     this.config = { ...this.config, ...config };
 
-    // コンパクトモード設定が変更された場合、タイマーを再設定
-    if ('compactMode' in config || 'statusRefreshInterval' in config) {
-      this.setupDashboardRefresh();
+    // テスト環境以外でタイマーを設定
+    if (process.env.NODE_ENV !== 'test') {
+      // コンパクトモード設定が変更された場合、タイマーを再設定
+      if ('compactMode' in config || 'statusRefreshInterval' in config) {
+        this.setupDashboardRefresh();
+      }
     }
   }
 
@@ -534,6 +538,32 @@ export class Logger {
   }
 
   /**
+   * すべてのタイマーをクリアする（テスト用）
+   */
+  public clearTimers(): void {
+    if (this.dashboardTimer) {
+      clearInterval(this.dashboardTimer);
+      this.dashboardTimer = null;
+    }
+
+    if (this.errorStatsTimer) {
+      clearInterval(this.errorStatsTimer);
+      this.errorStatsTimer = null;
+    }
+  }
+
+  /**
+   * インスタンスを破棄する（テスト用）
+   * タイマーをクリアし、シングルトンインスタンスをリセット
+   */
+  public static resetInstance(): void {
+    if (Logger.instance) {
+      Logger.instance.clearTimers();
+      Logger.instance = undefined;
+    }
+  }
+
+  /**
    * 経過時間を人間が読みやすい形式で返す
    */
   private getTimeAgo(date: Date): string {
@@ -565,47 +595,15 @@ export class Logger {
     };
     return statusTexts[status] || '';
   }
-
-  /**
-   * AppErrorからエラータイプに対応するエラーメッセージを生成
-   */
-  public createAppError(message: string, type: ErrorType, details?: any, originalError?: Error): AppError {
-    return new AppError(message, type, details, originalError);
-  }
-
-  /**
-   * エラー統計のリセット
-   */
-  public resetErrorStats(): void {
-    this.serviceErrorStats.clear();
-    this.errorHistory = [];
-
-    // サービスのエラー統計もクリア
-    for (const [name, service] of this.services.entries()) {
-      if (service.errorCount) {
-        service.errorCount = 0;
-        service.lastErrorTime = undefined;
-        this.services.set(name, service);
-      }
-    }
-  }
-
-  /**
-   * サービスステータスの一覧を取得
-   * モニタリングAPIから利用するためのパブリックメソッド
-   */
-  public getServiceStatuses(): ServiceStatus[] {
-    return Array.from(this.services.values());
-  }
-
-  /**
-   * エラー履歴を取得
-   * モニタリングAPIから利用するためのパブリックメソッド
-   */
-  public getErrorHistory(): ErrorRecord[] {
-    return [...this.errorHistory];
-  }
 }
 
-// 使いやすいようにエクスポート
-export const logger = Logger.getInstance();
+// グローバルロガーインスタンスをエクスポート (テスト環境では遅延初期化する)
+export const logger = process.env.NODE_ENV === 'test'
+  ? new Proxy({} as Logger, {
+    get(target, prop) {
+      // テストの場合は遅延初期化して、必要なときだけインスタンスを作成
+      const instance = Logger.getInstance();
+      return instance[prop as keyof Logger];
+    }
+  })
+  : Logger.getInstance();
