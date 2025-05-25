@@ -54,6 +54,7 @@ export class Logger implements ILogger {
   private suppressionInterval: number = 60000; // 1分間
   private dashboardTimer: NodeJS.Timeout | null = null;
   private dashboardRendered: boolean = false;
+  private errorStatsTimer: NodeJS.Timeout | null = null; // エラー統計用タイマーの参照を保持
 
   // エラー統計と履歴
   private errorHistory: ErrorRecord[] = [];
@@ -85,14 +86,17 @@ export class Logger implements ILogger {
       errorStatsTimeWindow: parseInt(process.env.ERROR_STATS_TIME_WINDOW || '3600000', 10) // デフォルト1時間
     };
 
-    // ステータスダッシュボード定期更新
-    if (this.config.compactMode) {
-      // 既存のタイマーを停止してから新しいタイマーを設定
-      this.setupDashboardRefresh();
-    }
+    // テスト環境ではタイマーを設定しない
+    if (process.env.NODE_ENV !== 'test') {
+      // ステータスダッシュボード定期更新
+      if (this.config.compactMode) {
+        // 既存のタイマーを停止してから新しいタイマーを設定
+        this.setupDashboardRefresh();
+      }
 
-    // エラー統計のクリーンアップタイマー設定
-    setInterval(() => this.cleanupErrorStats(), this.config.errorStatsTimeWindow / 2);
+      // エラー統計のクリーンアップタイマー設定
+      this.errorStatsTimer = setInterval(() => this.cleanupErrorStats(), this.config.errorStatsTimeWindow / 2);
+    }
   }
 
   /**
@@ -165,14 +169,34 @@ export class Logger implements ILogger {
   }
 
   /**
+   * テスト用のロガーインスタンスを取得
+   * タイマーを設定しないインスタンスを返す
+   */
+  public static getTestInstance(): Logger {
+    // テスト環境であることを明示
+    process.env.NODE_ENV = 'test';
+
+    // 既存のインスタンスをリセット
+    if (Logger.instance) {
+      Logger.instance.clearTimers();
+      Logger.instance = undefined;
+    }
+
+    return Logger.getInstance();
+  }
+
+  /**
    * 設定を更新
    */
   public setConfig(config: Partial<LoggerConfig>): void {
     this.config = { ...this.config, ...config };
 
-    // コンパクトモード設定が変更された場合、タイマーを再設定
-    if ('compactMode' in config || 'statusRefreshInterval' in config) {
-      this.setupDashboardRefresh();
+    // テスト環境以外でタイマーを設定
+    if (process.env.NODE_ENV !== 'test') {
+      // コンパクトモード設定が変更された場合、タイマーを再設定
+      if ('compactMode' in config || 'statusRefreshInterval' in config) {
+        this.setupDashboardRefresh();
+      }
     }
   }
 
@@ -514,6 +538,32 @@ export class Logger implements ILogger {
   }
 
   /**
+   * すべてのタイマーをクリアする（テスト用）
+   */
+  public clearTimers(): void {
+    if (this.dashboardTimer) {
+      clearInterval(this.dashboardTimer);
+      this.dashboardTimer = null;
+    }
+
+    if (this.errorStatsTimer) {
+      clearInterval(this.errorStatsTimer);
+      this.errorStatsTimer = null;
+    }
+  }
+
+  /**
+   * インスタンスを破棄する（テスト用）
+   * タイマーをクリアし、シングルトンインスタンスをリセット
+   */
+  public static resetInstance(): void {
+    if (Logger.instance) {
+      Logger.instance.clearTimers();
+      Logger.instance = undefined;
+    }
+  }
+
+  /**
    * 経過時間を人間が読みやすい形式で返す
    */
   private getTimeAgo(date: Date): string {
@@ -547,5 +597,13 @@ export class Logger implements ILogger {
   }
 }
 
-// 使いやすいようにエクスポート
-export const logger = Logger.getInstance();
+// グローバルロガーインスタンスをエクスポート (テスト環境では遅延初期化する)
+export const logger = process.env.NODE_ENV === 'test'
+  ? new Proxy({} as Logger, {
+    get(target, prop) {
+      // テストの場合は遅延初期化して、必要なときだけインスタンスを作成
+      const instance = Logger.getInstance();
+      return instance[prop as keyof Logger];
+    }
+  })
+  : Logger.getInstance();
