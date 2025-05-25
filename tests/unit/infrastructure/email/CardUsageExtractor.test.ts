@@ -172,6 +172,27 @@ describe('CardUsageExtractor', () => {
       expect(result.amount).toBe(1234);
       expect(result.datetime_of_use).toBeDefined();
     });
+
+    test('異常系: カード名が取得できない場合のテスト', () => {
+      // カード名情報が欠けているメール本文
+      const emailBody = `
+デビットカード取引確認メール
+
+【ご利用日時(日本時間)】 2025年5月10日 15:30:00
+【ご利用金額】 1,234円
+【ご利用先】 コンビニエンスストア東京
+【カード番号末尾4桁】 1234
+      `;
+
+      // カード情報を抽出
+      const result = extractor.extractFromEmailBody(emailBody, CardCompany.MUFG);
+
+      // カード名がデフォルト値（空文字）になっていることを検証
+      expect(result.card_name).toBe('');
+      expect(result.amount).toBe(1234);
+      expect(result.where_to_use).toBe('コンビニエンスストア東京');
+      expect(result.datetime_of_use).toBeDefined();
+    });
   });
 
   describe('SMBC（三井住友カード）のメール解析', () => {
@@ -304,6 +325,93 @@ describe('CardUsageExtractor', () => {
 
       // カード名がデフォルト値になっていることを検証
       expect(result.card_name).toBe('三井住友カード'); // デフォルト値
+      expect(result.amount).toBe(2468);
+      expect(result.where_to_use).toBe('スーパーマーケット');
+      expect(result.datetime_of_use).toBeDefined();
+    });
+
+    test('異常系: 日付のみ存在し、金額と場所の情報がないケース', () => {
+      // 日付のみ存在するメール本文
+      const emailBody = `
+三井住友カード 様
+
+三井住友カードの利用のお知らせ
+ご利用日時：2025/05/10 15:30
+      `;
+
+      // カード情報を抽出
+      const result = extractor.extractFromEmailBody(emailBody, CardCompany.SMBC);
+
+      // 日付は正しく抽出され、他の情報はデフォルト値になることを検証
+      expect(result.datetime_of_use).toBeDefined();
+      const extractedDate = new Date(result.datetime_of_use);
+      expect(extractedDate.getFullYear()).toBe(2025);
+      expect(extractedDate.getMonth()).toBe(4); // 5月は4
+      expect(extractedDate.getDate()).toBe(10);
+
+      expect(result.card_name).toBe('三井住友カード');
+      expect(result.amount).toBe(0);
+      expect(result.where_to_use).toBe('不明');
+    });
+
+    test('異常系: 日付が空の場合、現在時刻が使用されること', () => {
+      // 日付が空のメール本文
+      const emailBody = `
+三井住友カード 様
+
+三井住友カードの利用のお知らせ
+ご利用日時： スーパーマーケット 2,468円
+      `;
+
+      // カード情報を抽出
+      const result = extractor.extractFromEmailBody(emailBody, CardCompany.SMBC);
+
+      // 日付が現在時刻になっていることを検証
+      expect(result.datetime_of_use).toBeDefined();
+      const extractedDate = new Date(result.datetime_of_use);
+      const now = new Date();
+      expect(extractedDate.getFullYear()).toBe(now.getFullYear());
+      expect(extractedDate.getMonth()).toBe(now.getMonth());
+
+      // 他の情報は正しく抽出されていることを確認
+      expect(result.card_name).toBe('三井住友カード');
+      expect(result.amount).toBe(2468);
+      expect(result.where_to_use).toBe('スーパーマーケット');
+    });
+
+    test('異常系: 利用場所情報のみがない場合のテスト', () => {
+      // 利用場所情報が欠けているメール本文
+      const emailBody = `
+三井住友カード 様
+
+三井住友カードの利用のお知らせ
+ご利用日時：2025/05/10 15:30 2,468円
+      `;
+
+      // カード情報を抽出
+      const result = extractor.extractFromEmailBody(emailBody, CardCompany.SMBC);
+
+      // 利用場所がデフォルト値（不明）になり、他の情報は正しく抽出されていることを検証
+      expect(result.where_to_use).toBe('不明');
+      expect(result.card_name).toBe('三井住友カード');
+      expect(result.amount).toBe(2468);
+      expect(result.datetime_of_use).toBeDefined();
+    });
+
+    test('異常系: カード名が様で終わらない場合のテスト', () => {
+      // カード名の形式が異なるメール本文
+      const emailBody = `
+三井住友カード
+
+三井住友カードの利用のお知らせ
+ご利用日時：2025/05/10 15:30 スーパーマーケット 2,468円
+      `;
+
+      // カード情報を抽出
+      const result = extractor.extractFromEmailBody(emailBody, CardCompany.SMBC);
+
+      // カード名はデフォルト値になり、他の情報は正しく抽出されていることを検証
+      expect(result.card_name).toBe('三井住友カード');
       expect(result.amount).toBe(2468);
       expect(result.where_to_use).toBe('スーパーマーケット');
       expect(result.datetime_of_use).toBeDefined();
