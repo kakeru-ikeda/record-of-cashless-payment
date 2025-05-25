@@ -4,27 +4,35 @@
  */
 export class DateUtil {
     /**
+     * 月と週番号(term)の基本情報だけを取得する
+     * 無限再帰防止用の内部メソッド
+     * @param date 対象の日付
+     * @returns 月と週番号の情報
+     * @private
+     */
+    private static getBasicTermInfo(date: Date): { month: number; term: number } {
+        const month = date.getMonth() + 1;
+
+        // 週番号の計算
+        // 月の最初の日を取得
+        const firstDayOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+        // 月初の曜日 (0: 日曜, 1: 月曜, ...)
+        const startOfMonthDay = firstDayOfMonth.getDay();
+
+        // 現在の日の月内週番号を計算
+        const dayPosition = date.getDate() + startOfMonthDay;
+        const weekNumber = Math.ceil(dayPosition / 7);
+
+        return { month, term: weekNumber };
+    }
+
+    /**
      * 日付から週内情報を含む詳細情報を取得
      * @param date 対象の日付
      * @returns 日付の詳細情報
      */
     static getDateInfo(date: Date) {
-        const baseInfo = this._getBaseDateInfo(date);
-
-        // 最終日の判定情報を追加
-        return {
-            ...baseInfo,
-            isLastDayOfTerm: this.isLastDayOfTerm(date),
-            isLastDayOfMonth: this.isLastDayOfMonth(date)
-        };
-    }
-
-    /**
-     * 基本的な日付情報を取得（内部メソッド）
-     * @param date 対象の日付
-     * @returns 基本的な日付情報
-     */
-    static _getBaseDateInfo(date: Date) {
+        // 基本的な日付情報
         const year = date.getFullYear();
         const month = date.getMonth() + 1;
         const day = date.getDate();
@@ -84,7 +92,8 @@ export class DateUtil {
             weekEndDate = lastDayOfMonthDate;
         }
 
-        return {
+        // 基本情報にまとめる
+        const baseInfo = {
             date,
             year,
             month,
@@ -94,6 +103,13 @@ export class DateUtil {
             weekStartDate,
             weekEndDate,
             timestamp,
+        };
+
+        // 最終日の判定情報を追加して返す
+        return {
+            ...baseInfo,
+            isLastDayOfTerm: this.isLastDayOfTerm(date),
+            isLastDayOfMonth: this.isLastDayOfMonth(date)
         };
     }
 
@@ -235,9 +251,9 @@ export class DateUtil {
         const nextDay = new Date(date);
         nextDay.setDate(date.getDate() + 1);
 
-        // 無限再帰を防ぐため、getDateInfoではなく_getBaseDateInfoを使用
-        const currentInfo = this._getBaseDateInfo(date);
-        const nextInfo = this._getBaseDateInfo(nextDay);
+        // 無限再帰を防ぐため、getBasicTermInfoを使用
+        const currentInfo = this.getBasicTermInfo(date);
+        const nextInfo = this.getBasicTermInfo(nextDay);
 
         // 次の日のtermが異なる場合、または月が変わる場合は週の最終日
         return currentInfo.term !== nextInfo.term || currentInfo.month !== nextInfo.month;
