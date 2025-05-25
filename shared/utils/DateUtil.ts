@@ -128,16 +128,6 @@ export class DateUtil {
     }
 
     /**
-     * 現在の日時から日付情報を取得（タイムゾーン考慮）
-     * @returns 現在日付の詳細情報
-     */
-    static getCurrentDateInfo() {
-        // 日本時間の日付を取得
-        const now = this.getJSTDate();
-        return this.getDateInfo(now);
-    }
-
-    /**
      * 現在の日付を日本時間（JST）で取得
      * @returns 日本時間の日付オブジェクト
      */
