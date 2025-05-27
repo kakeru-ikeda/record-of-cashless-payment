@@ -1,4 +1,4 @@
-import { INotifyCardUsageUseCase } from '@domain/usecases/notification/INotifyCardUsageUseCase';
+import { INotifyCardUsageUseCase } from '@domain/interfaces/usecases/notification/INotifyCardUsageUseCase';
 import { CardUsageNotificationDTO } from '@shared/domain/dto/CardUsageNotificationDTO';
 import { logger } from '@shared/infrastructure/logging/Logger';
 import { ErrorHandler } from '@shared/infrastructure/errors/ErrorHandler';

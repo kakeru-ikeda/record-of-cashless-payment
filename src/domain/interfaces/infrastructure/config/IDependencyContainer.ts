@@ -7,8 +7,8 @@ import { ImapEmailService } from "@infrastructure/email/ImapEmailService";
 import { FirestoreCardUsageRepository } from "@infrastructure/firebase/FirestoreCardUsageRepository";
 import { DiscordNotifier } from "@shared/infrastructure/discord/DiscordNotifier";
 import { ProcessEmailUseCase } from "@usecase/email/ProcessEmailUseCase";
-import { IProcessCardCompanyEmailUseCase } from "@domain/usecases/email/IProcessCardCompanyEmailUseCase";
-import { INotifyCardUsageUseCase } from "@domain/usecases/notification/INotifyCardUsageUseCase";
+import { IProcessCardCompanyEmailUseCase } from "@domain/interfaces/usecases/email/IProcessCardCompanyEmailUseCase";
+import { INotifyCardUsageUseCase } from "@domain/interfaces/usecases/notification/INotifyCardUsageUseCase";
 
 export interface IDependencyContainer {
     /**

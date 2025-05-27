@@ -1,6 +1,6 @@
 import { CardCompany } from '@domain/enums/CardCompany';
 import { ParsedEmail } from '@infrastructure/email/EmailParser';
-import { IProcessCardCompanyEmailUseCase } from '@domain/usecases/email/IProcessCardCompanyEmailUseCase';
+import { IProcessCardCompanyEmailUseCase } from '@domain/interfaces/usecases/email/IProcessCardCompanyEmailUseCase';
 import { ProcessEmailUseCase } from '@usecase/email/ProcessEmailUseCase';
 import { logger } from '@shared/infrastructure/logging/Logger';
 import { ErrorHandler } from '@shared/infrastructure/errors/ErrorHandler';
