@@ -5,9 +5,9 @@ import { ImapClientAdapter, ImapConnectionConfig } from '@infrastructure/email/I
 import { EmailParser, ParsedEmail } from '@infrastructure/email/EmailParser';
 import { CardUsageExtractor } from '@infrastructure/email/CardUsageExtractor';
 import { IEmailService } from '@domain/interfaces/email/IEmailService';
-import { CardUsageNotification } from '@shared/domain/entities/CardUsageNotification';
-import { CardUsageMapper } from '@shared/domain/mappers/CardUsageMapper';
 import { CardCompany } from '@domain/enums/CardCompany';
+import { CardUsage } from '@domain/entities/CardUsage';
+import { ErrorHandler } from '@shared/infrastructure/errors/ErrorHandler';
 
 /**
  * IMAP接続とメール処理のサービス
@@ -229,30 +229,13 @@ export class ImapEmailService implements IEmailService {
    * @param cardCompany カード会社の種類
    * @returns 抽出されたカード利用情報
    */
-  async parseCardUsageFromEmail(emailContent: string, cardCompany: CardCompany = CardCompany.MUFG): Promise<CardUsageNotification> {
-    try {
-      // カード利用情報の抽出
-      const cardUsage = this.cardUsageExtractor.extractFromEmailBody(emailContent, cardCompany);
-
-      // マッパーを使ってドメインモデルから通知用DTOに変換
-      return CardUsageMapper.toNotification(cardUsage);
-    } catch (error) {
-      const appError = new AppError(
-        'カード利用情報の抽出に失敗しました',
-        ErrorType.EMAIL,
-        { cardCompany },
-        error instanceof Error ? error : new Error(String(error))
-      );
-      logger.error(appError, this.serviceContext);
-
-      // エラー時は空のオブジェクトを返す
-      return {
-        card_name: '',
-        datetime_of_use: new Date().toISOString(),
-        amount: 0,
-        where_to_use: ''
-      };
-    }
+  @ErrorHandler.errorDecorator('ImapEmailService', {
+    defaultMessage: 'メールからカード利用情報の抽出に失敗しました',
+    rethrow: true
+  })
+  async parseCardUsageFromEmail(emailContent: string, cardCompany: CardCompany = CardCompany.MUFG): Promise<CardUsage> {
+    // カード利用情報の抽出
+    return this.cardUsageExtractor.extractFromEmailBody(emailContent, cardCompany);
   }
 
   /**
