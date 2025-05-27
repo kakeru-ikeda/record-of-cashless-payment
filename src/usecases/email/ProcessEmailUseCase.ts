@@ -1,5 +1,5 @@
 import { CardUsageNotificationDTO } from '@shared/domain/dto/CardUsageNotificationDTO';
-import { ICardUsageRepository } from '@domain/repositories/ICardUsageRepository';
+import { ICardUsageRepository } from '@domain/interfaces/repositories/ICardUsageRepository';
 import { IProcessEmailUseCase } from '@domain/usecases/email/IProcessEmailUseCase';
 import { ImapEmailService } from '@infrastructure/email/ImapEmailService';
 import { logger } from '@shared/infrastructure/logging/Logger';
