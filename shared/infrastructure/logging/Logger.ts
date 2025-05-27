@@ -1,6 +1,6 @@
 
 import { AppError, ErrorType } from '@shared/errors/AppError';
-import { ILogger, LogNotifyOptions, ServiceStatus } from '@shared/domain/interfaces/ILogger';
+import { ILogger, LogNotifyOptions, ServiceStatus } from '@shared/domain/interfaces/logging/ILogger';
 import { IDiscordNotifier } from '@shared/domain/interfaces/discord/IDiscordNotifier';
 
 /**
