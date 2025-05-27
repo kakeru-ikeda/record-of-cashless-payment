@@ -9,7 +9,7 @@ import { Environment } from '@shared/infrastructure/config/Environment';
 import { logger } from '@shared/infrastructure/logging/Logger';
 import { IProcessCardCompanyEmailUseCase } from '@domain/usecases/email/IProcessCardCompanyEmailUseCase';
 import { INotifyCardUsageUseCase } from '@domain/usecases/notification/INotifyCardUsageUseCase';
-import { IDependencyContainer } from '@domain/interfaces/config/IDependencyContainer';
+import { IDependencyContainer } from '@domain/interfaces/infrastructure/config/IDependencyContainer';
 
 /**
  * アプリケーションの依存性を管理するコンテナクラス

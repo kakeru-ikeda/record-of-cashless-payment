@@ -4,7 +4,7 @@ import { ServiceRoutes } from '@presentation/api/routes/ServiceRoutes';
 import { ServiceController } from '@presentation/api/controllers/ServiceController';
 import { logger } from '@shared/infrastructure/logging/Logger';
 import { EmailController } from '@presentation/email/controllers/EmailController';
-import { IHttpAppConfig } from '@domain/interfaces/config/IHttpAppConfig';
+import { IHttpAppConfig } from '@domain/interfaces/infrastructure/config/IHttpAppConfig';
 
 /**
  * アプリケーション設定を管理するクラス

@@ -3,7 +3,7 @@ import { logger } from '@shared/infrastructure/logging/Logger';
 import { AppError, ErrorType } from '@shared/errors/AppError';
 import { ErrorHandler } from '@shared/infrastructure/errors/ErrorHandler';
 import { EventEmitter } from 'events';
-import { IEmailClient, IImapConnectionConfig } from '@domain/interfaces/email/IEmailClient';
+import { IEmailClient, IImapConnectionConfig } from '@domain/interfaces/infrastructure/email/IEmailClient';
 
 /**
  * IMAP接続管理のための型定義
