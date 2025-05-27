@@ -5,11 +5,9 @@ import { ImapClientAdapter, ImapConnectionConfig } from '@infrastructure/email/I
 import { EmailParser, ParsedEmail } from '@infrastructure/email/EmailParser';
 import { CardUsageExtractor } from '@infrastructure/email/CardUsageExtractor';
 import { IEmailService } from '@domain/interfaces/email/IEmailService';
-import { CardUsage } from '@domain/entities/CardUsage';
 import { CardUsageNotification } from '@shared/domain/entities/CardUsageNotification';
 import { CardUsageMapper } from '@shared/domain/mappers/CardUsageMapper';
-import { Timestamp } from 'firebase-admin/firestore';
-import { CardCompany, CardUsageInfo } from '@domain/entities/card/CardTypes';
+import { CardCompany } from '@domain/entities/card/CardTypes';
 
 /**
  * IMAP接続とメール処理のサービス
