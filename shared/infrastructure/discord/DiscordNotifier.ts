@@ -25,7 +25,7 @@ enum NotificationType {
 /**
  * Discord Webhookを使用した通知のオプションインターフェース
  */
-interface DiscordWebhookNotifierOptions {
+interface DiscordNotifierOptions {
     usageWebhookUrl: string
     alertWeeklyWebhookUrl?: string
     alertMonthlyWebhookUrl?: string
@@ -60,7 +60,7 @@ export class DiscordNotifier implements IDiscordNotifier {
      * @param loggingWebhookUrl エラーログ通知用のDiscord WebhookのURL
      */
     constructor(
-        options: DiscordWebhookNotifierOptions
+        options: DiscordNotifierOptions
     ) {
         this.usageWebhookUrl = options.usageWebhookUrl;
         this.alertWeeklyWebhookUrl = options.alertWeeklyWebhookUrl || '';

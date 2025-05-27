@@ -48,7 +48,7 @@ export interface IDependencyContainer {
     getCardUsageRepository(): FirestoreCardUsageRepository;
 
     /**
-     * DiscordWebhookNotifierを取得する
+     * DiscordNotifierを取得する
      */
     getDiscordNotifier(): DiscordNotifier;
 }

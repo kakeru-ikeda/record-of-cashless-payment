@@ -116,7 +116,7 @@ export class DependencyContainer implements IDependencyContainer {
   }
 
   /**
-   * DiscordWebhookNotifierを取得
+   * DiscordNotifierを取得
    */
   public getDiscordNotifier(): DiscordNotifier {
     return this.discordNotifier;
