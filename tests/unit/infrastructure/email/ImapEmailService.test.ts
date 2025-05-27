@@ -2,8 +2,8 @@ import { ImapEmailService } from '../../../../src/infrastructure/email/ImapEmail
 import { ImapClientAdapter } from '../../../../src/infrastructure/email/ImapClientAdapter';
 import { EmailParser, ParsedEmail } from '../../../../src/infrastructure/email/EmailParser';
 import { CardUsageExtractor } from '../../../../src/infrastructure/email/CardUsageExtractor';
-import { CardUsageNotification } from '../../../../shared/domain/entities/CardUsageNotification';
-import { CardCompany } from '../../../../src/domain/entities/card/CardTypes';
+import { CardUsageNotificationDTO } from '../../../../shared/domain/dto/CardUsageNotificationDTO';
+import { CardCompany } from '../../../../src/domain/enums/CardCompany';
 
 // 依存コンポーネントをモック
 jest.mock('../../../../src/infrastructure/email/ImapClientAdapter');
@@ -175,8 +175,8 @@ describe('ImapEmailService', () => {
         CardCompany.MUFG // デフォルト値
       );
 
-      // 結果がCardUsageNotificationの形式に変換されていることを確認
-      const expected: CardUsageNotification = {
+      // 結果がCardUsageNotificationDTOの形式に変換されていることを確認
+      const expected: CardUsageNotificationDTO = {
         card_name: sampleCardUsageInfo.card_name,
         datetime_of_use: sampleCardUsageInfo.datetime_of_use,
         amount: sampleCardUsageInfo.amount,
@@ -196,38 +196,19 @@ describe('ImapEmailService', () => {
       );
     });
 
-    test('異常系: 抽出エラー時はデフォルト値のオブジェクトを返すこと', async () => {
+    test('異常系: 抽出エラー時はAppErrorがスローされること', async () => {
       // 抽出に失敗するようにモック
       mockCardUsageExtractor.extractFromEmailBody.mockImplementationOnce(() => {
         throw new Error('抽出エラー');
       });
 
-      // カード情報を抽出
-      const result = await emailService.parseCardUsageFromEmail(sampleEmailContent);
-
-      // デフォルト値のオブジェクトが返されることを確認
-      expect(result).toEqual({
-        card_name: '',
-        datetime_of_use: expect.any(String),
-        amount: 0,
-        where_to_use: ''
-      });
-    });
-  });
-
-  describe('executeTest', () => {
-    test('テスト実行メソッドが正しく動作すること', async () => {
-      // テスト実行
-      const result = await emailService.executeTest(sampleEmailContent, CardCompany.MUFG);
-
+      // 抽出実行（例外をキャッチ）
+      await expect(emailService.parseCardUsageFromEmail(sampleEmailContent)).rejects.toThrow('メールからカード利用情報の抽出に失敗しました');
       // CardUsageExtractorが呼ばれていることを確認
       expect(mockCardUsageExtractor.extractFromEmailBody).toHaveBeenCalledWith(
         sampleEmailContent,
-        CardCompany.MUFG
+        CardCompany.MUFG // デフォルト値
       );
-
-      // 結果を検証
-      expect(result).toEqual(sampleCardUsageInfo);
     });
   });
 

@@ -1,8 +1,8 @@
 import { ProcessCardCompanyEmailUseCase } from '../../../../src/usecases/email/ProcessCardCompanyEmailUseCase';
 import { ProcessEmailUseCase } from '../../../../src/usecases/email/ProcessEmailUseCase';
 import { ParsedEmail } from '../../../../src/infrastructure/email/EmailParser';
-import { CardUsageNotification } from '../../../../shared/domain/entities/CardUsageNotification';
-import { CardCompany } from '../../../../src/domain/entities/card/CardTypes';
+import { CardUsageNotificationDTO } from '../../../../shared/domain/dto/CardUsageNotificationDTO';
+import { CardCompany } from '../../../../src/domain/enums/CardCompany';
 
 // Loggerをモック化
 jest.mock('../../../../shared/infrastructure/logging/Logger', () => ({
@@ -77,8 +77,8 @@ describe('ProcessCardCompanyEmailUseCase', () => {
       datetime_of_use: '2025-05-10T06:30:00.000Z',
       amount: 1500,
       where_to_use: 'テスト利用先'
-    } as CardUsageNotification,
-    savedPath: 'users/2025/5/10/card-usage-123'
+    } as CardUsageNotificationDTO,
+    savedPath: 'details/2025/05/term2/10/1715350200000'
   };
 
   beforeEach(() => {

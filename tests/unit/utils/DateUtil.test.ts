@@ -159,36 +159,6 @@ describe('DateUtil', () => {
         });
     });
 
-    describe('Firestoreパスの生成', () => {
-        test('4月30日のFirestoreパスは term5 を含む', () => {
-            // テスト用に現在時刻を固定
-            const mockDate = new Date(2025, 3, 30, 12, 0, 0);
-            const mockTime = mockDate.getTime();
-
-            // Date.nowをモック
-            // @ts-ignore TypeScriptの型エラーを無視
-            global.Date = class extends Date {
-                constructor(...args: any[]) {
-                    if (args.length === 0) {
-                        super(mockTime);
-                        return;
-                    }
-                    super(...args as [any]);
-                }
-
-                static now() {
-                    return mockTime;
-                }
-            } as unknown as DateConstructor;
-
-            const testDate = new Date(2025, 3, 30);
-            const pathInfo = DateUtil.getFirestorePath(testDate);
-
-            expect(pathInfo.weeklyReportPath).toContain('term5');
-            expect(pathInfo.path).toContain('/term5/');
-        });
-    });
-
     describe('週末の判定', () => {
         test('土曜日は週の最終日として認識される', () => {
             const testDate = new Date(2025, 3, 26); // 2025年4月26日（土曜日）

@@ -3,7 +3,7 @@ import { HttpAppConfig } from '../../../../src/infrastructure/config/HttpAppConf
 import { DependencyContainer } from '../../../../src/infrastructure/config/DependencyContainer';
 import { EmailController } from '../../../../src/presentation/email/controllers/EmailController';
 import { TestRunner } from '../../../../src/infrastructure/test/TestRunner';
-import { CardCompany } from '../../../../src/domain/entities/card/CardTypes';
+import { CardCompany } from '../../../../src/domain/enums/CardCompany';
 import { ProcessEmailUseCase } from '../../../../src/usecases/email/ProcessEmailUseCase';
 import { Server } from 'http';
 

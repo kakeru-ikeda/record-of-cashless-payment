@@ -1,7 +1,7 @@
 import { DependencyContainer } from '../../../../src/infrastructure/config/DependencyContainer';
 import { ImapEmailService } from '../../../../src/infrastructure/email/ImapEmailService';
 import { FirestoreCardUsageRepository } from '../../../../src/infrastructure/firebase/FirestoreCardUsageRepository';
-import { DiscordWebhookNotifier } from '../../../../shared/infrastructure/discord/DiscordNotifier';
+import { DiscordNotifier } from '../../../../shared/infrastructure/discord/DiscordNotifier';
 import { ProcessEmailUseCase } from '../../../../src/usecases/email/ProcessEmailUseCase';
 import { EmailController } from '../../../../src/presentation/email/controllers/EmailController';
 import { ProcessCardCompanyEmailUseCase } from '../../../../src/usecases/email/ProcessCardCompanyEmailUseCase';
@@ -58,7 +58,7 @@ describe('DependencyContainer', () => {
   let dependencyContainer: DependencyContainer;
   let mockImapEmailService: jest.Mocked<ImapEmailService>;
   let mockFirestoreCardUsageRepository: jest.Mocked<FirestoreCardUsageRepository>;
-  let mockDiscordNotifier: jest.Mocked<DiscordWebhookNotifier>;
+  let mockDiscordNotifier: jest.Mocked<DiscordNotifier>;
   let mockProcessEmailUseCase: jest.Mocked<ProcessEmailUseCase>;
   let mockEmailController: jest.Mocked<EmailController>;
   let mockProcessCardCompanyEmailUseCase: jest.Mocked<ProcessCardCompanyEmailUseCase>;
@@ -81,10 +81,10 @@ describe('DependencyContainer', () => {
     mockFirestoreCardUsageRepository = new FirestoreCardUsageRepository() as jest.Mocked<FirestoreCardUsageRepository>;
     mockFirestoreCardUsageRepository.initialize = jest.fn().mockResolvedValue(undefined);
 
-    mockDiscordNotifier = new DiscordWebhookNotifier({
+    mockDiscordNotifier = new DiscordNotifier({
       usageWebhookUrl: mockEnvironment.DISCORD_WEBHOOK_URL,
       loggingWebhookUrl: mockEnvironment.DISCORD_LOGGING_WEBHOOK_URL
-    }) as jest.Mocked<DiscordWebhookNotifier>;
+    }) as jest.Mocked<DiscordNotifier>;
     mockProcessEmailUseCase = new ProcessEmailUseCase({} as any, {} as any) as jest.Mocked<ProcessEmailUseCase>;
     mockEmailController = new EmailController({} as any, {} as any) as jest.Mocked<EmailController>;
     mockProcessCardCompanyEmailUseCase = new ProcessCardCompanyEmailUseCase({} as any) as jest.Mocked<ProcessCardCompanyEmailUseCase>;
@@ -97,7 +97,7 @@ describe('DependencyContainer', () => {
     (FirestoreCardUsageRepository as jest.MockedClass<typeof FirestoreCardUsageRepository>).mockImplementation(
       () => mockFirestoreCardUsageRepository
     );
-    (DiscordWebhookNotifier as jest.MockedClass<typeof DiscordWebhookNotifier>).mockImplementation(
+    (DiscordNotifier as jest.MockedClass<typeof DiscordNotifier>).mockImplementation(
       () => mockDiscordNotifier
     );
     (ProcessEmailUseCase as jest.MockedClass<typeof ProcessEmailUseCase>).mockImplementation(
@@ -133,8 +133,8 @@ describe('DependencyContainer', () => {
       expect(FirestoreCardUsageRepository).toHaveBeenCalled();
       expect(mockFirestoreCardUsageRepository.initialize).toHaveBeenCalled();
 
-      // DiscordWebhookNotifierが正しい引数で初期化されることを確認
-      expect(DiscordWebhookNotifier).toHaveBeenCalledWith(
+      // DiscordNotifierが正しい引数で初期化されることを確認
+      expect(DiscordNotifier).toHaveBeenCalledWith(
         expect.objectContaining({
           usageWebhookUrl: mockEnvironment.DISCORD_WEBHOOK_URL,
           loggingWebhookUrl: mockEnvironment.DISCORD_LOGGING_WEBHOOK_URL
@@ -174,7 +174,7 @@ describe('DependencyContainer', () => {
       mockEnvironment.DISCORD_WEBHOOK_URL = '';
 
       // モックを再設定して動作を変更
-      (DiscordWebhookNotifier as jest.MockedClass<typeof DiscordWebhookNotifier>).mockImplementationOnce(() => {
+      (DiscordNotifier as jest.MockedClass<typeof DiscordNotifier>).mockImplementationOnce(() => {
         // Discord通知が無効になったことを示すためのモック
         const mockedNotifier = {
           ...mockDiscordNotifier,

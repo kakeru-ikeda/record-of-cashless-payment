@@ -3,7 +3,7 @@ import { ImapEmailService } from '../../../../../src/infrastructure/email/ImapEm
 import { ProcessCardCompanyEmailUseCase } from '../../../../../src/usecases/email/ProcessCardCompanyEmailUseCase';
 import { NotifyCardUsageUseCase } from '../../../../../src/usecases/notification/NotifyCardUsageUseCase';
 import { ParsedEmail } from '../../../../../src/infrastructure/email/EmailParser';
-import { CardCompany } from '../../../../../src/domain/entities/card/CardTypes';
+import { CardCompany } from '../../../../../src/domain/enums/CardCompany';
 
 // 依存コンポーネントをモック
 jest.mock('../../../../../src/infrastructure/email/ImapEmailService');
