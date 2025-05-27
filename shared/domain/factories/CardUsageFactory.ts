@@ -30,7 +30,7 @@ export class CardUsageFactory {
             where_to_use,
             memo,
             is_active,
-            created_at: Timestamp.now()
+            created_at: Timestamp.fromDate(new Date())
         };
     }
 
