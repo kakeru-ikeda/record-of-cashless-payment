@@ -7,11 +7,12 @@ import {
 } from '@shared/domain/entities/ReportNotifications';
 import { logger } from '@shared/infrastructure/logging/Logger';
 import { AppError, ErrorType } from '@shared/errors/AppError';
+import { IDiscordNotifier } from '@shared/domain/interfaces/discord/IDiscordNotifier';
 
 /**
  * 通知の種類を表す列挙型
  */
-export enum NotificationType {
+enum NotificationType {
     USAGE = 'usage',                  // カード利用通知
     ALERT_WEEKLY = 'alert_weekly',    // 週次アラート通知
     ALERT_MONTHLY = 'alert_monthly',  // 月次アラート通知
@@ -19,56 +20,6 @@ export enum NotificationType {
     REPORT_WEEKLY = 'report_weekly',  // 週次レポート通知
     REPORT_MONTHLY = 'report_monthly', // 月次レポート通知
     ERROR_LOG = 'error_log'           // エラーログ通知
-}
-
-/**
- * Discordの通知インターフェース
- */
-export interface DiscordNotifier {
-    /**
-     * カード利用情報を通知する
-     * @param data カード利用情報
-     * @returns 通知の成功または失敗を表すブール値
-     */
-    notify(data: CardUsageNotificationDTO): Promise<boolean>;
-
-    /**
-     * ウィークリーレポートを通知する
-     * @param data ウィークリーレポート情報
-     * @returns 通知の成功または失敗を表すブール値
-     */
-    notifyWeeklyReport(data: WeeklyReportNotification): Promise<boolean>;
-
-    /**
-     * デイリーレポートを通知する
-     * @param data デイリーレポート情報
-     * @returns 通知の成功または失敗を表すブール値
-     */
-    notifyDailyReport(data: DailyReportNotification): Promise<boolean>;
-
-    /**
-     * マンスリーレポートを通知する
-     * @param data マンスリーレポート情報
-     * @returns 通知の成功または失敗を表すブール値
-     */
-    notifyMonthlyReport(data: MonthlyReportNotification): Promise<boolean>;
-
-    /**
-     * エラー情報を通知する
-     * @param error AppErrorオブジェクト
-     * @param context エラーが発生したコンテキスト情報
-     * @returns 通知の成功または失敗を表すブール値
-     */
-    notifyError(error: AppError, context?: string): Promise<boolean>;
-
-    /**
-     * ログメッセージを通知する
-     * @param message 通知するメッセージ文字列
-     * @param title メッセージのタイトル（オプション）
-     * @param context メッセージのコンテキスト情報（オプション）
-     * @returns 通知の成功または失敗を表すブール値
-     */
-    notifyLogging(message: string, title?: string, context?: string): Promise<boolean>;
 }
 
 /**
@@ -87,7 +38,7 @@ interface DiscordWebhookNotifierOptions {
 /**
  * Discordを使用した通知のプレゼンター実装
  */
-export class DiscordWebhookNotifier implements DiscordNotifier {
+export class DiscordNotifier implements IDiscordNotifier {
     private readonly serviceContext = 'DiscordNotifier';
     // 各種通知用Webhook URL
     private readonly usageWebhookUrl: string;            // 利用明細通知用
@@ -152,7 +103,7 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
      * @param notificationType 通知タイプの説明（ログ用）
      * @returns 成功時はtrue、失敗時はfalse
      */
-    private async sendDiscordNotification(
+    private async _send(
         webhookUrl: string,
         embeds: any[],
         notificationType: string
@@ -202,7 +153,7 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
      * @param data カード利用情報
      * @returns 通知の成功または失敗を表すブール値
      */
-    async notify(data: CardUsageNotificationDTO): Promise<boolean> {
+    async notifyCardUsage(data: CardUsageNotificationDTO): Promise<boolean> {
         try {
             const webhookUrl = this.getWebhookUrl(NotificationType.USAGE);
 
@@ -240,7 +191,7 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
                 }
             ];
 
-            return this.sendDiscordNotification(webhookUrl, embeds, 'カード利用');
+            return this._send(webhookUrl, embeds, 'カード利用');
         } catch (error) {
             const appError = new AppError(
                 'Discord通知の送信中にエラーが発生しました',
@@ -321,7 +272,7 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
             // 通知タイプの説明を設定（ログ表示用）
             const description = data.alertLevel > 0 ? 'ウィークリーアラート' : 'ウィークリーレポート';
 
-            return this.sendDiscordNotification(webhookUrl, embeds, description);
+            return this._send(webhookUrl, embeds, description);
         } catch (error) {
             const appError = new AppError(
                 'ウィークリーレポートの通知の送信中にエラーが発生しました',
@@ -374,7 +325,7 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
                 });
             }
 
-            return this.sendDiscordNotification(webhookUrl, embeds, 'デイリーレポート');
+            return this._send(webhookUrl, embeds, 'デイリーレポート');
         } catch (error) {
             const appError = new AppError(
                 'デイリーレポートの通知の送信中にエラーが発生しました',
@@ -455,7 +406,7 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
             // 通知タイプの説明を設定（ログ表示用）
             const description = data.alertLevel > 0 ? 'マンスリーアラート' : 'マンスリーレポート';
 
-            return this.sendDiscordNotification(webhookUrl, embeds, description);
+            return this._send(webhookUrl, embeds, description);
         } catch (error) {
             const appError = new AppError(
                 'マンスリーレポートの通知の送信中にエラーが発生しました',
@@ -571,7 +522,7 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
                 });
             }
 
-            return this.sendDiscordNotification(webhookUrl, embeds, 'エラーログ');
+            return this._send(webhookUrl, embeds, 'エラーログ');
         } catch (err) {
             // ここでログ送信に失敗した場合はコンソールに出力するのみ（無限ループ防止）
             logger.warn(
@@ -627,7 +578,7 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
                 }
             ];
 
-            return this.sendDiscordNotification(webhookUrl, embeds, 'ログメッセージ');
+            return this._send(webhookUrl, embeds, 'ログメッセージ');
         } catch (err) {
             // ここでログ送信に失敗した場合はコンソールに出力するのみ（無限ループ防止）
             logger.warn(
