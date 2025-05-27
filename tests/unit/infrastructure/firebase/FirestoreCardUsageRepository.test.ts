@@ -34,6 +34,7 @@ describe('FirestoreCardUsageRepository', () => {
   // テスト用データ
   const testDate = new Date('2025-05-10T15:30:00');
   const testTimestamp = admin.firestore.Timestamp.fromDate(testDate);
+  const testMockTimestamp = 1715350200000; // 2025-05-10T15:30:00のタイムスタンプ値
 
   const testCardUsage: CardUsage = {
     card_name: 'テストカード',
@@ -45,11 +46,10 @@ describe('FirestoreCardUsageRepository', () => {
   };
 
   const testPathInfo = {
-    year: 2025,
-    month: 5,
-    week: 19,
-    dayOfWeek: '土',
-    path: 'users/2025/5/10/card-usage-123'
+    path: `details/2025/05/term2/10/${testMockTimestamp}`,
+    weeklyReportPath: 'reports/weekly/2025-05/term2',
+    dailyReportPath: 'reports/daily/2025-05/10',
+    monthlyReportPath: 'reports/monthly/2025/05'
   };
 
   beforeEach(() => {
@@ -71,9 +71,6 @@ describe('FirestoreCardUsageRepository', () => {
     (Environment.getFirebaseAdminKeyPath as jest.Mock).mockReturnValue('/path/to/key.json');
     (Environment.isCloudFunctions as jest.Mock).mockReturnValue(false);
 
-    // DateUtilのgetFirestorePathメソッドをモック
-    (DateUtil.getFirestorePath as jest.Mock).mockReturnValue(testPathInfo);
-
     // CardUsageMapperのtoNotificationメソッドをモック
     (CardUsageMapper.toNotification as jest.Mock).mockReturnValue({
       card_name: testCardUsage.card_name,
@@ -82,6 +79,47 @@ describe('FirestoreCardUsageRepository', () => {
       where_to_use: testCardUsage.where_to_use,
       memo: '',
       is_active: true
+    });
+
+    // DateUtilのモック化（getDateInfo関数の戻り値を設定）
+    const mockDateInfo = {
+      date: new Date(2025, 4, 10), // 5月10日
+      year: 2025,
+      month: 5,
+      day: 10,
+      weekNumber: 2,
+      term: 2,
+      weekStartDate: new Date(2025, 4, 4),
+      weekEndDate: new Date(2025, 4, 10),
+      timestamp: testMockTimestamp,
+      isLastDayOfTerm: false,
+      isLastDayOfMonth: false
+    };
+
+    // DateUtil.getDateInfoのモック実装を設定
+    (DateUtil.getDateInfo as jest.Mock).mockReturnValue(mockDateInfo);
+
+    // getFirestorePathメソッドのモックを追加
+    jest.spyOn(FirestoreCardUsageRepository, 'getFirestorePath').mockImplementation(() => {
+      return {
+        // testPathInfoの既存のプロパティ
+        path: testPathInfo.path,
+        weeklyReportPath: testPathInfo.weeklyReportPath,
+        dailyReportPath: testPathInfo.dailyReportPath,
+        monthlyReportPath: testPathInfo.monthlyReportPath,
+        // DateUtilのmockDateInfoから追加が必要なプロパティ
+        date: mockDateInfo.date,
+        year: mockDateInfo.year,
+        month: mockDateInfo.month,
+        day: mockDateInfo.day,
+        weekNumber: mockDateInfo.weekNumber,
+        term: mockDateInfo.term,
+        weekStartDate: mockDateInfo.weekStartDate,
+        weekEndDate: mockDateInfo.weekEndDate,
+        timestamp: mockDateInfo.timestamp,
+        isLastDayOfTerm: mockDateInfo.isLastDayOfTerm,
+        isLastDayOfMonth: mockDateInfo.isLastDayOfMonth
+      };
     });
 
     // FirestoreCardUsageRepositoryのインスタンスを作成
@@ -111,15 +149,31 @@ describe('FirestoreCardUsageRepository', () => {
     });
   });
 
-  describe('getFirestorePath', () => {
-    test('日付からFirestoreパスが生成されること', () => {
-      const result = FirestoreCardUsageRepository.getFirestorePath(testDate);
+  describe('getFirestorePathFromDate', () => {
+    test('正常系: 日付からFirestoreのパスが正しく生成されること', () => {
+      // スパイを元に戻す（このテストでは実際の実装を使用するため）
+      jest.spyOn(FirestoreCardUsageRepository, 'getFirestorePath').mockRestore();
 
-      // DateUtilが呼ばれることを確認
-      expect(DateUtil.getFirestorePath).toHaveBeenCalledWith(testDate);
+      // Date.nowをモック化してタイムスタンプを固定
+      const originalNow = Date.now;
+      Date.now = jest.fn().mockReturnValue(testMockTimestamp);
 
-      // 結果が正しいことを確認
-      expect(result).toEqual(testPathInfo);
+      try {
+        const sampleDate = new Date('2025-05-10T15:30:00');
+        const result = FirestoreCardUsageRepository.getFirestorePath(sampleDate);
+
+        // タイムスタンプ部分以外の構造を検証
+        expect(result.path).toMatch(`details/2025/05/term2/10/`);
+        // pathが数値で終わることを確認（タイムスタンプ部分）
+        expect(result.path.match(/\/\d+$/)).toBeTruthy();
+
+        expect(result.weeklyReportPath).toBe('reports/weekly/2025-05/term2');
+        expect(result.dailyReportPath).toBe('reports/daily/2025-05/10');
+        expect(result.monthlyReportPath).toBe('reports/monthly/2025/05');
+      } finally {
+        // モックをクリーンアップ
+        Date.now = originalNow;
+      }
     });
   });
 

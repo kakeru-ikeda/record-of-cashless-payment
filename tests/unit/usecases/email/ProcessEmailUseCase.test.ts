@@ -1,10 +1,10 @@
 import { ProcessEmailUseCase } from '../../../../src/usecases/email/ProcessEmailUseCase';
 import { ImapEmailService } from '../../../../src/infrastructure/email/ImapEmailService';
-import { ICardUsageRepository } from '../../../../src/domain/repositories/ICardUsageRepository';
+import { ICardUsageRepository } from '../../../../src/domain/interfaces/repositories/ICardUsageRepository';
 import { DiscordNotifier } from '../../../../shared/infrastructure/discord/DiscordNotifier';
-import { CardUsageNotification } from '../../../../shared/domain/entities/CardUsageNotification';
+import { CardUsageNotificationDTO } from '../../../../shared/domain/dto/CardUsageNotificationDTO';
 import * as admin from 'firebase-admin';
-import { CardCompany } from '../../../../src/domain/entities/card/CardTypes';
+import { CardCompany } from '../../../../src/domain/enums/CardCompany';
 
 // 依存コンポーネントをモック化
 jest.mock('../../../../src/infrastructure/email/ImapEmailService');
@@ -23,6 +23,19 @@ jest.mock('firebase-admin', () => {
     }
   };
 });
+
+jest.mock('../../../../shared/domain/mappers/CardUsageMapper', () => ({
+  CardUsageMapper: {
+    toNotification: jest.fn().mockReturnValue({
+      card_name: 'Ｄ　三菱ＵＦＪ－ＪＣＢデビット',
+      datetime_of_use: '2025-05-10T06:30:00.000Z',
+      amount: 1500,
+      where_to_use: 'コンビニ',
+      memo: '',
+      is_active: true
+    })
+  }
+}));
 
 // Loggerをモック化
 jest.mock('../../../../shared/infrastructure/logging/Logger', () => ({
@@ -76,7 +89,7 @@ describe('ProcessEmailUseCase', () => {
   【ご利用先】 コンビニ
   【カード番号末尾4桁】 1234`;
 
-  const sampleCardUsage: CardUsageNotification = {
+  const sampleCardUsage: CardUsageNotificationDTO = {
     card_name: 'Ｄ　三菱ＵＦＪ－ＪＣＢデビット',
     datetime_of_use: '2025-05-10T06:30:00.000Z', // UTC時間
     amount: 1500,
@@ -119,28 +132,19 @@ describe('ProcessEmailUseCase', () => {
         CardCompany.MUFG
       );
 
-      // Firestoreのタイムスタンプ変換が呼ばれることを確認
-      expect(admin.firestore.Timestamp.fromDate).toHaveBeenCalledWith(
-        expect.any(Date)
-      );
-
       // リポジトリのsaveメソッドが適切なデータで呼ばれることを確認
       expect(mockCardUsageRepository.save).toHaveBeenCalledWith({
         card_name: sampleCardUsage.card_name,
-        datetime_of_use: 'mocked-firebase-timestamp',
+        datetime_of_use: '2025-05-10T06:30:00.000Z',
         amount: sampleCardUsage.amount,
         where_to_use: sampleCardUsage.where_to_use,
         memo: sampleCardUsage.memo,
         is_active: sampleCardUsage.is_active,
-        created_at: 'mocked-server-timestamp'
       });
 
-      // Discordに通知は行われない (Controllerの責務に移動したため)
-      expect(mockDiscordNotifier.notify).not.toHaveBeenCalled();
-
-      // 戻り値が正しいか確認（オブジェクト形式に変更）
+      // 戻り値が正しいか確認
       expect(result).toEqual({
-        usage: sampleCardUsage,
+        usage: sampleCardUsage,  // CardUsageMapper.toNotificationの戻り値を期待
         savedPath: 'users/2025/5/10/card-usage-123'
       });
     });
@@ -182,45 +186,6 @@ describe('ProcessEmailUseCase', () => {
         sampleEmailBody,
         CardCompany.MUFG
       );
-    });
-  });
-
-  describe('executeTest', () => {
-    test('正常系: テストモードでメール処理が実行できること', async () => {
-      // テスト実行
-      const result = await processEmailUseCase.executeTest(sampleEmailBody, CardCompany.MUFG);
-
-      // emailServiceのparseCardUsageFromEmailが呼ばれることを確認
-      expect(mockEmailService.parseCardUsageFromEmail).toHaveBeenCalledWith(
-        sampleEmailBody,
-        CardCompany.MUFG
-      );
-
-      // リポジトリのsaveメソッドが呼ばれることを確認
-      expect(mockCardUsageRepository.save).toHaveBeenCalled();
-
-      // Discordに通知されないことを確認（Controllerの責務に移行したため）
-      expect(mockDiscordNotifier.notify).not.toHaveBeenCalled();
-
-      // 結果が正しい形式で返されることを確認（notificationSentフィールドが削除された）
-      expect(result).toEqual({
-        parsedData: sampleCardUsage,
-        savedPath: 'users/2025/5/10/card-usage-123'
-      });
-    });
-
-    test('異常系: テスト実行中にエラーが発生した場合、エラーがスローされること', async () => {
-      // parseCardUsageFromEmailで例外が発生するようモックを設定
-      mockEmailService.parseCardUsageFromEmail.mockRejectedValueOnce(
-        new Error('テスト実行エラー')
-      );
-
-      // 例外がスローされることを確認
-      await expect(processEmailUseCase.executeTest(sampleEmailBody, CardCompany.MUFG))
-        .rejects.toThrow('テスト実行エラー');
-
-      // ErrorHandler.handleが呼ばれたことを確認
-      expect(mockhandle).toHaveBeenCalled();
     });
   });
 });

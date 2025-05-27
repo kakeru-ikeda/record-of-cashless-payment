@@ -4,12 +4,10 @@ import { AppError, ErrorType } from '@shared/errors/AppError';
 import { ImapClientAdapter, ImapConnectionConfig } from '@infrastructure/email/ImapClientAdapter';
 import { EmailParser, ParsedEmail } from '@infrastructure/email/EmailParser';
 import { CardUsageExtractor } from '@infrastructure/email/CardUsageExtractor';
-import { IEmailService } from '@domain/interfaces/email/IEmailService';
+import { IEmailService } from '@domain/interfaces/infrastructure/email/IEmailService';
+import { CardCompany } from '@domain/enums/CardCompany';
 import { CardUsage } from '@domain/entities/CardUsage';
-import { CardUsageNotification } from '@shared/domain/entities/CardUsageNotification';
-import { CardUsageMapper } from '@shared/domain/mappers/CardUsageMapper';
-import { Timestamp } from 'firebase-admin/firestore';
-import { CardCompany, CardUsageInfo } from '@domain/entities/card/CardTypes';
+import { ErrorHandler } from '@shared/infrastructure/errors/ErrorHandler';
 
 /**
  * IMAP接続とメール処理のサービス
@@ -231,50 +229,13 @@ export class ImapEmailService implements IEmailService {
    * @param cardCompany カード会社の種類
    * @returns 抽出されたカード利用情報
    */
-  async parseCardUsageFromEmail(emailContent: string, cardCompany: CardCompany = CardCompany.MUFG): Promise<CardUsageNotification> {
-    try {
-      // カード利用情報の抽出
-      const cardUsageInfo = this.cardUsageExtractor.extractFromEmailBody(emailContent, cardCompany);
-
-      // 一時的なCardUsageエンティティを作成
-      const cardUsage: CardUsage = {
-        ...cardUsageInfo,
-        datetime_of_use: Timestamp.fromDate(new Date(cardUsageInfo.datetime_of_use)),
-        created_at: Timestamp.now()
-      };
-
-      // マッパーを使ってドメインモデルから通知用DTOに変換
-      return CardUsageMapper.toNotification(cardUsage);
-    } catch (error) {
-      const appError = new AppError(
-        'カード利用情報の抽出に失敗しました',
-        ErrorType.EMAIL,
-        { cardCompany },
-        error instanceof Error ? error : new Error(String(error))
-      );
-      logger.error(appError, this.serviceContext);
-
-      // エラー時は空のオブジェクトを返す
-      return {
-        card_name: '',
-        datetime_of_use: new Date().toISOString(),
-        amount: 0,
-        where_to_use: ''
-      };
-    }
-  }
-
-  /**
-   * テスト用：カード利用情報の抽出
-   * @param emailBody メール本文
-   * @param cardCompany カード会社
-   * @returns 抽出結果
-   */
-  async executeTest(emailBody: string, cardCompany: CardCompany): Promise<CardUsageInfo> {
-    const context = `${this.serviceContext}:Test`;
-    logger.info(`${cardCompany}のカード利用情報をテスト抽出します`, context);
-
-    return this.cardUsageExtractor.extractFromEmailBody(emailBody, cardCompany);
+  @ErrorHandler.errorDecorator('ImapEmailService', {
+    defaultMessage: 'メールからカード利用情報の抽出に失敗しました',
+    rethrow: true
+  })
+  async parseCardUsageFromEmail(emailContent: string, cardCompany: CardCompany = CardCompany.MUFG): Promise<CardUsage> {
+    // カード利用情報の抽出
+    return this.cardUsageExtractor.extractFromEmailBody(emailContent, cardCompany);
   }
 
   /**

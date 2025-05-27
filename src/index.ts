@@ -3,7 +3,7 @@ import * as dotenv from 'dotenv';
 import { Environment } from '@shared/infrastructure/config/Environment';
 import { logger, LogLevel } from '@shared/infrastructure/logging/Logger';
 import { Application } from '@infrastructure/app/Application';
-import { CardCompany } from '@domain/entities/card/CardTypes';
+import { CardCompany } from '@domain/enums/CardCompany';
 import { AppError, ErrorType } from '@shared/errors/AppError';
 
 // 環境変数の読み込み

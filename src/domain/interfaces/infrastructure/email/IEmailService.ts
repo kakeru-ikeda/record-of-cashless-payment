@@ -1,6 +1,6 @@
 import { ParsedEmail } from '@infrastructure/email/EmailParser';
-import { CardUsageNotification } from '@shared/domain/entities/CardUsageNotification';
-import { CardCompany } from '@domain/entities/card/CardTypes';
+import { CardCompany } from '@domain/enums/CardCompany';
+import { CardUsage } from '@domain/entities/CardUsage';
 
 /**
  * メールサービスのインターフェース
@@ -26,5 +26,5 @@ export interface IEmailService {
     parseCardUsageFromEmail(
         emailContent: string,
         cardCompany?: CardCompany
-    ): Promise<CardUsageNotification>;
+    ): Promise<CardUsage>;
 }

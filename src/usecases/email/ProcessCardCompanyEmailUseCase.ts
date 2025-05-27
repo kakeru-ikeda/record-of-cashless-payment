@@ -1,10 +1,10 @@
-import { CardCompany } from '@domain/entities/card/CardTypes';
+import { CardCompany } from '@domain/enums/CardCompany';
 import { ParsedEmail } from '@infrastructure/email/EmailParser';
-import { IProcessCardCompanyEmailUseCase } from '@domain/usecases/email/IProcessCardCompanyEmailUseCase';
+import { IProcessCardCompanyEmailUseCase } from '@domain/interfaces/usecases/email/IProcessCardCompanyEmailUseCase';
 import { ProcessEmailUseCase } from '@usecase/email/ProcessEmailUseCase';
 import { logger } from '@shared/infrastructure/logging/Logger';
 import { ErrorHandler } from '@shared/infrastructure/errors/ErrorHandler';
-import { CardUsageNotification } from '@shared/domain/entities/CardUsageNotification';
+import { CardUsageNotificationDTO } from '@shared/domain/dto/CardUsageNotificationDTO';
 
 /**
  * メールからカード会社を判定し、カード利用情報を処理するユースケース
@@ -25,7 +25,7 @@ export class ProcessCardCompanyEmailUseCase implements IProcessCardCompanyEmailU
   async execute(email: ParsedEmail): Promise<{
     cardCompany: CardCompany | null;
     usageResult?: {
-      usage: CardUsageNotification;
+      usage: CardUsageNotificationDTO;
       savedPath: string;
     };
   }> {

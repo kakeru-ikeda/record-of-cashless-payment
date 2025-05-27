@@ -1,6 +1,6 @@
 import { Firestore } from 'firebase-admin/firestore';
 import { CardUsage } from '@domain/entities/CardUsage';
-import { ICardUsageRepository } from '@domain/repositories/ICardUsageRepository';
+import { ICardUsageRepository } from '@domain/interfaces/repositories/ICardUsageRepository';
 import { Environment } from '@shared/infrastructure/config/Environment';
 import { DateUtil } from '@shared/utils/DateUtil';
 import { FirestoreService } from '@shared/infrastructure/database/FirestoreService';
@@ -39,7 +39,28 @@ export class FirestoreCardUsageRepository implements ICardUsageRepository {
    * @returns パス情報を含むオブジェクト
    */
   static getFirestorePath(date: Date) {
-    return DateUtil.getFirestorePath(date);
+    const dateInfo = DateUtil.getDateInfo(date);
+    const now = new Date();
+
+    // 月と日を2桁でフォーマット
+    const monthFormatted = dateInfo.month.toString().padStart(2, '0');
+    const dayFormatted = dateInfo.day.toString().padStart(2, '0');
+
+    // カード利用データのパス
+    const path = `details/${dateInfo.year}/${monthFormatted}/term${dateInfo.term}/${dateInfo.day}/${now.getTime()}`;
+
+    // 新しいレポートパス形式
+    const weeklyReportPath = `reports/weekly/${dateInfo.year}-${monthFormatted}/term${dateInfo.term}`;
+    const dailyReportPath = `reports/daily/${dateInfo.year}-${monthFormatted}/${dayFormatted}`;
+    const monthlyReportPath = `reports/monthly/${dateInfo.year}/${monthFormatted}`;
+
+    return {
+      ...dateInfo,
+      path,
+      weeklyReportPath,
+      dailyReportPath,
+      monthlyReportPath
+    };
   }
 
   /**

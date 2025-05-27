@@ -3,7 +3,7 @@ import { htmlToText } from 'html-to-text';
 import { logger } from '@shared/infrastructure/logging/Logger';
 import { AppError, ErrorType } from '@shared/errors/AppError';
 import { RawEmailMessage } from '@infrastructure/email/ImapClientAdapter';
-import { IEmailParser } from '@domain/interfaces/email/IEmailParser';
+import { IEmailParser } from '@domain/interfaces/infrastructure/email/IEmailParser';
 
 /**
  * パース済みメールの型定義

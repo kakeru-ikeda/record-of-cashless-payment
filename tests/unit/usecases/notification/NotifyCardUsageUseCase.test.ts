@@ -1,6 +1,6 @@
 import { NotifyCardUsageUseCase } from '../../../../src/usecases/notification/NotifyCardUsageUseCase';
 import { DiscordNotifier } from '../../../../shared/infrastructure/discord/DiscordNotifier';
-import { CardUsageNotification } from '../../../../shared/domain/entities/CardUsageNotification';
+import { CardUsageNotificationDTO } from '../../../../shared/domain/dto/CardUsageNotificationDTO';
 import { AppError, ErrorType } from '../../../../shared/errors/AppError';
 
 // Loggerをモック化
@@ -33,7 +33,7 @@ describe('NotifyCardUsageUseCase', () => {
   let mockDiscordNotifier: jest.Mocked<DiscordNotifier>;
 
   // テスト用のサンプルデータ
-  const sampleCardUsage: CardUsageNotification = {
+  const sampleCardUsage: CardUsageNotificationDTO = {
     card_name: 'テストカード',
     datetime_of_use: '2025-05-10T06:30:00.000Z',
     amount: 1500,
@@ -51,7 +51,7 @@ describe('NotifyCardUsageUseCase', () => {
 
     // モックの設定
     mockDiscordNotifier = {
-      notify: jest.fn().mockResolvedValue(true),
+      notifyCardUsage: jest.fn().mockResolvedValue(true),
       notifyError: jest.fn().mockResolvedValue(true),
       notifyLogging: jest.fn().mockResolvedValue(true)
     } as unknown as jest.Mocked<DiscordNotifier>;
@@ -66,12 +66,12 @@ describe('NotifyCardUsageUseCase', () => {
       await notifyCardUsageUseCase.notifyUsage(sampleCardUsage);
 
       // DiscordNotifierのnotifyが呼ばれることを確認
-      expect(mockDiscordNotifier.notify).toHaveBeenCalledWith(sampleCardUsage);
+      expect(mockDiscordNotifier.notifyCardUsage).toHaveBeenCalledWith(sampleCardUsage);
     });
 
     test('異常系: Discord通知に失敗した場合、エラーがスローされること', async () => {
       // notifyが失敗するようにモック
-      mockDiscordNotifier.notify.mockRejectedValueOnce(new Error('通知失敗'));
+      mockDiscordNotifier.notifyCardUsage.mockRejectedValueOnce(new Error('通知失敗'));
 
       // エラーがスローされることを確認
       await expect(notifyCardUsageUseCase.notifyUsage(sampleCardUsage))

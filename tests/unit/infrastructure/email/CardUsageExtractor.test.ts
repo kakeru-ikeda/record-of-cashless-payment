@@ -1,6 +1,7 @@
 import { CardUsageExtractor } from '../../../../src/infrastructure/email/CardUsageExtractor';
 import { AppError } from '../../../../shared/errors/AppError';
-import { CardCompany } from '../../../../src/domain/entities/card/CardTypes';
+import { CardCompany } from '../../../../src/domain/enums/CardCompany';
+import { Timestamp } from 'firebase-admin/firestore';
 
 // Loggerをモック化
 jest.mock('../../../../shared/infrastructure/logging/Logger', () => {
@@ -45,8 +46,9 @@ describe('CardUsageExtractor', () => {
       expect(result.amount).toBe(1234);
       expect(result.where_to_use).toBe('コンビニエンスストア東京');
 
-      // 日付変換が正しく行われていることを検証（イレギュラーな日付のため一部柔軟に）
-      const extractedDate = new Date(result.datetime_of_use);
+      // 日付変換が正しく行われていることを検証
+      expect(result.datetime_of_use).toBeInstanceOf(Timestamp);
+      const extractedDate = result.datetime_of_use.toDate();
       expect(extractedDate.getFullYear()).toBe(2025);
       expect(extractedDate.getMonth()).toBe(4); // 5月は4
       expect(extractedDate.getDate()).toBe(10);
@@ -70,8 +72,8 @@ describe('CardUsageExtractor', () => {
       expect(result.amount).toBe(0);
       expect(result.where_to_use).toBe('');
 
-      // 日付はデフォルト値（現在時刻のISO文字列）
-      expect(result.datetime_of_use).toBeDefined();
+      // 日付はデフォルト値（Timestampオブジェクト）
+      expect(result.datetime_of_use).toBeInstanceOf(Timestamp);
     });
 
     test('正常系: カンマを含む金額が正しく数値変換されること', () => {
@@ -120,7 +122,7 @@ describe('CardUsageExtractor', () => {
       const result = extractor.extractFromEmailBody(emailBody, CardCompany.MUFG);
 
       // 日付変換エラー時のフォールバック処理が実行されたことを検証
-      expect(result.datetime_of_use).toBeDefined();
+      expect(result.datetime_of_use).toBeInstanceOf(Timestamp);
 
       // その他のフィールドが正しく抽出されていることを検証
       expect(result.card_name).toBe('Ｄ　三菱ＵＦＪ－ＪＣＢデビット');
@@ -149,7 +151,7 @@ describe('CardUsageExtractor', () => {
       expect(result.amount).toBe(0);
       expect(result.card_name).toBe('Ｄ　三菱ＵＦＪ－ＪＣＢデビット');
       expect(result.where_to_use).toBe('コンビニエンスストア東京');
-      expect(result.datetime_of_use).toBeDefined();
+      expect(result.datetime_of_use).toBeInstanceOf(Timestamp);
     });
 
     test('異常系: 利用先だけがない場合のテスト', () => {
@@ -215,7 +217,8 @@ describe('CardUsageExtractor', () => {
       expect(result.where_to_use).toBe('スーパーマーケット');
 
       // 日付変換が正しく行われていることを検証
-      const extractedDate = new Date(result.datetime_of_use);
+      expect(result.datetime_of_use).toBeInstanceOf(Timestamp);
+      const extractedDate = result.datetime_of_use.toDate();
       expect(extractedDate.getFullYear()).toBe(2025);
       expect(extractedDate.getMonth()).toBe(4); // 5月は4
       expect(extractedDate.getDate()).toBe(10);
@@ -343,8 +346,8 @@ describe('CardUsageExtractor', () => {
       const result = extractor.extractFromEmailBody(emailBody, CardCompany.SMBC);
 
       // 日付は正しく抽出され、他の情報はデフォルト値になることを検証
-      expect(result.datetime_of_use).toBeDefined();
-      const extractedDate = new Date(result.datetime_of_use);
+      expect(result.datetime_of_use).toBeInstanceOf(Timestamp);
+      const extractedDate = result.datetime_of_use.toDate();
       expect(extractedDate.getFullYear()).toBe(2025);
       expect(extractedDate.getMonth()).toBe(4); // 5月は4
       expect(extractedDate.getDate()).toBe(10);
@@ -367,8 +370,8 @@ describe('CardUsageExtractor', () => {
       const result = extractor.extractFromEmailBody(emailBody, CardCompany.SMBC);
 
       // 日付が現在時刻になっていることを検証
-      expect(result.datetime_of_use).toBeDefined();
-      const extractedDate = new Date(result.datetime_of_use);
+      expect(result.datetime_of_use).toBeInstanceOf(Timestamp);
+      const extractedDate = result.datetime_of_use.toDate();
       const now = new Date();
       expect(extractedDate.getFullYear()).toBe(now.getFullYear());
       expect(extractedDate.getMonth()).toBe(now.getMonth());
@@ -435,10 +438,10 @@ describe('CardUsageExtractor', () => {
       const result = extractor.extractFromEmailBody(emailBody, CardCompany.MUFG);
 
       // 日付変換が正しく処理されることを検証
-      expect(result.datetime_of_use).toBeDefined();
+      expect(result.datetime_of_use).toBeInstanceOf(Timestamp);
 
       // 正しい日付に変換されていることを確認
-      const extractedDate = new Date(result.datetime_of_use);
+      const extractedDate = result.datetime_of_use.toDate();
       expect(extractedDate.getFullYear()).toBe(2025);
       expect(extractedDate.getMonth()).toBe(4); // 5月は4
       expect(extractedDate.getDate()).toBe(1);

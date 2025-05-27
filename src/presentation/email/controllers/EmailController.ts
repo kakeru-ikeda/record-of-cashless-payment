@@ -4,9 +4,9 @@ import { Environment } from '../../../../shared/infrastructure/config/Environmen
 import { logger } from '../../../../shared/infrastructure/logging/Logger';
 import { AppError, ErrorType } from '@shared/errors/AppError';
 import { ErrorHandler } from '../../../../shared/infrastructure/errors/ErrorHandler';
-import { IProcessCardCompanyEmailUseCase } from '../../../domain/usecases/email/IProcessCardCompanyEmailUseCase';
-import { INotifyCardUsageUseCase } from '../../../domain/usecases/notification/INotifyCardUsageUseCase';
-import { CardCompany } from '@domain/entities/card/CardTypes';
+import { IProcessCardCompanyEmailUseCase } from '../../../domain/interfaces/usecases/email/IProcessCardCompanyEmailUseCase';
+import { INotifyCardUsageUseCase } from '../../../domain/interfaces/usecases/notification/INotifyCardUsageUseCase';
+import { CardCompany } from '@domain/enums/CardCompany';
 
 /**
  * メール処理のコントローラー

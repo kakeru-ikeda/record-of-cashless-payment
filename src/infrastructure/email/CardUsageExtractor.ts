@@ -1,7 +1,9 @@
 import { logger } from '@shared/infrastructure/logging/Logger';
 import { AppError, ErrorType } from '@shared/errors/AppError';
-import { ICardUsageExtractor } from '@domain/interfaces/email/ICardUsageExtractor';
-import { CardCompany, CardUsageInfo } from '@domain/entities/card/CardTypes';
+import { ICardUsageExtractor } from '@domain/interfaces/infrastructure/email/ICardUsageExtractor';
+import { CardCompany } from '@domain/enums/CardCompany';
+import { CardUsage } from '@domain/entities/CardUsage';
+import { CardUsageFactory } from '@shared/domain/factories/CardUsageFactory';
 
 /**
  * カード利用情報の抽出を専門に行うクラス
@@ -20,7 +22,7 @@ export class CardUsageExtractor implements ICardUsageExtractor {
    * @param cardCompany カード会社の種類
    * @returns 抽出されたカード利用情報
    */
-  extractFromEmailBody(body: string, cardCompany: CardCompany): CardUsageInfo {
+  extractFromEmailBody(body: string, cardCompany: CardCompany): CardUsage {
     const context = `${this.serviceContext}:${cardCompany}`;
     logger.info(`${cardCompany}のカード利用情報を抽出します`, context);
 
@@ -45,7 +47,7 @@ export class CardUsageExtractor implements ICardUsageExtractor {
    * @param body メール本文
    * @returns 抽出されたカード利用情報
    */
-  private parseMufgEmail(body: string, context: string): CardUsageInfo {
+  private parseMufgEmail(body: string, context: string): CardUsage {
     // 正規表現パターン - 新しいメール形式に対応
     const cardNameMatch = body.match(/カード名称\s*：\s*(.+?)(?=\s*\n)/);
     const dateMatch = body.match(/【ご利用日時\(日本時間\)】\s*([\d年月日 :]+)/);
@@ -72,22 +74,24 @@ export class CardUsageExtractor implements ICardUsageExtractor {
       const isoDate = new Date(datetime_of_use.replace(/年|月/g, '-').replace('日', '')).toISOString();
       logger.debug("変換後日時: " + isoDate, context);
 
-      return {
+      // CardUsageエンティティを生成
+      return CardUsageFactory.create(
         card_name,
-        datetime_of_use: isoDate,
-        amount: parseInt(amountStr, 10),
-        where_to_use,
-      };
+        isoDate,
+        parseInt(amountStr, 10),
+        where_to_use
+      );
     } catch (error) {
       logger.warn('日付変換に失敗しました。現在時刻を使用します', context);
       logger.debug(String(error), context);
 
-      return {
+      // 日付変換に失敗した場合は現在時刻を使用
+      return CardUsageFactory.create(
         card_name,
-        datetime_of_use: new Date().toISOString(),
-        amount: parseInt(amountStr, 10),
-        where_to_use,
-      };
+        new Date().toISOString(),
+        parseInt(amountStr, 10),
+        where_to_use
+      );
     }
   }
 
@@ -96,7 +100,7 @@ export class CardUsageExtractor implements ICardUsageExtractor {
    * @param body メール本文
    * @returns 抽出されたカード利用情報
    */
-  private parseSmbcEmail(body: string, context: string): CardUsageInfo {
+  private parseSmbcEmail(body: string, context: string): CardUsage {
     logger.debug("三井住友カードのメール本文解析", context);
 
     // 三井住友カードのメール形式に合わせたパターン抽出
@@ -111,20 +115,20 @@ export class CardUsageExtractor implements ICardUsageExtractor {
 
     // 不正な日付形式の場合、第二の方法を試す
     // 「ご利用日時：不正な日付 スーパーマーケット 2,468円」のようなケースを処理
-    const alternativeUsageInfoMatch = !usageInfoMatch ? 
+    const alternativeUsageInfoMatch = !usageInfoMatch ?
       body.match(/ご利用日時：[^\n]*?([^ \d][^0-9]*) ([\d,]+)円/) : null;
-      
+
     // 利用場所がない場合のケース:「ご利用日時：2025/05/10 15:30 2,468円」
-    const amountOnlyMatch = (!usageInfoMatch && !alternativeUsageInfoMatch) ? 
+    const amountOnlyMatch = (!usageInfoMatch && !alternativeUsageInfoMatch) ?
       body.match(/ご利用日時：[^\n]*?([\d,]+)円/) : null;
 
     // データを抽出・整形
     const datetime_of_use = dateMatch?.[1]?.trim() || '';
     const card_name = cardNameMatch?.[1]?.trim() || '三井住友カード';
-    
+
     // 利用場所の抽出 - メインの正規表現またはバックアップの正規表現から取得
     let where_to_use = '不明';
-    
+
     if (usageInfoMatch && usageInfoMatch[1]?.trim()) {
       where_to_use = usageInfoMatch[1].trim();
     } else if (alternativeUsageInfoMatch && alternativeUsageInfoMatch[1]) {
@@ -132,16 +136,16 @@ export class CardUsageExtractor implements ICardUsageExtractor {
       const value = alternativeUsageInfoMatch[1];
       where_to_use = value.trim();
     }
-    
+
     // 金額からカンマを削除して整数に変換
     // 複数のマッチングパターンから金額を取得
     let amountStr = '0';
-    
+
     // 明示的に分岐してカバレッジを確保
     const hasUsageInfoMatch = !!(usageInfoMatch && usageInfoMatch[2]);
     const hasAlternativeMatch = !!(alternativeUsageInfoMatch && alternativeUsageInfoMatch[2]);
     const hasAmountOnlyMatch = !!(amountOnlyMatch && amountOnlyMatch[1]);
-    
+
     // 分岐を明示的に行い、各条件の実行をより確実にカバー
     if (hasUsageInfoMatch) {
       amountStr = usageInfoMatch[2].replace(/,/g, '');
@@ -170,22 +174,24 @@ export class CardUsageExtractor implements ICardUsageExtractor {
 
       logger.debug("変換後日時（SMBC）: " + isoDate, context);
 
-      return {
+      // CardUsageエンティティを生成
+      return CardUsageFactory.create(
         card_name,
-        datetime_of_use: isoDate,
-        amount: parseInt(amountStr, 10),
-        where_to_use,
-      };
+        isoDate,
+        parseInt(amountStr, 10),
+        where_to_use
+      );
     } catch (error) {
       logger.warn('日付変換に失敗しました。現在時刻を使用します', context);
       logger.debug(String(error), context);
 
-      return {
+      // 日付変換に失敗した場合は現在時刻を使用
+      return CardUsageFactory.create(
         card_name,
-        datetime_of_use: new Date().toISOString(),
-        amount: parseInt(amountStr, 10),
-        where_to_use,
-      };
+        new Date().toISOString(),
+        parseInt(amountStr, 10),
+        where_to_use
+      );
     }
   }
 }

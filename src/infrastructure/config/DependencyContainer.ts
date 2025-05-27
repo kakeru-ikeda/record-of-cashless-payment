@@ -1,15 +1,15 @@
 import { ImapEmailService } from '@infrastructure/email/ImapEmailService';
 import { FirestoreCardUsageRepository } from '@infrastructure/firebase/FirestoreCardUsageRepository';
-import { DiscordWebhookNotifier } from '@shared/infrastructure/discord/DiscordNotifier';
+import { DiscordNotifier } from '@shared/infrastructure/discord/DiscordNotifier';
 import { ProcessEmailUseCase } from '@usecase/email/ProcessEmailUseCase';
 import { ProcessCardCompanyEmailUseCase } from '@usecase/email/ProcessCardCompanyEmailUseCase';
 import { NotifyCardUsageUseCase } from '@usecase/notification/NotifyCardUsageUseCase';
 import { EmailController } from '@presentation/email/controllers/EmailController';
 import { Environment } from '@shared/infrastructure/config/Environment';
 import { logger } from '@shared/infrastructure/logging/Logger';
-import { IProcessCardCompanyEmailUseCase } from '@domain/usecases/email/IProcessCardCompanyEmailUseCase';
-import { INotifyCardUsageUseCase } from '@domain/usecases/notification/INotifyCardUsageUseCase';
-import { IDependencyContainer } from '@domain/interfaces/config/IDependencyContainer';
+import { IProcessCardCompanyEmailUseCase } from '@domain/interfaces/usecases/email/IProcessCardCompanyEmailUseCase';
+import { INotifyCardUsageUseCase } from '@domain/interfaces/usecases/notification/INotifyCardUsageUseCase';
+import { IDependencyContainer } from '@domain/interfaces/infrastructure/config/IDependencyContainer';
 
 /**
  * アプリケーションの依存性を管理するコンテナクラス
@@ -18,7 +18,7 @@ import { IDependencyContainer } from '@domain/interfaces/config/IDependencyConta
 export class DependencyContainer implements IDependencyContainer {
   private emailService: ImapEmailService;
   private cardUsageRepository: FirestoreCardUsageRepository;
-  private discordNotifier: DiscordWebhookNotifier;
+  private discordNotifier: DiscordNotifier;
   private processEmailUseCase: ProcessEmailUseCase;
   private processCardCompanyEmailUseCase: ProcessCardCompanyEmailUseCase;
   private notifyCardUsageUseCase: NotifyCardUsageUseCase;
@@ -29,7 +29,7 @@ export class DependencyContainer implements IDependencyContainer {
    */
   public async initialize(): Promise<void> {
     // DiscordNotifierの初期化
-    this.discordNotifier = new DiscordWebhookNotifier({
+    this.discordNotifier = new DiscordNotifier({
       usageWebhookUrl: Environment.DISCORD_WEBHOOK_URL,
       loggingWebhookUrl: Environment.DISCORD_LOGGING_WEBHOOK_URL,
     });
@@ -116,9 +116,9 @@ export class DependencyContainer implements IDependencyContainer {
   }
 
   /**
-   * DiscordWebhookNotifierを取得
+   * DiscordNotifierを取得
    */
-  public getDiscordNotifier(): DiscordWebhookNotifier {
+  public getDiscordNotifier(): DiscordNotifier {
     return this.discordNotifier;
   }
 }

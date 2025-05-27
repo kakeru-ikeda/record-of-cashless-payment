@@ -1,12 +1,11 @@
-import * as admin from 'firebase-admin';
-import { CardUsage } from '@domain/entities/CardUsage';
-import { CardUsageNotification } from '@shared/domain/entities/CardUsageNotification';
-import { ICardUsageRepository } from '@domain/repositories/ICardUsageRepository';
-import { IProcessEmailUseCase } from '@domain/usecases/email/IProcessEmailUseCase';
+import { CardUsageNotificationDTO } from '@shared/domain/dto/CardUsageNotificationDTO';
+import { ICardUsageRepository } from '@domain/interfaces/repositories/ICardUsageRepository';
+import { IProcessEmailUseCase } from '@domain/interfaces/usecases/email/IProcessEmailUseCase';
 import { ImapEmailService } from '@infrastructure/email/ImapEmailService';
 import { logger } from '@shared/infrastructure/logging/Logger';
 import { ErrorHandler } from '@shared/infrastructure/errors/ErrorHandler';
-import { CardCompany } from '@domain/entities/card/CardTypes';
+import { CardCompany } from '@domain/enums/CardCompany';
+import { CardUsageMapper } from '@shared/domain/mappers/CardUsageMapper';
 
 /**
  * メール処理のユースケース
@@ -35,33 +34,19 @@ export class ProcessEmailUseCase implements IProcessEmailUseCase {
   @ErrorHandler.errorDecorator('ProcessEmailUseCase', {
     defaultMessage: 'メール処理中にエラーが発生しました'
   })
-  async execute(emailBody: string, cardCompany: CardCompany = CardCompany.MUFG): Promise<{ usage: CardUsageNotification, savedPath: string }> {
+  async execute(emailBody: string, cardCompany: CardCompany = CardCompany.MUFG): Promise<{ usage: CardUsageNotificationDTO, savedPath: string }> {
     logger.info(`${cardCompany}のメール本文の解析を開始します...`, this.serviceContext);
 
-    // メール本文からカード利用情報を抽出（既にCardUsageMapperを使用）
-    const usage = await this.emailService.parseCardUsageFromEmail(emailBody, cardCompany);
-
-    logger.debug(`パース結果: ${JSON.stringify(usage)}`, this.serviceContext);
-
-    // Firestoreのタイムスタンプに変換
-    const firestoreTimestamp = admin.firestore.Timestamp.fromDate(new Date(usage.datetime_of_use));
-
-    // カード利用情報エンティティを作成
-    const cardUsageEntity: CardUsage = {
-      card_name: usage.card_name,
-      datetime_of_use: firestoreTimestamp,
-      amount: usage.amount,
-      where_to_use: usage.where_to_use,
-      memo: usage.memo,
-      is_active: usage.is_active,
-      created_at: admin.firestore.FieldValue.serverTimestamp() as admin.firestore.Timestamp
-    };
+    // メール本文からカード利用情報を抽出
+    const cardUsage = await this.emailService.parseCardUsageFromEmail(emailBody, cardCompany);
+    logger.debug(`パース結果: ${JSON.stringify(cardUsage)}`, this.serviceContext);
 
     // リポジトリを通じてFirestoreに保存
-    const savedPath = await this.cardUsageRepository.save(cardUsageEntity);
+    const savedPath = await this.cardUsageRepository.save(cardUsage);
     logger.info(`カード利用情報を保存しました: ${savedPath}`, this.serviceContext);
 
     // 処理したカード利用情報と保存パスを返す
+    const usage = CardUsageMapper.toNotification(cardUsage);
     return { usage, savedPath };
   }
 
@@ -75,33 +60,21 @@ export class ProcessEmailUseCase implements IProcessEmailUseCase {
     defaultMessage: 'テスト実行中にエラーが発生しました'
   })
   async executeTest(emailBody: string, cardCompany: CardCompany = CardCompany.MUFG): Promise<{
-    parsedData: CardUsageNotification;
+    parsedData: CardUsageNotificationDTO;
     savedPath: string;
   }> {
     logger.info(`テストモードで${cardCompany}のメール処理を実行します`, this.serviceContext);
 
     // メール本文からカード利用情報を抽出
-    const usage = await this.emailService.parseCardUsageFromEmail(emailBody, cardCompany);
-    logger.debug(`テストパース結果: ${JSON.stringify(usage)}`, this.serviceContext);
-
-    // Firestoreのタイムスタンプに変換
-    const firestoreTimestamp = admin.firestore.Timestamp.fromDate(new Date(usage.datetime_of_use));
-
-    // カード利用情報エンティティを作成
-    const cardUsageEntity: CardUsage = {
-      card_name: usage.card_name,
-      datetime_of_use: firestoreTimestamp,
-      amount: usage.amount,
-      where_to_use: usage.where_to_use,
-      memo: usage.memo,
-      is_active: usage.is_active,
-      created_at: admin.firestore.FieldValue.serverTimestamp() as admin.firestore.Timestamp
-    };
+    const cardUsage = await this.emailService.parseCardUsageFromEmail(emailBody, cardCompany);
+    logger.debug(`テストパース結果: ${JSON.stringify(cardUsage)}`, this.serviceContext);
 
     // リポジトリを通じてFirestoreに保存
-    const savedPath = await this.cardUsageRepository.save(cardUsageEntity);
+    const savedPath = await this.cardUsageRepository.save(cardUsage);
     logger.info('カード利用情報を保存しました: ' + savedPath, this.serviceContext);
 
+    // 処理したカード利用情報を通知形式に変換
+    const usage = CardUsageMapper.toNotification(cardUsage);
     return {
       parsedData: usage,
       savedPath

@@ -1,6 +1,7 @@
-import { DiscordNotifier } from '@shared/infrastructure/discord/DiscordNotifier';
+
 import { AppError, ErrorType } from '@shared/errors/AppError';
-import { ILogger, LogNotifyOptions, ServiceStatus } from '@shared/domain/interfaces/ILogger';
+import { ILogger, LogNotifyOptions, ServiceStatus } from '@shared/domain/interfaces/logging/ILogger';
+import { IDiscordNotifier } from '@shared/domain/interfaces/discord/IDiscordNotifier';
 
 /**
  * 本来は DiscordNotifier をアダプターとして利用するべきだが、
@@ -61,7 +62,7 @@ export class Logger implements ILogger {
   private serviceErrorStats: Map<string, { count: number, times: Date[] }> = new Map();
 
   // Discordの通知機能
-  private discordNotifier: DiscordNotifier | null = null;
+  private discordNotifier: IDiscordNotifier | null = null;
 
   /**
    * コンストラクタ - シングルトンパターン
@@ -102,7 +103,7 @@ export class Logger implements ILogger {
   /**
    * DiscordNotifierを設定
    */
-  public setDiscordNotifier(discordNotifier: DiscordNotifier): void {
+  public setDiscordNotifier(discordNotifier: IDiscordNotifier): void {
     this.discordNotifier = discordNotifier;
     logger.info('DiscordNotifierが設定されました', 'Logger');
   }

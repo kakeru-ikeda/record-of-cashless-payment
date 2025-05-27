@@ -3,8 +3,8 @@ import { HttpAppConfig } from '@infrastructure/config/HttpAppConfig';
 import { DependencyContainer } from '@infrastructure/config/DependencyContainer';
 import { TestRunner } from '@infrastructure/test/TestRunner';
 import { logger } from '@shared/infrastructure/logging/Logger';
-import { CardCompany } from '@domain/entities/card/CardTypes';
-import { IApplication } from '@domain/interfaces/app/IApplication';
+import { CardCompany } from '@domain/enums/CardCompany';
+import { IApplication } from '@domain/interfaces/infrastructure/app/IApplication';
 import { ErrorHandler } from '@shared/infrastructure/errors/ErrorHandler';
 
 /**
