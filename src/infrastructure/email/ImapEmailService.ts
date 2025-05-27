@@ -234,14 +234,7 @@ export class ImapEmailService implements IEmailService {
   async parseCardUsageFromEmail(emailContent: string, cardCompany: CardCompany = CardCompany.MUFG): Promise<CardUsageNotification> {
     try {
       // カード利用情報の抽出
-      const cardUsageInfo = this.cardUsageExtractor.extractFromEmailBody(emailContent, cardCompany);
-
-      // 一時的なCardUsageエンティティを作成
-      const cardUsage: CardUsage = {
-        ...cardUsageInfo,
-        datetime_of_use: Timestamp.fromDate(new Date(cardUsageInfo.datetime_of_use)),
-        created_at: Timestamp.now()
-      };
+      const cardUsage = this.cardUsageExtractor.extractFromEmailBody(emailContent, cardCompany);
 
       // マッパーを使ってドメインモデルから通知用DTOに変換
       return CardUsageMapper.toNotification(cardUsage);
@@ -262,19 +255,6 @@ export class ImapEmailService implements IEmailService {
         where_to_use: ''
       };
     }
-  }
-
-  /**
-   * テスト用：カード利用情報の抽出
-   * @param emailBody メール本文
-   * @param cardCompany カード会社
-   * @returns 抽出結果
-   */
-  async executeTest(emailBody: string, cardCompany: CardCompany): Promise<CardUsageInfo> {
-    const context = `${this.serviceContext}:Test`;
-    logger.info(`${cardCompany}のカード利用情報をテスト抽出します`, context);
-
-    return this.cardUsageExtractor.extractFromEmailBody(emailBody, cardCompany);
   }
 
   /**
