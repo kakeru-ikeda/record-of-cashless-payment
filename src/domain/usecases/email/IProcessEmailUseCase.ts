@@ -1,4 +1,4 @@
-import { CardUsageNotification } from '@shared/domain/entities/CardUsageNotification';
+import { CardUsageNotificationDTO } from '@shared/domain/dto/CardUsageNotificationDTO';
 import { CardCompany } from '@domain/enums/CardCompany';
 
 /**
@@ -13,7 +13,7 @@ export interface IProcessEmailUseCase {
    * @returns 処理されたカード利用情報と保存パス
    */
   execute(emailBody: string, cardCompany: CardCompany): Promise<{
-    usage: CardUsageNotification,
+    usage: CardUsageNotificationDTO,
     savedPath: string
   }>;
 
@@ -24,7 +24,7 @@ export interface IProcessEmailUseCase {
    * @returns 処理結果
    */
   executeTest(emailBody: string, cardCompany: CardCompany): Promise<{
-    parsedData: CardUsageNotification;
+    parsedData: CardUsageNotificationDTO;
     savedPath: string;
   }>;
 }

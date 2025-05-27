@@ -1,8 +1,8 @@
-import { CardUsageNotification } from '@shared/domain/entities/CardUsageNotification';
+import { CardUsageNotificationDTO } from '@shared/domain/dto/CardUsageNotificationDTO';
 
 export interface INotifyCardUsageUseCase {
   /**
    * カード利用情報をDiscordに通知する
    */
-  notifyUsage(usage: CardUsageNotification): Promise<void>;
+  notifyUsage(usage: CardUsageNotificationDTO): Promise<void>;
 }

@@ -1,6 +1,6 @@
 import { CardCompany } from '@domain/enums/CardCompany';
 import { ParsedEmail } from '@infrastructure/email/EmailParser';
-import { CardUsageNotification } from '@shared/domain/entities/CardUsageNotification';
+import { CardUsageNotificationDTO } from '@shared/domain/dto/CardUsageNotificationDTO';
 
 export interface IProcessCardCompanyEmailUseCase {
   /**
@@ -9,7 +9,7 @@ export interface IProcessCardCompanyEmailUseCase {
   execute(email: ParsedEmail): Promise<{
     cardCompany: CardCompany | null;
     usageResult?: {
-      usage: CardUsageNotification;
+      usage: CardUsageNotificationDTO;
       savedPath: string;
     };
   }>;

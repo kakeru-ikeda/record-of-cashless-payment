@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { CardUsageNotification } from '@shared/domain/entities/CardUsageNotification';
+import { CardUsageNotificationDTO } from '@shared/domain/dto/CardUsageNotificationDTO';
 import {
     WeeklyReportNotification,
     DailyReportNotification,
@@ -30,7 +30,7 @@ export interface DiscordNotifier {
      * @param data カード利用情報
      * @returns 通知の成功または失敗を表すブール値
      */
-    notify(data: CardUsageNotification): Promise<boolean>;
+    notify(data: CardUsageNotificationDTO): Promise<boolean>;
 
     /**
      * ウィークリーレポートを通知する
@@ -202,7 +202,7 @@ export class DiscordWebhookNotifier implements DiscordNotifier {
      * @param data カード利用情報
      * @returns 通知の成功または失敗を表すブール値
      */
-    async notify(data: CardUsageNotification): Promise<boolean> {
+    async notify(data: CardUsageNotificationDTO): Promise<boolean> {
         try {
             const webhookUrl = this.getWebhookUrl(NotificationType.USAGE);
 
