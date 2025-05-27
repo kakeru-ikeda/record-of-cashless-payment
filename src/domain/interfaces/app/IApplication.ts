@@ -2,7 +2,7 @@
  * アプリケーションのライフサイクル管理を担当するインターフェース
  * このインターフェースにより、アプリケーションの初期化、実行、終了の抽象化が可能になる
  */
-import { CardCompany } from '@domain/entities/card/CardTypes';
+import { CardCompany } from '@domain/enums/CardCompany';
 
 export interface IApplication {
     /**

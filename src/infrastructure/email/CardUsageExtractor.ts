@@ -1,7 +1,7 @@
 import { logger } from '@shared/infrastructure/logging/Logger';
 import { AppError, ErrorType } from '@shared/errors/AppError';
 import { ICardUsageExtractor } from '@domain/interfaces/email/ICardUsageExtractor';
-import { CardCompany } from '@domain/entities/card/CardTypes';
+import { CardCompany } from '@domain/enums/CardCompany';
 import { CardUsage } from '@domain/entities/CardUsage';
 import { CardUsageFactory } from '@shared/domain/factories/CardUsageFactory';
 

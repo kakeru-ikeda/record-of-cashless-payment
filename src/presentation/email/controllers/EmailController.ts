@@ -6,7 +6,7 @@ import { AppError, ErrorType } from '@shared/errors/AppError';
 import { ErrorHandler } from '../../../../shared/infrastructure/errors/ErrorHandler';
 import { IProcessCardCompanyEmailUseCase } from '../../../domain/usecases/email/IProcessCardCompanyEmailUseCase';
 import { INotifyCardUsageUseCase } from '../../../domain/usecases/notification/INotifyCardUsageUseCase';
-import { CardCompany } from '@domain/entities/card/CardTypes';
+import { CardCompany } from '@domain/enums/CardCompany';
 
 /**
  * メール処理のコントローラー

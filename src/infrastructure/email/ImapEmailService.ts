@@ -7,7 +7,7 @@ import { CardUsageExtractor } from '@infrastructure/email/CardUsageExtractor';
 import { IEmailService } from '@domain/interfaces/email/IEmailService';
 import { CardUsageNotification } from '@shared/domain/entities/CardUsageNotification';
 import { CardUsageMapper } from '@shared/domain/mappers/CardUsageMapper';
-import { CardCompany } from '@domain/entities/card/CardTypes';
+import { CardCompany } from '@domain/enums/CardCompany';
 
 /**
  * IMAP接続とメール処理のサービス

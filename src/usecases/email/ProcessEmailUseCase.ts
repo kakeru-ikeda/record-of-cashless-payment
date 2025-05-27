@@ -6,7 +6,7 @@ import { IProcessEmailUseCase } from '@domain/usecases/email/IProcessEmailUseCas
 import { ImapEmailService } from '@infrastructure/email/ImapEmailService';
 import { logger } from '@shared/infrastructure/logging/Logger';
 import { ErrorHandler } from '@shared/infrastructure/errors/ErrorHandler';
-import { CardCompany } from '@domain/entities/card/CardTypes';
+import { CardCompany } from '@domain/enums/CardCompany';
 
 /**
  * メール処理のユースケース

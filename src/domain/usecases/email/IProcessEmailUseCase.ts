@@ -1,5 +1,5 @@
 import { CardUsageNotification } from '@shared/domain/entities/CardUsageNotification';
-import { CardCompany } from '@domain/entities/card/CardTypes';
+import { CardCompany } from '@domain/enums/CardCompany';
 
 /**
  * メール処理のユースケースインターフェース
