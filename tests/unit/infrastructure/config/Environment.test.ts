@@ -1,4 +1,4 @@
-import { Environment } from '../../../../../shared/infrastructure/config/Environment';
+import { Environment } from '../../../../shared/infrastructure/config/Environment';
 import * as fs from 'fs';
 
 // fsのモック
@@ -7,7 +7,7 @@ jest.mock('fs', () => ({
 }));
 
 // Loggerをモック化
-jest.mock('../../../../../shared/infrastructure/logging/Logger', () => ({
+jest.mock('../../../../shared/infrastructure/logging/Logger', () => ({
     logger: {
         info: jest.fn(),
         debug: jest.fn(),
@@ -19,7 +19,7 @@ jest.mock('../../../../../shared/infrastructure/logging/Logger', () => ({
 }));
 
 // Logger importをテスト用に取得
-import { logger } from '../../../../../shared/infrastructure/logging/Logger';
+import { logger } from '../../../../shared/infrastructure/logging/Logger';
 
 describe('Environment', () => {
     // 元の環境変数を保存
@@ -59,7 +59,7 @@ describe('Environment', () => {
 
             // Environment クラスを再require することで環境変数を再読み込み
             jest.resetModules();
-            const { Environment: ReloadedEnvironment } = require('../../../../../shared/infrastructure/config/Environment');
+            const { Environment: ReloadedEnvironment } = require('../../../../shared/infrastructure/config/Environment');
 
             expect(ReloadedEnvironment.IMAP_SERVER).toBe('test.imap.server');
             expect(ReloadedEnvironment.IMAP_USER).toBe('test-user');
@@ -72,7 +72,7 @@ describe('Environment', () => {
             process.env.DISCORD_LOGGING_WEBHOOK_URL = 'https://discord.com/api/webhooks/logging';
 
             jest.resetModules();
-            const { Environment: ReloadedEnvironment } = require('../../../../../shared/infrastructure/config/Environment');
+            const { Environment: ReloadedEnvironment } = require('../../../../shared/infrastructure/config/Environment');
 
             expect(ReloadedEnvironment.DISCORD_WEBHOOK_URL).toBe('https://discord.com/api/webhooks/test');
             expect(ReloadedEnvironment.DISCORD_ALERT_WEEKLY_WEBHOOK_URL).toBe('https://discord.com/api/webhooks/alert-weekly');
@@ -85,20 +85,20 @@ describe('Environment', () => {
             delete process.env.FUNCTION_TARGET;
 
             jest.resetModules();
-            let { Environment: ReloadedEnvironment } = require('../../../../../shared/infrastructure/config/Environment');
+            let { Environment: ReloadedEnvironment } = require('../../../../shared/infrastructure/config/Environment');
             expect(ReloadedEnvironment.IS_CLOUD_FUNCTIONS).toBe(false);
 
             // FUNCTIONS_EMULATORが設定されている場合
             process.env.FUNCTIONS_EMULATOR = 'true';
             jest.resetModules();
-            ReloadedEnvironment = require('../../../../../shared/infrastructure/config/Environment').Environment;
+            ReloadedEnvironment = require('../../../../shared/infrastructure/config/Environment').Environment;
             expect(ReloadedEnvironment.IS_CLOUD_FUNCTIONS).toBe(true);
 
             // FUNCTION_TARGETが設定されている場合
             delete process.env.FUNCTIONS_EMULATOR;
             process.env.FUNCTION_TARGET = 'api';
             jest.resetModules();
-            ReloadedEnvironment = require('../../../../../shared/infrastructure/config/Environment').Environment;
+            ReloadedEnvironment = require('../../../../shared/infrastructure/config/Environment').Environment;
             expect(ReloadedEnvironment.IS_CLOUD_FUNCTIONS).toBe(true);
         });
     });
@@ -151,7 +151,7 @@ describe('Environment', () => {
             process.env.FUNCTIONS_EMULATOR = 'true';
 
             jest.resetModules();
-            const { Environment: ReloadedEnvironment } = require('../../../../../shared/infrastructure/config/Environment');
+            const { Environment: ReloadedEnvironment } = require('../../../../shared/infrastructure/config/Environment');
 
             // ファイルが存在しないようにモック
             (fs.existsSync as jest.Mock).mockReturnValue(false);
@@ -241,12 +241,12 @@ describe('Environment', () => {
         });
 
         it('getDiscordWebhookUrl()が正しいURLを返すこと', () => {
-            const { Environment: ReloadedEnvironment } = require('../../../../../shared/infrastructure/config/Environment');
+            const { Environment: ReloadedEnvironment } = require('../../../../shared/infrastructure/config/Environment');
             expect(ReloadedEnvironment.getDiscordWebhookUrl()).toBe('https://discord.com/api/webhooks/main');
         });
 
         it('専用URLが設定されている場合は専用URLを返すこと', () => {
-            const { Environment: ReloadedEnvironment } = require('../../../../../shared/infrastructure/config/Environment');
+            const { Environment: ReloadedEnvironment } = require('../../../../shared/infrastructure/config/Environment');
 
             expect(ReloadedEnvironment.getDiscordAlertWeeklyWebhookUrl()).toBe('https://discord.com/api/webhooks/alert-weekly');
             expect(ReloadedEnvironment.getDiscordAlertMonthlyWebhookUrl()).toBe('https://discord.com/api/webhooks/alert-monthly');
@@ -265,7 +265,7 @@ describe('Environment', () => {
             delete process.env.DISCORD_REPORT_MONTHLY_WEBHOOK_URL;
             delete process.env.DISCORD_LOGGING_WEBHOOK_URL;
 
-            const { Environment: ReloadedEnvironment } = require('../../../../../shared/infrastructure/config/Environment');
+            const { Environment: ReloadedEnvironment } = require('../../../../shared/infrastructure/config/Environment');
 
             const mainUrl = 'https://discord.com/api/webhooks/main';
             expect(ReloadedEnvironment.getDiscordAlertWeeklyWebhookUrl()).toBe(mainUrl);
@@ -282,7 +282,7 @@ describe('Environment', () => {
             delete process.env.LOG_LEVEL;
 
             jest.resetModules();
-            const { Environment: ReloadedEnvironment } = require('../../../../../shared/infrastructure/config/Environment');
+            const { Environment: ReloadedEnvironment } = require('../../../../shared/infrastructure/config/Environment');
 
             expect(ReloadedEnvironment.LOG_LEVEL).toBe('INFO');
         });
@@ -291,7 +291,7 @@ describe('Environment', () => {
             delete process.env.COMPACT_LOGS;
 
             jest.resetModules();
-            const { Environment: ReloadedEnvironment } = require('../../../../../shared/infrastructure/config/Environment');
+            const { Environment: ReloadedEnvironment } = require('../../../../shared/infrastructure/config/Environment');
 
             expect(ReloadedEnvironment.COMPACT_LOGS).toBe(false);
         });
@@ -300,7 +300,7 @@ describe('Environment', () => {
             delete process.env.SUPPRESS_POLLING_LOGS;
 
             jest.resetModules();
-            const { Environment: ReloadedEnvironment } = require('../../../../../shared/infrastructure/config/Environment');
+            const { Environment: ReloadedEnvironment } = require('../../../../shared/infrastructure/config/Environment');
 
             expect(ReloadedEnvironment.SUPPRESS_POLLING_LOGS).toBe(false);
         });
@@ -309,7 +309,7 @@ describe('Environment', () => {
             delete process.env.STATUS_REFRESH_INTERVAL;
 
             jest.resetModules();
-            const { Environment: ReloadedEnvironment } = require('../../../../../shared/infrastructure/config/Environment');
+            const { Environment: ReloadedEnvironment } = require('../../../../shared/infrastructure/config/Environment');
 
             expect(ReloadedEnvironment.STATUS_REFRESH_INTERVAL).toBe(30000);
         });
@@ -321,7 +321,7 @@ describe('Environment', () => {
             process.env.STATUS_REFRESH_INTERVAL = '60000';
 
             jest.resetModules();
-            const { Environment: ReloadedEnvironment } = require('../../../../../shared/infrastructure/config/Environment');
+            const { Environment: ReloadedEnvironment } = require('../../../../shared/infrastructure/config/Environment');
 
             expect(ReloadedEnvironment.LOG_LEVEL).toBe('DEBUG');
             expect(ReloadedEnvironment.COMPACT_LOGS).toBe(true);

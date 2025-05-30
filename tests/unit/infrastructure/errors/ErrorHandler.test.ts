@@ -1,9 +1,9 @@
-import { ErrorHandler } from '../../../../../shared/infrastructure/errors/ErrorHandler';
-import { AppError, ErrorType } from '../../../../../shared/errors/AppError';
-import { logger } from '../../../../../shared/infrastructure/logging/Logger';
+import { ErrorHandler } from '../../../../shared/infrastructure/errors/ErrorHandler';
+import { AppError, ErrorType } from '../../../../shared/errors/AppError';
+import { logger } from '../../../../shared/infrastructure/logging/Logger';
 
 // Loggerをモック化
-jest.mock('../../../../../shared/infrastructure/logging/Logger', () => ({
+jest.mock('../../../../shared/infrastructure/logging/Logger', () => ({
     logger: {
         info: jest.fn(),
         debug: jest.fn(),
