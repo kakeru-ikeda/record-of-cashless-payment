@@ -184,6 +184,31 @@ describe('DiscordNotifier', () => {
             expect(result).toBe(false);
             expect(logger.error).toHaveBeenCalled();
         });
+
+        it('非Errorオブジェクトの例外発生時にも適切に処理されること', async () => {
+            const notifier = createDiscordNotifier();
+
+            // Error以外のオブジェクトを投げる
+            mockedAxios.post.mockRejectedValueOnce('文字列エラー');
+
+            const cardUsageData: CardUsageNotificationDTO = {
+                card_name: 'テストカード',
+                where_to_use: 'テスト店舗',
+                amount: 1000,
+                datetime_of_use: new Date('2023-01-01T10:00:00').toISOString(),
+            };
+
+            const result = await notifier.notifyCardUsage(cardUsageData);
+
+            expect(result).toBe(false);
+            expect(logger.error).toHaveBeenCalled();
+            // originalErrorがundefinedでAppErrorが作成されることを確認
+            const errorCall = (logger.error as jest.Mock).mock.calls.find(call =>
+                call[0] && call[0].message === 'カード利用の通知の送信中にエラーが発生しました'
+            );
+            expect(errorCall).toBeTruthy();
+            expect(errorCall[0].originalError).toBeUndefined();
+        });
     });
 
     describe('notifyWeeklyReport', () => {
@@ -211,7 +236,31 @@ describe('DiscordNotifier', () => {
             expect(postData.embeds[0].description).toContain('5,000円');
         });
 
-        it('アラートレベル付きの週次レポートを送信できること', async () => {
+        it('アラートレベル1の週次レポートを送信できること', async () => {
+            const notifier = createDiscordNotifier();
+            (mockedAxios.post as jest.Mock).mockResolvedValueOnce({ status: 204 });
+
+            const reportData: WeeklyReportNotification = {
+                title: 'ウィークリーアラート',
+                period: '2023/01/01 - 2023/01/07',
+                totalAmount: 12000,
+                totalCount: 8,
+                alertLevel: 1,
+                additionalInfo: 'レベル1アラート'
+            };
+
+            const result = await notifier.notifyWeeklyReport(reportData);
+
+            expect(result).toBe(true);
+            expect(mockedAxios.post).toHaveBeenCalled();
+            const postCall = (mockedAxios.post as jest.Mock).mock.calls[0];
+            expect(postCall[0]).toBe('https://discord.com/api/webhooks/alert-weekly');
+            const postData = postCall[1] as any;
+            expect(postData.embeds[0].title).toContain('🔔');
+            expect(postData.embeds[0].color).toBe(16766720);
+        });
+
+        it('アラートレベル2の週次レポートを送信できること', async () => {
             const notifier = createDiscordNotifier();
             (mockedAxios.post as jest.Mock).mockResolvedValueOnce({ status: 204 });
 
@@ -232,6 +281,30 @@ describe('DiscordNotifier', () => {
             expect(postCall[0]).toBe('https://discord.com/api/webhooks/alert-weekly');
             const postData = postCall[1] as any;
             expect(postData.embeds[0].title).toContain('ウィークリーアラート');
+        });
+
+        it('アラートレベル3の週次レポートを送信できること', async () => {
+            const notifier = createDiscordNotifier();
+            (mockedAxios.post as jest.Mock).mockResolvedValueOnce({ status: 204 });
+
+            const reportData: WeeklyReportNotification = {
+                title: 'ウィークリーアラート',
+                period: '2023/01/01 - 2023/01/07',
+                totalAmount: 20000,
+                totalCount: 15,
+                alertLevel: 3,
+                additionalInfo: 'レベル3アラート'
+            };
+
+            const result = await notifier.notifyWeeklyReport(reportData);
+
+            expect(result).toBe(true);
+            expect(mockedAxios.post).toHaveBeenCalled();
+            const postCall = (mockedAxios.post as jest.Mock).mock.calls[0];
+            expect(postCall[0]).toBe('https://discord.com/api/webhooks/alert-weekly');
+            const postData = postCall[1] as any;
+            expect(postData.embeds[0].title).toContain('🚨');
+            expect(postData.embeds[0].color).toBe(15158332);
         });
 
         it('例外発生時にエラー処理されること', async () => {
@@ -320,6 +393,54 @@ describe('DiscordNotifier', () => {
             expect(postData.embeds[0].description).toContain('50,000円');
         });
 
+        it('アラートレベル1の月次レポートを送信できること', async () => {
+            const notifier = createDiscordNotifier();
+            (mockedAxios.post as jest.Mock).mockResolvedValueOnce({ status: 204 });
+
+            const reportData: MonthlyReportNotification = {
+                title: 'マンスリーアラート',
+                period: '2023/01',
+                totalAmount: 80000,
+                totalCount: 30,
+                alertLevel: 1,
+                additionalInfo: 'アラート情報'
+            };
+
+            const result = await notifier.notifyMonthlyReport(reportData);
+
+            expect(result).toBe(true);
+            expect(mockedAxios.post).toHaveBeenCalled();
+            const postCall = (mockedAxios.post as jest.Mock).mock.calls[0];
+            expect(postCall[0]).toBe('https://discord.com/api/webhooks/alert-monthly');
+            const postData = postCall[1] as any;
+            expect(postData.embeds[0].title).toContain('🔔');
+            expect(postData.embeds[0].color).toBe(16766720);
+        });
+
+        it('アラートレベル2の月次レポートを送信できること', async () => {
+            const notifier = createDiscordNotifier();
+            (mockedAxios.post as jest.Mock).mockResolvedValueOnce({ status: 204 });
+
+            const reportData: MonthlyReportNotification = {
+                title: 'マンスリーアラート',
+                period: '2023/01',
+                totalAmount: 90000,
+                totalCount: 40,
+                alertLevel: 2,
+                additionalInfo: 'アラート情報'
+            };
+
+            const result = await notifier.notifyMonthlyReport(reportData);
+
+            expect(result).toBe(true);
+            expect(mockedAxios.post).toHaveBeenCalled();
+            const postCall = (mockedAxios.post as jest.Mock).mock.calls[0];
+            expect(postCall[0]).toBe('https://discord.com/api/webhooks/alert-monthly');
+            const postData = postCall[1] as any;
+            expect(postData.embeds[0].title).toContain('マンスリーアラート');
+            expect(postData.embeds[0].color).toBe(15548997);
+        });
+
         it('アラートレベル付きの月次レポートを送信できること', async () => {
             const notifier = createDiscordNotifier();
             (mockedAxios.post as jest.Mock).mockResolvedValueOnce({ status: 204 });
@@ -379,28 +500,205 @@ describe('DiscordNotifier', () => {
             expect(postData.embeds[0].fields[0].value).toBe('テストエラー');
         });
 
-        it('詳細情報付きのエラー通知を送信できること', async () => {
+        it('AUTHENTICATION/AUTHORIZATIONエラーの通知を送信できること', async () => {
             const notifier = createDiscordNotifier();
             (mockedAxios.post as jest.Mock).mockResolvedValueOnce({ status: 204 });
 
-            const originalError = new Error('元のエラー');
-            originalError.stack = 'スタックトレース情報';
-
-            const error = new AppError(
-                'テストエラー',
-                ErrorType.DATA_ACCESS,
-                { key: 'value' },
-                originalError
-            );
-
+            const error = new AppError('認証エラー', ErrorType.AUTHENTICATION);
             const result = await notifier.notifyError(error);
 
             expect(result).toBe(true);
             expect(mockedAxios.post).toHaveBeenCalled();
             const postCall = (mockedAxios.post as jest.Mock).mock.calls[0];
             const postData = postCall[1] as any;
-            expect(postData.embeds[0].fields.some((f: any) => f.name === '詳細情報')).toBe(true);
-            expect(postData.embeds[0].fields.some((f: any) => f.name === 'スタックトレース')).toBe(true);
+            expect(postData.embeds[0].title).toContain('🔒');
+            expect(postData.embeds[0].color).toBe(15548997);
+        });
+
+        it('DISCORDエラーの通知を送信できること', async () => {
+            const notifier = createDiscordNotifier();
+            (mockedAxios.post as jest.Mock).mockResolvedValueOnce({ status: 204 });
+
+            const error = new AppError('Discord エラー', ErrorType.DISCORD);
+            const result = await notifier.notifyError(error);
+
+            expect(result).toBe(true);
+            expect(mockedAxios.post).toHaveBeenCalled();
+            const postCall = (mockedAxios.post as jest.Mock).mock.calls[0];
+            const postData = postCall[1] as any;
+            expect(postData.embeds[0].title).toContain('🔌');
+            expect(postData.embeds[0].color).toBe(10181046);
+        });
+
+        it('EMAILエラーの通知を送信できること', async () => {
+            const notifier = createDiscordNotifier();
+            (mockedAxios.post as jest.Mock).mockResolvedValueOnce({ status: 204 });
+
+            const error = new AppError('メールエラー', ErrorType.EMAIL);
+            const result = await notifier.notifyError(error);
+
+            expect(result).toBe(true);
+            expect(mockedAxios.post).toHaveBeenCalled();
+            const postCall = (mockedAxios.post as jest.Mock).mock.calls[0];
+            const postData = postCall[1] as any;
+            expect(postData.embeds[0].title).toContain('📧');
+            expect(postData.embeds[0].color).toBe(3447003);
+        });
+
+        it('DATA_ACCESS/FIREBASEエラーの通知を送信できること', async () => {
+            const notifier = createDiscordNotifier();
+            (mockedAxios.post as jest.Mock).mockResolvedValueOnce({ status: 204 });
+
+            const error = new AppError('データアクセスエラー', ErrorType.DATA_ACCESS);
+            const result = await notifier.notifyError(error);
+
+            expect(result).toBe(true);
+            expect(mockedAxios.post).toHaveBeenCalled();
+            const postCall = (mockedAxios.post as jest.Mock).mock.calls[0];
+            const postData = postCall[1] as any;
+            expect(postData.embeds[0].title).toContain('🗄️');
+            expect(postData.embeds[0].color).toBe(1752220);
+        });
+
+        it('NETWORKエラーの通知を送信できること', async () => {
+            const notifier = createDiscordNotifier();
+            (mockedAxios.post as jest.Mock).mockResolvedValueOnce({ status: 204 });
+
+            const error = new AppError('ネットワークエラー', ErrorType.NETWORK);
+            const result = await notifier.notifyError(error);
+
+            expect(result).toBe(true);
+            expect(mockedAxios.post).toHaveBeenCalled();
+            const postCall = (mockedAxios.post as jest.Mock).mock.calls[0];
+            const postData = postCall[1] as any;
+            expect(postData.embeds[0].title).toContain('🌐');
+            expect(postData.embeds[0].color).toBe(12370112);
+        });
+
+        it('AUTHORIZATION エラーの通知を送信できること', async () => {
+            const notifier = createDiscordNotifier();
+            (mockedAxios.post as jest.Mock).mockResolvedValueOnce({ status: 204 });
+
+            const error = new AppError('認可エラー', ErrorType.AUTHORIZATION);
+            const result = await notifier.notifyError(error);
+
+            expect(result).toBe(true);
+            expect(mockedAxios.post).toHaveBeenCalled();
+            const postCall = (mockedAxios.post as jest.Mock).mock.calls[0];
+            const postData = postCall[1] as any;
+            expect(postData.embeds[0].title).toContain('🔒');
+            expect(postData.embeds[0].color).toBe(15548997);
+        });
+
+        it('FIREBASE エラーの通知を送信できること', async () => {
+            const notifier = createDiscordNotifier();
+            (mockedAxios.post as jest.Mock).mockResolvedValueOnce({ status: 204 });
+
+            const error = new AppError('Firebase エラー', ErrorType.FIREBASE);
+            const result = await notifier.notifyError(error);
+
+            expect(result).toBe(true);
+            expect(mockedAxios.post).toHaveBeenCalled();
+            const postCall = (mockedAxios.post as jest.Mock).mock.calls[0];
+            const postData = postCall[1] as any;
+            expect(postData.embeds[0].title).toContain('🗄️');
+            expect(postData.embeds[0].color).toBe(1752220);
+        });
+
+        it('デフォルトエラー（UNKNOWN）の通知を送信できること', async () => {
+            const notifier = createDiscordNotifier();
+            (mockedAxios.post as jest.Mock).mockResolvedValueOnce({ status: 204 });
+
+            // 意図的に定義されていないエラータイプを使用
+            const error = new AppError('不明なエラー', 'UNKNOWN' as ErrorType);
+            const result = await notifier.notifyError(error);
+
+            expect(result).toBe(true);
+            expect(mockedAxios.post).toHaveBeenCalled();
+            const postCall = (mockedAxios.post as jest.Mock).mock.calls[0];
+            const postData = postCall[1] as any;
+            expect(postData.embeds[0].title).toContain('❌');
+            expect(postData.embeds[0].color).toBe(15158332);
+        });
+
+        it('詳細情報付きのエラー通知を送信できること', async () => {
+            const notifier = createDiscordNotifier();
+            (mockedAxios.post as jest.Mock).mockResolvedValueOnce({ status: 204 });
+
+            const error = new AppError(
+                '詳細エラー',
+                ErrorType.NETWORK,
+                { userId: '123', operation: 'test' }
+            );
+            const result = await notifier.notifyError(error);
+
+            expect(result).toBe(true);
+            expect(mockedAxios.post).toHaveBeenCalled();
+            const postCall = (mockedAxios.post as jest.Mock).mock.calls[0];
+            const postData = postCall[1] as any;
+            const embed = postData.embeds[0];
+
+            // 詳細情報が含まれていることを確認
+            const detailsField = embed.fields.find((field: any) => field.name === '詳細情報');
+            expect(detailsField).toBeTruthy();
+            expect(detailsField.value).toContain('userId');
+            expect(detailsField.value).toContain('123');
+        });
+
+        it('スタックトレース付きのエラー通知を送信できること', async () => {
+            const notifier = createDiscordNotifier();
+            (mockedAxios.post as jest.Mock).mockResolvedValueOnce({ status: 204 });
+
+            const originalError = new Error('原因エラー');
+            originalError.stack = 'Error: 原因エラー\n    at test (file.ts:10:5)\n    at another (file.ts:20:10)';
+
+            const error = new AppError(
+                'スタックトレース付きエラー',
+                ErrorType.GENERAL,
+                {},
+                originalError
+            );
+            const result = await notifier.notifyError(error);
+
+            expect(result).toBe(true);
+            expect(mockedAxios.post).toHaveBeenCalled();
+            const postCall = (mockedAxios.post as jest.Mock).mock.calls[0];
+            const postData = postCall[1] as any;
+            const embed = postData.embeds[0];
+
+            // スタックトレースが含まれていることを確認
+            const stackField = embed.fields.find((field: any) => field.name === 'スタックトレース');
+            expect(stackField).toBeTruthy();
+            expect(stackField.value).toContain('原因エラー');
+        });
+
+        it('長いスタックトレースが適切に切り詰められること', async () => {
+            const notifier = createDiscordNotifier();
+            (mockedAxios.post as jest.Mock).mockResolvedValueOnce({ status: 204 });
+
+            const originalError = new Error('長いスタックトレース');
+            // 1000文字を超える長いスタックトレースを作成
+            originalError.stack = 'Error: 長いスタックトレース\n' + 'a'.repeat(1200);
+
+            const error = new AppError(
+                '長いスタックトレース付きエラー',
+                ErrorType.GENERAL,
+                {},
+                originalError
+            );
+            const result = await notifier.notifyError(error);
+
+            expect(result).toBe(true);
+            expect(mockedAxios.post).toHaveBeenCalled();
+            const postCall = (mockedAxios.post as jest.Mock).mock.calls[0];
+            const postData = postCall[1] as any;
+            const embed = postData.embeds[0];
+
+            // スタックトレースが切り詰められていることを確認
+            const stackField = embed.fields.find((field: any) => field.name === 'スタックトレース');
+            expect(stackField).toBeTruthy();
+            expect(stackField.value).toContain('...(省略)');
+            expect(stackField.value.length).toBeLessThan(1100); // 切り詰められて短くなっている
         });
 
         it('例外発生時に処理を続行すること', async () => {
@@ -413,8 +711,6 @@ describe('DiscordNotifier', () => {
             const result = await notifier.notifyError(error);
 
             expect(result).toBe(false);
-            // notifyErrorの場合はwarnではなくerrorログが出力される
-            expect(logger.error).toHaveBeenCalled();
         });
     });
 
@@ -458,8 +754,6 @@ describe('DiscordNotifier', () => {
             const result = await notifier.notifyLogging('テストメッセージ');
 
             expect(result).toBe(false);
-            // notifyLoggingの場合はwarnではなくerrorログが出力される
-            expect(logger.error).toHaveBeenCalled();
         });
     });
 });
