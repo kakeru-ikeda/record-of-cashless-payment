@@ -1,4 +1,4 @@
-import { CardUsageMapper } from '../../../../shared/domain/mappers/CardUsageMapper';
+import { CardUsageMapper } from '../../../../shared/infrastructure/mappers/CardUsageMapper';
 import { CardUsage } from '../../../../shared/domain/entities/CardUsage';
 import { CardUsageNotificationDTO } from '../../../../shared/domain/dto/CardUsageNotificationDTO';
 import { Timestamp } from 'firebase-admin/firestore';
@@ -25,7 +25,7 @@ describe('CardUsageMapper', () => {
             // Arrange
             const testDate = new Date('2025-05-30T09:30:00Z');
             const createdDate = new Date('2025-05-30T10:00:00Z');
-            
+
             const mockTimestamp = {
                 toDate: () => testDate,
                 seconds: Math.floor(testDate.getTime() / 1000),
@@ -69,7 +69,7 @@ describe('CardUsageMapper', () => {
             // Arrange
             const testDate = new Date('2025-05-29T15:45:00Z');
             const createdDate = new Date('2025-05-30T10:00:00Z');
-            
+
             const mockTimestamp = {
                 toDate: () => testDate,
                 seconds: Math.floor(testDate.getTime() / 1000),
@@ -112,7 +112,7 @@ describe('CardUsageMapper', () => {
             // Arrange
             const testDate = new Date('2025-05-28T20:15:30Z');
             const createdDate = new Date('2025-05-30T10:00:00Z');
-            
+
             const mockTimestamp = {
                 toDate: () => testDate,
                 seconds: Math.floor(testDate.getTime() / 1000),
@@ -179,7 +179,7 @@ describe('CardUsageMapper', () => {
 
             // Timestamp.fromDateが呼ばれていることを確認
             expect(Timestamp.fromDate).toHaveBeenCalledWith(new Date('2025-05-30T14:20:00.000Z'));
-            
+
             // Timestamp.nowが呼ばれていることを確認
             expect(Timestamp.now).toHaveBeenCalled();
 
@@ -254,13 +254,13 @@ describe('CardUsageMapper', () => {
             // Assert
             // Timestamp.fromDateが呼ばれていることを確認
             expect(Timestamp.fromDate).toHaveBeenCalledTimes(1);
-            
+
             // 最後の呼び出しの引数がInvalid Dateであることを確認
             const lastCall = (Timestamp.fromDate as jest.Mock).mock.calls[0];
             const passedDate = lastCall[0];
             expect(passedDate instanceof Date).toBe(true);
             expect(isNaN(passedDate.getTime())).toBe(true); // Invalid Dateの場合はNaN
-            
+
             expect(result.card_name).toBe('テストカード');
             expect(result.amount).toBe(1000);
             expect(result.where_to_use).toBe('テスト場所');
@@ -277,7 +277,7 @@ describe('CardUsageMapper', () => {
             // Arrange
             const originalDate = new Date('2025-05-30T12:00:00Z');
             const createdDate = new Date('2025-05-30T10:00:00Z');
-            
+
             const mockTimestamp = {
                 toDate: () => originalDate,
                 seconds: Math.floor(originalDate.getTime() / 1000),
@@ -313,7 +313,7 @@ describe('CardUsageMapper', () => {
 
             // datetime_of_useは変換されるがデータは保持される
             expect(Timestamp.fromDate).toHaveBeenCalledWith(originalDate);
-            
+
             // created_atは新しく生成される
             expect(Timestamp.now).toHaveBeenCalled();
         });

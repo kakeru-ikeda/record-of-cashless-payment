@@ -5,7 +5,7 @@ import { ImapEmailService } from '@infrastructure/email/ImapEmailService';
 import { logger } from '@shared/infrastructure/logging/Logger';
 import { ErrorHandler } from '@shared/infrastructure/errors/ErrorHandler';
 import { CardCompany } from '@domain/enums/CardCompany';
-import { CardUsageMapper } from '@shared/domain/mappers/CardUsageMapper';
+import { CardUsageMapper } from '@shared/infrastructure/mappers/CardUsageMapper';
 
 /**
  * メール処理のユースケース
