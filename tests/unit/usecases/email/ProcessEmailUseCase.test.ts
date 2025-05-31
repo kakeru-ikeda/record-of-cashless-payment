@@ -24,7 +24,7 @@ jest.mock('firebase-admin', () => {
   };
 });
 
-jest.mock('../../../../shared/domain/mappers/CardUsageMapper', () => ({
+jest.mock('../../../../shared/infrastructure/mappers/CardUsageMapper', () => ({
   CardUsageMapper: {
     toNotification: jest.fn().mockReturnValue({
       card_name: 'Ｄ　三菱ＵＦＪ－ＪＣＢデビット',

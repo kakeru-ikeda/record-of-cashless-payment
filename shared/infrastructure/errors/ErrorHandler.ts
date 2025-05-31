@@ -188,6 +188,18 @@ export class ErrorHandler {
             return ErrorType.FIREBASE;
         }
 
+        // メール関連のエラー
+        if (
+            errorName.includes('mail') ||
+            errorName.includes('email') ||
+            errorName.includes('imap') ||
+            errorMessage.includes('mail') ||
+            errorMessage.includes('email') ||
+            errorMessage.includes('imap')
+        ) {
+            return ErrorType.EMAIL;
+        }
+
         // ネットワーク関連のエラー
         if (
             errorName.includes('network') ||
@@ -231,18 +243,6 @@ export class ErrorHandler {
             return ErrorType.VALIDATION;
         }
 
-        // メール関連のエラー
-        if (
-            errorName.includes('mail') ||
-            errorName.includes('email') ||
-            errorName.includes('imap') ||
-            errorMessage.includes('mail') ||
-            errorMessage.includes('email') ||
-            errorMessage.includes('imap')
-        ) {
-            return ErrorType.EMAIL;
-        }
-
         // Discord関連のエラー
         if (
             errorName.includes('discord') ||
@@ -254,34 +254,5 @@ export class ErrorHandler {
 
         // その他のエラーは一般エラーとして扱う
         return ErrorType.GENERAL;
-    }
-
-    /**
-     * エラーをログに出力する
-     * @param appError AppErrorオブジェクト
-     * @param context エラーが発生したコンテキスト
-     */
-    private static logError(appError: AppError, context: string): void {
-        const errorLog = `
-======================================
-エラー発生: ${new Date().toISOString()}
-コンテキスト: ${context}
-${appError.toLogString()}
-======================================
-`;
-
-        // エラーの重大度に応じてログ出力
-        if (
-            appError.type === ErrorType.GENERAL ||
-            appError.type === ErrorType.FIREBASE ||
-            appError.type === ErrorType.DATA_ACCESS ||
-            appError.type === ErrorType.NETWORK ||
-            appError.type === ErrorType.CONFIGURATION ||
-            appError.type === ErrorType.ENVIRONMENT
-        ) {
-            console.error(errorLog);
-        } else {
-            console.warn(errorLog);
-        }
     }
 }

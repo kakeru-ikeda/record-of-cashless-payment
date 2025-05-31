@@ -30,7 +30,7 @@ export interface RawEmailMessage {
  * IMAP接続・管理を専門に行うアダプタークラス
  * ImapFlowライブラリのラッパーとして機能し、接続管理・再接続・メール取得などの低レベル操作を担当
  */
-export class ImapClientAdapter extends EventEmitter implements IEmailClient {
+export class ImapEmailClient extends EventEmitter implements IEmailClient {
   private client: ImapFlow | null = null;
   private keepAliveTimer: NodeJS.Timeout | null = null;
   private reconnectTimer: NodeJS.Timeout | null = null;
@@ -45,7 +45,7 @@ export class ImapClientAdapter extends EventEmitter implements IEmailClient {
    */
   constructor(private readonly config: ImapConnectionConfig) {
     super();
-    this.serviceContext = 'ImapClientAdapter';
+    this.serviceContext = 'ImapEmailClient';
     logger.updateServiceStatus(this.serviceContext, 'offline', '初期化済み');
   }
 

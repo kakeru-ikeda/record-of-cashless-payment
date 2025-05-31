@@ -7,7 +7,11 @@ module.exports = {
   verbose: true,
   collectCoverageFrom: [
     'src/**/*.ts',
-    '!src/index.ts'
+    '!src/index.ts',
+    "shared/**/*.{ts,tsx}",
+    "!**/node_modules/**",
+    "!**/dist/**",
+    "!**/*.d.ts",
   ],
   coverageDirectory: 'coverage',
   transform: {

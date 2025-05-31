@@ -1,3 +1,7 @@
+import { AppError } from "@shared/errors/AppError";
+import { ErrorConfig } from "@shared/infrastructure/config/ErrorConfig";
+import { ErrorTypeMapper } from "@shared/infrastructure/mappers/ErrorTypeMapper";
+
 /**
  * API/Functions用の標準レスポンスインターフェイス
  */
@@ -44,6 +48,18 @@ export class ResponseHelper {
      */
     static error(status: number = 500, message: string, data?: any): Response {
         return this.createResponse(status, false, message, data);
+    }
+
+    /**
+     * AppErrorをHTTPレスポンスに変換する
+     * @param appError 変換するAppErrorオブジェクト
+     * @returns 適切に整形されたエラーレスポンス
+     */
+    static fromAppError(appError: AppError): Response {
+        const statusCode = ErrorTypeMapper.toHttpStatusCode(appError.type);
+        const details = ErrorConfig.shouldIncludeDetails() ? appError.details : undefined;
+
+        return this.error(statusCode, appError.message, details);
     }
 
     /**

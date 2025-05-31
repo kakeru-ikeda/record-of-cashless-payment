@@ -1,5 +1,5 @@
 import { EmailParser } from '../../../../src/infrastructure/email/EmailParser';
-import { RawEmailMessage } from '../../../../src/infrastructure/email/ImapClientAdapter';
+import { RawEmailMessage } from '../../../../src/infrastructure/email/ImapEmailClient';
 import { simpleParser } from 'mailparser';
 
 // mailparserのモック化

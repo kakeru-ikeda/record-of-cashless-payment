@@ -1,7 +1,7 @@
 import { logger } from '@shared/infrastructure/logging/Logger';
 import { Environment } from '@shared/infrastructure/config/Environment';
 import { AppError, ErrorType } from '@shared/errors/AppError';
-import { ImapClientAdapter, ImapConnectionConfig } from '@infrastructure/email/ImapClientAdapter';
+import { ImapEmailClient, ImapConnectionConfig } from '@infrastructure/email/ImapEmailClient';
 import { EmailParser, ParsedEmail } from '@infrastructure/email/EmailParser';
 import { CardUsageExtractor } from '@infrastructure/email/CardUsageExtractor';
 import { IEmailService } from '@domain/interfaces/infrastructure/email/IEmailService';
@@ -14,7 +14,7 @@ import { ErrorHandler } from '@shared/infrastructure/errors/ErrorHandler';
  * メール監視、メール解析、カード利用情報抽出のフローを調整
  */
 export class ImapEmailService implements IEmailService {
-  private imapClient: ImapClientAdapter;
+  private imapClient: ImapEmailClient;
   private emailParser: EmailParser;
   private cardUsageExtractor: CardUsageExtractor;
   private pollingTimer: NodeJS.Timeout | null = null;
@@ -51,7 +51,7 @@ export class ImapEmailService implements IEmailService {
       }
     };
 
-    this.imapClient = new ImapClientAdapter(config);
+    this.imapClient = new ImapEmailClient(config);
     this.emailParser = new EmailParser();
     this.cardUsageExtractor = new CardUsageExtractor();
 
@@ -68,9 +68,9 @@ export class ImapEmailService implements IEmailService {
         this.pollingTimer = null;
       }
 
-      // ImapClientAdapterの自動再接続機能が動作するため、
+      // ImapEmailClientの自動再接続機能が動作するため、
       // ここでは追加のアクションは不要です。
-      // ImapClientAdapterはscheduleReconnectメソッドを内部で呼び出し、
+      // ImapEmailClientはscheduleReconnectメソッドを内部で呼び出し、
       // 指数バックオフに基づいて再接続を試みます。
       // 再接続成功時にreconnectedイベントが発火します。
       logger.info(`IMAPクライアントの自動再接続プロセスが開始されるのを待機しています: ${mailboxName}`, this.serviceContext);

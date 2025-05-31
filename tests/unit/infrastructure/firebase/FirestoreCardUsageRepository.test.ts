@@ -5,14 +5,14 @@ import { CardUsage } from '../../../../src/domain/entities/CardUsage';
 import { FirestoreService } from '../../../../shared/infrastructure/database/FirestoreService';
 import { DateUtil } from '../../../../shared/utils/DateUtil';
 import { Environment } from '../../../../shared/infrastructure/config/Environment';
-import { CardUsageMapper } from '../../../../shared/domain/mappers/CardUsageMapper';
+import { CardUsageMapper } from '../../../../shared/infrastructure/mappers/CardUsageMapper';
 import { AppError } from '../../../../shared/errors/AppError';
 
 // モック
 jest.mock('../../../../shared/infrastructure/database/FirestoreService');
 jest.mock('../../../../shared/infrastructure/config/Environment');
 jest.mock('../../../../shared/utils/DateUtil');
-jest.mock('../../../../shared/domain/mappers/CardUsageMapper');
+jest.mock('../../../../shared/infrastructure/mappers/CardUsageMapper');
 jest.mock('firebase-admin/firestore');
 
 // Loggerをモック化
