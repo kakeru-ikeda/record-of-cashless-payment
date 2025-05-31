@@ -115,7 +115,7 @@ describe('FirestoreService', () => {
                 expect(admin.initializeApp).toHaveBeenCalledWith();
                 expect(admin.firestore).toHaveBeenCalled();
                 expect(result).toBe(mockFirestore);
-                expect(console.log).toHaveBeenCalledWith('[FirestoreService] Cloud Functions環境でFirestoreに接続しました');
+                expect(logger.info).toHaveBeenCalledWith('Cloud Functions環境でFirestoreに接続しました', 'FirestoreService');
             });
 
             it('既に初期化済みの場合は既存のインスタンスを返すこと', async () => {
@@ -219,7 +219,7 @@ describe('FirestoreService', () => {
 
             expect(mockFirestore.doc).toHaveBeenCalledWith(path);
             expect(mockDoc.set).toHaveBeenCalledWith(data);
-            expect(console.log).toHaveBeenCalledWith('[FirestoreService] ドキュメントを保存しました: users/user1');
+            expect(logger.info).toHaveBeenCalledWith('ドキュメントを保存しました: users/user1', 'FirestoreService');
         });
 
         it('保存エラーの場合はAppErrorを投げること', async () => {
@@ -247,7 +247,7 @@ describe('FirestoreService', () => {
 
             expect(mockFirestore.doc).toHaveBeenCalledWith(path);
             expect(mockDoc.update).toHaveBeenCalledWith(data);
-            expect(console.log).toHaveBeenCalledWith('[FirestoreService] ドキュメントを更新しました: users/user1');
+            expect(logger.info).toHaveBeenCalledWith('ドキュメントを更新しました: users/user1', 'FirestoreService');
         });
 
         it('更新エラーの場合はAppErrorを投げること', async () => {
@@ -293,7 +293,7 @@ describe('FirestoreService', () => {
             const result = await firestoreService.getDocument(path);
 
             expect(result).toBeNull();
-            expect(console.log).toHaveBeenCalledWith('[FirestoreService] ドキュメントが見つかりません: users/nonexistent');
+            expect(logger.info).toHaveBeenCalledWith('ドキュメントが見つかりません: users/nonexistent', 'FirestoreService');
         });
 
         it('取得エラーの場合はAppErrorを投げること', async () => {
@@ -335,7 +335,7 @@ describe('FirestoreService', () => {
 
             expect(mockFirestore.doc).toHaveBeenCalledWith(path);
             expect(mockDoc.delete).toHaveBeenCalled();
-            expect(console.log).toHaveBeenCalledWith('[FirestoreService] ドキュメントを削除しました: users/user1');
+            expect(logger.info).toHaveBeenCalledWith('ドキュメントを削除しました: users/user1', 'FirestoreService');
         });
 
         it('削除エラーの場合はAppErrorを投げること', async () => {
