@@ -45,7 +45,7 @@ export class ImapEmailClient extends EventEmitter implements IEmailClient {
    */
   constructor(private readonly config: ImapConnectionConfig) {
     super();
-    this.serviceContext = 'ImapClientAdapter';
+    this.serviceContext = 'ImapEmailClient';
     logger.updateServiceStatus(this.serviceContext, 'offline', '初期化済み');
   }
 
