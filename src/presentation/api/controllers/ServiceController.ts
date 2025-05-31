@@ -3,7 +3,7 @@ import { logger } from '@shared/infrastructure/logging/Logger';
 import { EmailController } from '@presentation/email/controllers/EmailController';
 import { AppError, ErrorType } from '@shared/errors/AppError';
 import { ResponseHelper } from '@shared/presentation/responses/ResponseHelper';
-import { ErrorResponseAdapter } from '@shared/presentation/errors/ErrorResponseAdapter';
+import { ErrorResponseFormatter } from '@shared/presentation/errors/ErrorResponseFormatter';
 
 /**
  * サービス管理コントローラー
@@ -50,7 +50,7 @@ export class ServiceController {
 
             logger.error(appError, 'ServiceController');
 
-            const errorResponse = ErrorResponseAdapter.toResponse(appError);
+            const errorResponse = ErrorResponseFormatter.toResponse(appError);
             res.status(errorResponse.status).json(errorResponse);
         }
     };
@@ -123,7 +123,7 @@ export class ServiceController {
 
             logger.error(appError, 'ServiceController');
 
-            const errorResponse = ErrorResponseAdapter.toResponse(appError);
+            const errorResponse = ErrorResponseFormatter.toResponse(appError);
             res.status(errorResponse.status).json(errorResponse);
         }
     };

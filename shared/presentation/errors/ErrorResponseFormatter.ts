@@ -7,7 +7,7 @@ import { ErrorConfig } from '@shared/infrastructure/config/ErrorConfig';
  * エラーオブジェクトをHTTPレスポンスに変換するアダプタークラス
  * プレゼンテーション層でのレスポンス形式統一に特化
  */
-export class ErrorResponseAdapter {
+export class ErrorResponseFormatter {
     /**
      * AppErrorをHTTPレスポンスオブジェクトに変換
      * @param appError 変換するAppErrorオブジェクト

@@ -3,7 +3,7 @@ import { logger } from '@shared/infrastructure/logging/Logger';
 import { AppError, ErrorType } from '@shared/errors/AppError';
 import { ResponseHelper } from '@shared/presentation/responses/ResponseHelper';
 import { MonitoringView } from '@presentation/api/views/MonitoringView';
-import { ErrorResponseAdapter } from '@shared/presentation/errors/ErrorResponseAdapter';
+import { ErrorResponseFormatter } from '@shared/presentation/errors/ErrorResponseFormatter';
 
 /**
  * モニタリングコントローラー - サーバー状態の監視用エンドポイント実装
@@ -64,7 +64,7 @@ export class MonitoringController {
 
       logger.error(appError, 'MonitoringController');
 
-      const errorResponse = ErrorResponseAdapter.toResponse(appError);
+      const errorResponse = ErrorResponseFormatter.toResponse(appError);
       res.status(errorResponse.status).json(errorResponse);
     }
   };
@@ -103,7 +103,7 @@ export class MonitoringController {
 
       logger.error(appError, 'MonitoringController');
 
-      const errorResponse = ErrorResponseAdapter.toResponse(appError);
+      const errorResponse = ErrorResponseFormatter.toResponse(appError);
       res.status(errorResponse.status).json(errorResponse);
     }
   };
