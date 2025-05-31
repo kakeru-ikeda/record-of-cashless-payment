@@ -137,47 +137,69 @@ export class DateUtil {
             return date.toISOString().replace('T', ' ').substring(0, 19);
         }
 
-        const options: Intl.DateTimeFormatOptions = {};
+        // 年、月、日、時、分、秒の値を取得
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1;
+        const day = date.getDate();
+        const hours = date.getHours();
+        const minutes = date.getMinutes();
+        const seconds = date.getSeconds();
 
+        // フォーマット文字列を置換
+        let result = format;
+
+        // 年の置換
         if (format.includes('yyyy')) {
-            options.year = 'numeric';
+            result = result.replace('yyyy', year.toString());
         } else if (format.includes('yy')) {
-            options.year = '2-digit';
+            result = result.replace('yy', year.toString().slice(-2));
         }
 
+        // 月の置換
         if (format.includes('MM')) {
-            options.month = '2-digit';
+            result = result.replace('MM', month.toString().padStart(2, '0'));
         } else if (format.includes('M')) {
-            options.month = 'numeric';
+            result = result.replace('M', month.toString());
         }
 
+        // 日の置換
         if (format.includes('dd')) {
-            options.day = '2-digit';
+            result = result.replace('dd', day.toString().padStart(2, '0'));
         } else if (format.includes('d')) {
-            options.day = 'numeric';
+            result = result.replace('d', day.toString());
         }
 
-        if (format.includes('HH') || format.includes('hh')) {
-            options.hour = '2-digit';
-            options.hour12 = format.includes('hh');
-        } else if (format.includes('H') || format.includes('h')) {
-            options.hour = 'numeric';
-            options.hour12 = format.includes('h');
+        // 時間の置換（24時間形式）
+        if (format.includes('HH')) {
+            result = result.replace('HH', hours.toString().padStart(2, '0'));
+        } else if (format.includes('H')) {
+            result = result.replace('H', hours.toString());
         }
 
+        // 時間の置換（12時間形式）
+        if (format.includes('hh')) {
+            const hours12 = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+            result = result.replace('hh', hours12.toString().padStart(2, '0'));
+        } else if (format.includes('h')) {
+            const hours12 = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+            result = result.replace('h', hours12.toString());
+        }
+
+        // 分の置換
         if (format.includes('mm')) {
-            options.minute = '2-digit';
+            result = result.replace('mm', minutes.toString().padStart(2, '0'));
         } else if (format.includes('m')) {
-            options.minute = 'numeric';
+            result = result.replace('m', minutes.toString());
         }
 
+        // 秒の置換
         if (format.includes('ss')) {
-            options.second = '2-digit';
+            result = result.replace('ss', seconds.toString().padStart(2, '0'));
         } else if (format.includes('s')) {
-            options.second = 'numeric';
+            result = result.replace('s', seconds.toString());
         }
 
-        return new Intl.DateTimeFormat(locale, options).format(date);
+        return result;
     }
 
     /**
