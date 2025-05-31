@@ -78,6 +78,18 @@ describe('HTTP統合テスト', () => {
     app.use('/api/services', serviceRoutes.getRouter());
   });
 
+  afterEach(async () => {
+    // モックをクリア
+    jest.clearAllMocks();
+    
+    // アプリケーションのリセット
+    app = null as any;
+    mockEmailController = null as any;
+    
+    // 少し待機してリソースの解放を確実にする
+    await new Promise(resolve => setTimeout(resolve, 10));
+  });
+
   describe('モニタリングエンドポイント', () => {
     test('GET /monitoring/health: 正常なヘルスチェックレスポンスを返すこと', async () => {
       const response = await request(app).get('/monitoring/health');
@@ -175,10 +187,11 @@ describe('HTTP統合テスト', () => {
     test('POST /api/services/unknown-service: 存在しないサービスIDを指定した場合エラーを返すこと', async () => {
       const response = await request(app)
         .post('/api/services/unknown-service')
-        .send({ action: 'start' });
+        .send({ action: 'start' })
+        .timeout(5000); // 明示的にタイムアウトを設定
 
       expect(response.status).toBe(404);
       expect(response.body).toHaveProperty('success', false);
-    });
+    }, 6000); // テスト自体のタイムアウトも設定
   });
 });

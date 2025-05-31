@@ -1,6 +1,7 @@
 # Test stage
 FROM node:18 AS test
 WORKDIR /usr/src/app
+ENV TZ=Asia/Tokyo
 COPY package*.json ./
 RUN npm install
 COPY . .

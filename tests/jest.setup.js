@@ -1,5 +1,7 @@
 // テスト環境の設定
 process.env.NODE_ENV = 'test';
+// タイムゾーンを日本時間に設定
+process.env.TZ = 'Asia/Tokyo';
 
 // タイムアウトの設定
 jest.setTimeout(10000);
@@ -11,7 +13,7 @@ jest.setTimeout(10000);
 // jest.spyOn(console, 'error').mockImplementation(() => {});
 
 // グローバルな afterAll フックを追加
-afterAll(() => {
+afterAll(async () => {
   // NodeJS のタイマープールをクリア
   jest.useRealTimers();
 
@@ -25,8 +27,12 @@ afterAll(() => {
     // Loggerが読み込めない場合は無視
   }
 
-  // 残っているタイマーを検出
-  const activeTimers = process._getActiveHandles().filter(handle =>
+  // すべてのタイマーを強制クリア
+  jest.clearAllTimers();
+  
+  // プロセス上の未解決ハンドルをチェック
+  const activeHandles = process._getActiveHandles();
+  const activeTimers = activeHandles.filter(handle =>
     handle.constructor &&
     (handle.constructor.name === 'Timeout' || handle.constructor.name === 'Interval')
   );
@@ -45,4 +51,7 @@ afterAll(() => {
       }
     });
   }
+
+  // setImmediateを使用してより安全にクリーンアップを完了させる
+  await new Promise(resolve => setImmediate(resolve));
 });
