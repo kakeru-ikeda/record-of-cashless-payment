@@ -19,15 +19,17 @@ export class ErrorTypeMapper {
                 return 401;
             case ErrorType.AUTHORIZATION:
                 return 403;
+            case ErrorType.DUPLICATE:
+                return 409;
             case ErrorType.NETWORK:
+                return 503;
             case ErrorType.EMAIL:
             case ErrorType.DISCORD:
             case ErrorType.FIREBASE:
             case ErrorType.DATA_ACCESS:
-                return 502;
+                return 500;
             case ErrorType.CONFIGURATION:
             case ErrorType.ENVIRONMENT:
-                return 500;
             case ErrorType.GENERAL:
             default:
                 return 500;

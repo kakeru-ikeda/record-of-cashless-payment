@@ -1,3 +1,5 @@
+import { ErrorTypeMapper } from '@shared/infrastructure/mappers/ErrorTypeMapper';
+
 /**
  * アプリケーションエラーの種類を定義する列挙型
  */
@@ -29,25 +31,6 @@ export enum ErrorType {
 }
 
 /**
- * HTTP ステータスコードとエラータイプのマッピング
- */
-export const ErrorStatusMap: Record<ErrorType, number> = {
-    [ErrorType.GENERAL]: 500,
-    [ErrorType.AUTHENTICATION]: 401,
-    [ErrorType.AUTHORIZATION]: 403,
-    [ErrorType.VALIDATION]: 400,
-    [ErrorType.NOT_FOUND]: 404,
-    [ErrorType.DUPLICATE]: 409,
-    [ErrorType.DATA_ACCESS]: 500,
-    [ErrorType.FIREBASE]: 500,
-    [ErrorType.EMAIL]: 500,
-    [ErrorType.DISCORD]: 500,
-    [ErrorType.NETWORK]: 503,
-    [ErrorType.CONFIGURATION]: 500,
-    [ErrorType.ENVIRONMENT]: 500,
-};
-
-/**
  * アプリケーションで発生するエラーを表すベースクラス
  */
 export class AppError extends Error {
@@ -71,7 +54,7 @@ export class AppError extends Error {
         super(message);
         this.name = 'AppError';
         this.type = type;
-        this.statusCode = ErrorStatusMap[type];
+        this.statusCode = ErrorTypeMapper.toHttpStatusCode(type);
         this.details = details;
         this.originalError = originalError;
 
@@ -81,10 +64,7 @@ export class AppError extends Error {
         }
     }
 
-    /**
-     * エラーオブジェクトをログ出力用の文字列に変換する
-     * @returns ログ出力用の文字列
-     */
+    // ...existing code...
     toLogString(): string {
         const parts = [
             `[${this.type}] ${this.message}`,
@@ -96,10 +76,6 @@ export class AppError extends Error {
         return parts.filter(Boolean).join('\n');
     }
 
-    /**
-     * エラーオブジェクトをJSON形式に変換する
-     * @returns JSON形式のエラー情報
-     */
     toJSON(): Record<string, any> {
         return {
             type: this.type,
