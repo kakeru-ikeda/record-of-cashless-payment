@@ -70,7 +70,9 @@ export class DateUtil {
         ));
 
         // 週の開始日が今月の1日より前の場合（月をまたいだ場合）
-        if (new Date(weekStartDate.getTime() + 9 * 60 * 60 * 1000).getMonth() !== date.getMonth()) {
+        // 日本時間で比較するため、UTCから日本時間に変換して判定
+        const weekStartJST = new Date(weekStartDate.getTime() + 9 * 60 * 60 * 1000);
+        if (weekStartJST.getMonth() !== date.getMonth()) {
             // 週の開始日が前月の場合は、今月の1日から計算し直す（日本時間の午前0時）
             weekStartDate = new Date(Date.UTC(
                 date.getFullYear(),
