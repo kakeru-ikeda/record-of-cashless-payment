@@ -5,6 +5,9 @@ module.exports = {
   roots: ['<rootDir>/src/', '<rootDir>/tests/'],
   testMatch: ['**/tests/**/*.test.ts'],
   verbose: true,
+  // タイムゾーンを日本時間に設定
+  setupFilesAfterEnv: ['./tests/jest.setup.js'],
+  globalSetup: '<rootDir>/tests/globalSetup.js',
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/index.ts',
@@ -29,6 +32,7 @@ module.exports = {
     '^@shared/(.*)$': '<rootDir>/shared/$1'
   },
   setupFilesAfterEnv: ['./tests/jest.setup.js'],
+  globalSetup: '<rootDir>/tests/globalSetup.js',
   // タイムアウト処理の改善
   testTimeout: 10000,
   // テスト終了時に未解決のプロミスやタイマーを検出

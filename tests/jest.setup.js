@@ -1,5 +1,7 @@
 // テスト環境の設定
 process.env.NODE_ENV = 'test';
+// タイムゾーンを日本時間に設定
+process.env.TZ = 'Asia/Tokyo';
 
 // タイムアウトの設定
 jest.setTimeout(10000);
