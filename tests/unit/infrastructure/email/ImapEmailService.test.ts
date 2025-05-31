@@ -1,12 +1,12 @@
 import { ImapEmailService } from '../../../../src/infrastructure/email/ImapEmailService';
-import { ImapClientAdapter } from '../../../../src/infrastructure/email/ImapClientAdapter';
+import { ImapEmailClient } from '../../../../src/infrastructure/email/ImapEmailClient';
 import { EmailParser, ParsedEmail } from '../../../../src/infrastructure/email/EmailParser';
 import { CardUsageExtractor } from '../../../../src/infrastructure/email/CardUsageExtractor';
 import { CardUsageNotificationDTO } from '../../../../shared/domain/dto/CardUsageNotificationDTO';
 import { CardCompany } from '../../../../src/domain/enums/CardCompany';
 
 // 依存コンポーネントをモック
-jest.mock('../../../../src/infrastructure/email/ImapClientAdapter');
+jest.mock('../../../../src/infrastructure/email/ImapEmailClient');
 jest.mock('../../../../src/infrastructure/email/EmailParser');
 jest.mock('../../../../src/infrastructure/email/CardUsageExtractor');
 
@@ -26,7 +26,7 @@ jest.mock('../../../../shared/infrastructure/logging/Logger', () => {
 
 describe('ImapEmailService', () => {
   let emailService: ImapEmailService;
-  let mockImapClient: jest.Mocked<ImapClientAdapter>;
+  let mockImapClient: jest.Mocked<ImapEmailClient>;
   let mockEmailParser: jest.Mocked<EmailParser>;
   let mockCardUsageExtractor: jest.Mocked<CardUsageExtractor>;
 
@@ -51,12 +51,12 @@ describe('ImapEmailService', () => {
     jest.clearAllMocks();
 
     // モックの初期化
-    mockImapClient = new ImapClientAdapter({ host: '', port: 0, secure: false, auth: { user: '', pass: '' } }) as jest.Mocked<ImapClientAdapter>;
+    mockImapClient = new ImapEmailClient({ host: '', port: 0, secure: false, auth: { user: '', pass: '' } }) as jest.Mocked<ImapEmailClient>;
     mockEmailParser = new EmailParser() as jest.Mocked<EmailParser>;
     mockCardUsageExtractor = new CardUsageExtractor() as jest.Mocked<CardUsageExtractor>;
 
-    // ImapClientAdapterのコンストラクタモックを設定
-    (ImapClientAdapter as jest.MockedClass<typeof ImapClientAdapter>).mockImplementation(() => {
+    // ImapEmailClientのコンストラクタモックを設定
+    (ImapEmailClient as jest.MockedClass<typeof ImapEmailClient>).mockImplementation(() => {
       mockImapClient.connect = jest.fn().mockResolvedValue({} as any);
       mockImapClient.fetchUnseenMessages = jest.fn().mockResolvedValue(['123', '124']);
       mockImapClient.fetchMessage = jest.fn().mockResolvedValue({ uid: '123', source: Buffer.from(sampleEmailContent) });
@@ -92,7 +92,7 @@ describe('ImapEmailService', () => {
         (emailService as any).pollingTimer = null;
       }
 
-      // ImapClientAdapter のタイマーも確実にクリア
+      // ImapEmailClient のタイマーも確実にクリア
       if (mockImapClient) {
         // 明示的に internal タイマーをクリアする
         if ((mockImapClient as any).keepAliveTimer) {
@@ -119,7 +119,7 @@ describe('ImapEmailService', () => {
       // 接続を実行
       await emailService.connect('INBOX', mockCallback);
 
-      // ImapClientAdapterのconnectが呼ばれていることを確認
+      // ImapEmailClientのconnectが呼ばれていることを確認
       expect(mockImapClient.connect).toHaveBeenCalledWith('INBOX');
 
       // イベントリスナーが登録されていることを確認
@@ -148,7 +148,7 @@ describe('ImapEmailService', () => {
       // privateなpollForNewMessagesメソッドをテストするために、
       // ポーリング処理を直接シミュレート（内部実装に依存するため注意）
 
-      // ImapClientAdapterがfetchUnseenMessagesを呼び出したときの結果をモック
+      // ImapEmailClientがfetchUnseenMessagesを呼び出したときの結果をモック
       mockImapClient.fetchUnseenMessages.mockResolvedValueOnce(['123']);
 
       // pollForNewMessagesをインスタンスから直接取得して呼び出す（プライベートメソッド）
@@ -217,7 +217,7 @@ describe('ImapEmailService', () => {
       // 閉じる
       await emailService.close();
 
-      // ImapClientAdapterのcloseが呼ばれていることを確認
+      // ImapEmailClientのcloseが呼ばれていることを確認
       expect(mockImapClient.close).toHaveBeenCalled();
     });
   });

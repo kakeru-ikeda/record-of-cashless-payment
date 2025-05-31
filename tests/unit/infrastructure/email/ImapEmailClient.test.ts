@@ -1,4 +1,4 @@
-import { ImapClientAdapter, ImapConnectionConfig } from '../../../../src/infrastructure/email/ImapClientAdapter';
+import { ImapEmailClient, ImapConnectionConfig } from '../../../../src/infrastructure/email/ImapEmailClient';
 import { AppError } from '../../../../shared/errors/AppError';
 import { EventEmitter } from 'events';
 
@@ -80,8 +80,8 @@ jest.mock('../../../../shared/infrastructure/logging/Logger', () => ({
   }
 }));
 
-describe('ImapClientAdapter', () => {
-  let adapter: ImapClientAdapter;
+describe('ImapEmailClient', () => {
+  let adapter: ImapEmailClient;
   let mockConfig: ImapConnectionConfig;
 
   // 各テスト前の準備
@@ -102,7 +102,7 @@ describe('ImapClientAdapter', () => {
       }
     };
 
-    adapter = new ImapClientAdapter(mockConfig);
+    adapter = new ImapEmailClient(mockConfig);
   });
 
   test('正常系: 接続に成功すること', async () => {
