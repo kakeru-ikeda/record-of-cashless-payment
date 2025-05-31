@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin';
 import { Firestore } from 'firebase-admin/firestore';
 import { FirestoreCardUsageRepository } from '../../../../src/infrastructure/firebase/FirestoreCardUsageRepository';
-import { CardUsage } from '../../../../src/domain/entities/CardUsage';
+import { CardUsage } from '../../../../shared/domain/entities/CardUsage';
 import { FirestoreService } from '../../../../shared/infrastructure/database/FirestoreService';
 import { DateUtil } from '../../../../shared/utils/DateUtil';
 import { Environment } from '../../../../shared/infrastructure/config/Environment';

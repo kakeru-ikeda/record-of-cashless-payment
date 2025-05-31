@@ -1,5 +1,5 @@
 
-import { CardUsage } from '@domain/entities/CardUsage';
+import { CardUsage } from '@shared/domain/entities/CardUsage';
 
 /**
  * カード利用情報のリポジトリインターフェース

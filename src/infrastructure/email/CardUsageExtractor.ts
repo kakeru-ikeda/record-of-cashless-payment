@@ -2,7 +2,7 @@ import { logger } from '@shared/infrastructure/logging/Logger';
 import { AppError, ErrorType } from '@shared/errors/AppError';
 import { ICardUsageExtractor } from '@domain/interfaces/infrastructure/email/ICardUsageExtractor';
 import { CardCompany } from '@domain/enums/CardCompany';
-import { CardUsage } from '@domain/entities/CardUsage';
+import { CardUsage } from '@shared/domain/entities/CardUsage';
 import { CardUsageFactory } from '@shared/domain/factories/CardUsageFactory';
 
 /**

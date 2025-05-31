@@ -1,5 +1,5 @@
 import { Firestore } from 'firebase-admin/firestore';
-import { CardUsage } from '@domain/entities/CardUsage';
+import { CardUsage } from '@shared/domain/entities/CardUsage';
 import { ICardUsageRepository } from '@domain/interfaces/repositories/ICardUsageRepository';
 import { Environment } from '@shared/infrastructure/config/Environment';
 import { DateUtil } from '@shared/utils/DateUtil';

@@ -1,1 +1,0 @@
-export { CardUsage } from '@shared/domain/entities/CardUsage';
