@@ -1,5 +1,4 @@
 import { CardUsageFactory } from '../../../../shared/domain/factories/CardUsageFactory';
-import { CardUsage } from '../../../../shared/domain/entities/CardUsage';
 import { Timestamp } from 'firebase-admin/firestore';
 
 // firebase-adminのTimestampをモック
@@ -154,18 +153,18 @@ describe('CardUsageFactory', () => {
             // Assert
             // Timestamp.fromDateが2回呼ばれることを確認（datetime_of_use用とcreated_at用）
             expect(Timestamp.fromDate).toHaveBeenCalledTimes(2);
-            
+
             // モックの呼び出し引数を取得
             const calls = (Timestamp.fromDate as jest.MockedFunction<typeof Timestamp.fromDate>).mock.calls;
-            
+
             // 最初の呼び出しが不正な日付オブジェクトであることを確認（NaNを含む）
             expect(calls[0][0]).toBeInstanceOf(Date);
             expect(isNaN(calls[0][0].getTime())).toBe(true); // 不正な日付はNaNになる
-            
+
             // 2回目の呼び出しが有効な現在時刻であることを確認
             expect(calls[1][0]).toBeInstanceOf(Date);
             expect(isNaN(calls[1][0].getTime())).toBe(false); // 有効な日付
-            
+
             expect(result.card_name).toBe(card_name);
             expect(result.amount).toBe(amount);
             expect(result.where_to_use).toBe(where_to_use);
@@ -219,7 +218,7 @@ describe('CardUsageFactory', () => {
             // Arrange
             const testDate = new Date('2025-05-30T14:30:00Z');
             const createdDate = new Date('2025-05-30T10:00:00Z');
-            
+
             const mockTimestamp = {
                 toDate: () => testDate,
                 seconds: Math.floor(testDate.getTime() / 1000),
@@ -257,7 +256,7 @@ describe('CardUsageFactory', () => {
             // Arrange
             const testDate = new Date('2025-05-29T16:20:00Z');
             const createdDate = new Date('2025-05-29T10:00:00Z');
-            
+
             const mockTimestamp = {
                 toDate: () => testDate,
                 seconds: Math.floor(testDate.getTime() / 1000),
@@ -297,7 +296,7 @@ describe('CardUsageFactory', () => {
             // Arrange
             const testDate = new Date('2025-05-28T09:15:00Z');
             const createdDate = new Date('2025-05-28T08:00:00Z');
-            
+
             const mockTimestamp = {
                 toDate: () => testDate,
                 seconds: Math.floor(testDate.getTime() / 1000),
@@ -332,7 +331,7 @@ describe('CardUsageFactory', () => {
             // Arrange
             const testDate = new Date('2025-05-27T13:30:00Z');
             const createdDate = new Date('2025-05-27T12:00:00Z');
-            
+
             const mockTimestamp = {
                 toDate: () => testDate,
                 seconds: Math.floor(testDate.getTime() / 1000),
@@ -366,7 +365,7 @@ describe('CardUsageFactory', () => {
             // Arrange
             const testDate = new Date('2025-05-26T07:45:00Z');
             const createdDate = new Date('2025-05-26T07:00:00Z');
-            
+
             const mockTimestamp = {
                 toDate: () => testDate,
                 seconds: Math.floor(testDate.getTime() / 1000),
@@ -401,7 +400,7 @@ describe('CardUsageFactory', () => {
             // Arrange
             const testDate = new Date('2025-05-25T19:00:00Z');
             const createdDate = new Date('2025-05-25T18:00:00Z');
-            
+
             const mockTimestamp = {
                 toDate: () => testDate,
                 seconds: Math.floor(testDate.getTime() / 1000),
@@ -429,7 +428,7 @@ describe('CardUsageFactory', () => {
             // Timestampオブジェクトがそのまま参照されていることを確認
             expect(result.datetime_of_use).toBe(mockTimestamp);
             expect(result.created_at).toBe(mockCreatedTimestamp);
-            
+
             // Timestamp.fromDateは呼ばれていないことを確認（復元時は既存のTimestampを使用）
             expect(Timestamp.fromDate).not.toHaveBeenCalled();
         });

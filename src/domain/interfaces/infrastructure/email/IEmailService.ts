@@ -1,6 +1,6 @@
 import { ParsedEmail } from '@infrastructure/email/EmailParser';
 import { CardCompany } from '@domain/enums/CardCompany';
-import { CardUsage } from '@domain/entities/CardUsage';
+import { CardUsage } from '@shared/domain/entities/CardUsage';
 
 /**
  * メールサービスのインターフェース

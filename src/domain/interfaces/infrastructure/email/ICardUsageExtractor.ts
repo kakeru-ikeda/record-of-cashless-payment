@@ -3,7 +3,7 @@
  * メール本文からカード会社固有の形式でカード利用情報を抽出する処理を定義
  */
 import { CardCompany } from '@domain/enums/CardCompany';
-import { CardUsage } from '@domain/entities/CardUsage';
+import { CardUsage } from '@shared/domain/entities/CardUsage';
 
 export interface ICardUsageExtractor {
     /**

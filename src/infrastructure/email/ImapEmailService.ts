@@ -6,7 +6,7 @@ import { EmailParser, ParsedEmail } from '@infrastructure/email/EmailParser';
 import { CardUsageExtractor } from '@infrastructure/email/CardUsageExtractor';
 import { IEmailService } from '@domain/interfaces/infrastructure/email/IEmailService';
 import { CardCompany } from '@domain/enums/CardCompany';
-import { CardUsage } from '@domain/entities/CardUsage';
+import { CardUsage } from '@shared/domain/entities/CardUsage';
 import { ErrorHandler } from '@shared/infrastructure/errors/ErrorHandler';
 
 /**
