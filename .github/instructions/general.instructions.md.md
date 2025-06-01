@@ -1,0 +1,34 @@
+---
+applyTo: '**'
+---
+
+- このGitHubリポジトリはクリーンアーキテクチャに基づいた設計を行う
+- ディレクトリ構成は下記に従う
+  - src/
+    - メインプログラム
+    - src/index.tsをブートストラップとして利用する
+    - GitHubのmailブランチへのPushをトリガーとして、Jenkinsから自宅サーバーへのデプロイが行われる
+    - module-aliasパッケージを利用して`@`でのインポートを行える
+  - functions/
+    - Firebase Cloud Functionsで運用するサーバーレスプログラム
+    - functions/src/index.tsをブートストラップとして利用する
+    - `npm run deploy`コマンドでFirebaseへのデプロイが行われる
+    - apiトリガー
+      - カード利用情報の操作を行うcardUsageRoutes
+      - Firestoreに生成される各種レポートを取得するreportsRoutes
+    - onFirestoreWriteトリガー
+      - Firestoreにカード利用情報が書き込まれたときに実行される
+      - 各種レポートドキュメントの生成・書き込みを行う
+    - dailyReportScheduleトリガー
+      - 毎日日本時間0時に実行される
+      - 前日のデイリーレポートをDiscordに送信
+      - 処理日が週の最終日、または月の最終日の場合はウィークリーレポートを送信
+      - 処理日が月の最終日の場合はマンスリーレポートを送信
+  - shared/
+    - src/とfunctions/で共通して利用するコンポーネント
+    - ディレクトリ構成は当フォルダ配下でクリーンアーキテクチャに沿う
+  - tests/
+    - unit/
+      - src/とshared/の内容をカバーするテストコードを格納する
+      - src/、shared/のどちらに登録されていても同一のディレクトリ構成を利用してよい（shared/infrastructure層に配属されていても、テストコードはtest/unit/infrastructureに配置）
+      
