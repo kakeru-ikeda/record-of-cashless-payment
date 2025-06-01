@@ -31,4 +31,4 @@ applyTo: '**'
     - unit/
       - src/とshared/の内容をカバーするテストコードを格納する
       - src/、shared/のどちらに登録されていても同一のディレクトリ構成を利用してよい（shared/infrastructure層に配属されていても、テストコードはtest/unit/infrastructureに配置）
-      
+      - テストコード内ではmodule-aliasパッケージを利用できないので、相対パスを利用してインポートを行う
