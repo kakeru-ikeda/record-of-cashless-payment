@@ -31,4 +31,20 @@ export class CardUsageMapper {
       created_at: Timestamp.now()
     };
   }
+
+  /**
+   * Firestoreから取得したデータをCardUsageエンティティに変換する
+   * @param data Firestoreから取得したデータ
+   * @returns 
+   */
+  static fromFirestore(data: any): CardUsage {
+    return {
+      card_name: data.card_name,
+      amount: data.amount,
+      where_to_use: data.where_to_use,
+      datetime_of_use: Timestamp.fromDate(data.datetime_of_use.toDate()),
+      is_active: data.is_active,
+      created_at: Timestamp.fromDate(data.created_at.toDate())
+    };
+  }
 }
