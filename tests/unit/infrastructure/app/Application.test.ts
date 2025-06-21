@@ -76,8 +76,9 @@ describe('Application', () => {
 
     // AppConfigのモックを設定
     mockHttpAppConfig = new HttpAppConfig() as jest.Mocked<HttpAppConfig>;
+    (mockHttpAppConfig.initializeControllers as jest.Mock).mockReturnValue(undefined);
     (mockHttpAppConfig.setupMonitoringRoutes as jest.Mock).mockReturnValue(undefined);
-    (mockHttpAppConfig.setupServiceRoutes as jest.Mock).mockReturnValue(undefined);
+    (mockHttpAppConfig.setupAllApiRoutes as jest.Mock).mockReturnValue(undefined);
     (mockHttpAppConfig.startServer as jest.Mock).mockReturnValue(mockServer);
 
     // EmailControllerのモックを設定
@@ -134,8 +135,9 @@ describe('Application', () => {
       expect(mockDependencyContainer.initialize).toHaveBeenCalled();
 
       // AppConfigのメソッドが正しく呼ばれることを確認
+      expect(mockHttpAppConfig.initializeControllers).toHaveBeenCalledWith(mockDependencyContainer);
       expect(mockHttpAppConfig.setupMonitoringRoutes).toHaveBeenCalled();
-      expect(mockHttpAppConfig.setupServiceRoutes).toHaveBeenCalledWith(mockEmailController);
+      expect(mockHttpAppConfig.setupAllApiRoutes).toHaveBeenCalledWith(mockEmailController);
       expect(mockHttpAppConfig.startServer).toHaveBeenCalled();
     });
 
