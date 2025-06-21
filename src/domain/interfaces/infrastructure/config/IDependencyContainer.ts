@@ -4,7 +4,7 @@
  */
 import { EmailController } from "@presentation/email/controllers/EmailController";
 import { ImapEmailService } from "@infrastructure/email/ImapEmailService";
-import { FirestoreCardUsageRepository } from "@infrastructure/firebase/FirestoreCardUsageRepository";
+import { FirestoreCardUsageRepository } from "@infrastructure/database/repositories/FirestoreCardUsageRepository";
 import { DiscordNotifier } from "@shared/infrastructure/discord/DiscordNotifier";
 import { ProcessEmailUseCase } from "@usecase/email/ProcessEmailUseCase";
 import { IProcessCardCompanyEmailUseCase } from "@domain/interfaces/usecases/email/IProcessCardCompanyEmailUseCase";

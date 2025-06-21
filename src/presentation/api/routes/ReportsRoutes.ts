@@ -20,18 +20,30 @@ export class ReportsRoutes {
         // すべてのエンドポイントに認証ミドルウェアを適用
         this.router.use(authMiddleware);
 
-        // レポート一覧取得
-        // 将来的に必要な場合は実装
-        // this.router.get('/', this.reportController.getReports);
-
-        // 日次レポート取得（特定の日）
+        /**
+         * 日次レポート取得 API (特定の日)
+         */
         this.router.get('/daily/:year/:month/:day', this.reportController.getDailyReport);
 
-        // 月次レポート取得
-        this.router.get('/monthly/:year/:month', this.reportController.getMonthlyReport);
+        /**
+         * 日次レポート取得 API (月内の全日)
+         */
+        this.router.get('/daily/:year/:month', this.reportController.getMonthlyDailyReports);
 
-        // 週次レポート取得
-        this.router.get('/weekly/:year/:weekNumber', this.reportController.getWeeklyReport);
+        /**
+         * 週次レポート取得 API (特定の週)
+         */
+        this.router.get('/weekly/:year/:month/:term', this.reportController.getWeeklyReport);
+
+        /**
+         * 週次レポート取得 API (月内の全週)
+         */
+        this.router.get('/weekly/:year/:month', this.reportController.getMonthlyWeeklyReports);
+
+        /**
+         * 月次レポート取得 API
+         */
+        this.router.get('/monthly/:year/:month', this.reportController.getMonthlyReport);
     }
 
     public getRouter(): Router {

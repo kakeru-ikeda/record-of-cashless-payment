@@ -10,6 +10,7 @@ import { logger } from '@shared/infrastructure/logging/Logger';
 import { EmailController } from '@presentation/email/controllers/EmailController';
 import { IHttpAppConfig } from '@domain/interfaces/infrastructure/config/IHttpAppConfig';
 import { IDependencyContainer } from '@domain/interfaces/infrastructure/config/IDependencyContainer';
+import { ResponseHelper } from '@shared/presentation/responses/ResponseHelper';
 
 /**
  * アプリケーション設定を管理するクラス
@@ -55,7 +56,11 @@ export class HttpAppConfig implements IHttpAppConfig {
 
     // ヘルスチェックエンドポイント（認証不要）
     this.app.get('/health', (req, res) => {
-      res.json({ status: 'OK', timestamp: new Date().toISOString() });
+      const response = ResponseHelper.success('サーバーは正常に動作しています', {
+        status: 'OK',
+        timestamp: new Date().toISOString()
+      });
+      res.status(response.status).json(response);
     });
 
     // リクエストログ
@@ -116,10 +121,8 @@ export class HttpAppConfig implements IHttpAppConfig {
 
     // 404ハンドラー
     this.app.use('*', (req, res) => {
-      res.status(404).json({
-        error: 'Not Found',
-        message: `Route ${req.originalUrl} not found`
-      });
+      const response = ResponseHelper.notFound(`Route ${req.originalUrl} not found`);
+      res.status(response.status).json(response);
     });
 
     // エラーハンドラー
@@ -127,10 +130,8 @@ export class HttpAppConfig implements IHttpAppConfig {
       logger.error(error, 'API');
 
       const statusCode = (error as any).statusCode || 500;
-      res.status(statusCode).json({
-        error: 'Internal Server Error',
-        message: 'An error occurred'
-      });
+      const response = ResponseHelper.error(statusCode, 'Internal Server Error', error.message || 'An unexpected error occurred');
+      res.status(response.status).json(response);
     });
   }
 

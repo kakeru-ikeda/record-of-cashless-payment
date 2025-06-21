@@ -1,9 +1,8 @@
 import { ProcessEmailUseCase } from '../../../../src/usecases/email/ProcessEmailUseCase';
 import { ImapEmailService } from '../../../../src/infrastructure/email/ImapEmailService';
-import { ICardUsageRepository } from '../../../../src/domain/interfaces/repositories/ICardUsageRepository';
+import { ICardUsageCrudRepository } from '../../../../src/domain/interfaces/infrastructure/database/repositories/ICardUsageCrudRepository';
 import { DiscordNotifier } from '../../../../shared/infrastructure/discord/DiscordNotifier';
 import { CardUsageNotificationDTO } from '../../../../shared/domain/dto/CardUsageNotificationDTO';
-import * as admin from 'firebase-admin';
 import { CardCompany } from '../../../../src/domain/enums/CardCompany';
 
 // 依存コンポーネントをモック化
@@ -78,7 +77,7 @@ const mockhandle = jest.fn();
 describe('ProcessEmailUseCase', () => {
   let processEmailUseCase: ProcessEmailUseCase;
   let mockEmailService: jest.Mocked<ImapEmailService>;
-  let mockCardUsageRepository: jest.Mocked<ICardUsageRepository>;
+  let mockCardUsageRepository: jest.Mocked<ICardUsageCrudRepository>;
   let mockDiscordNotifier: jest.Mocked<DiscordNotifier>;
 
   // テスト用のサンプルデータ
@@ -108,7 +107,7 @@ describe('ProcessEmailUseCase', () => {
 
     mockCardUsageRepository = {
       save: jest.fn().mockResolvedValue('users/2025/5/10/card-usage-123')
-    } as unknown as jest.Mocked<ICardUsageRepository>;
+    } as unknown as jest.Mocked<ICardUsageCrudRepository>;
 
     mockDiscordNotifier = {
       notify: jest.fn().mockResolvedValue(true)

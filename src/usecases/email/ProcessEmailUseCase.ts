@@ -1,5 +1,5 @@
 import { CardUsageNotificationDTO } from '@shared/domain/dto/CardUsageNotificationDTO';
-import { ICardUsageRepository } from '@domain/interfaces/repositories/ICardUsageRepository';
+import { ICardUsageCrudRepository } from '@domain/interfaces/infrastructure/database/repositories/ICardUsageCrudRepository';
 import { IProcessEmailUseCase } from '@domain/interfaces/usecases/email/IProcessEmailUseCase';
 import { ImapEmailService } from '@infrastructure/email/ImapEmailService';
 import { logger } from '@shared/infrastructure/logging/Logger';
@@ -20,7 +20,7 @@ export class ProcessEmailUseCase implements IProcessEmailUseCase {
    */
   constructor(
     private readonly emailService: ImapEmailService,
-    private readonly cardUsageRepository: ICardUsageRepository
+    private readonly cardUsageRepository: ICardUsageCrudRepository
   ) {
     logger.updateServiceStatus(this.serviceContext, 'online', '初期化完了');
   }

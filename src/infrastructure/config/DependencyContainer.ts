@@ -1,5 +1,5 @@
 import { ImapEmailService } from '@infrastructure/email/ImapEmailService';
-import { FirestoreCardUsageRepository } from '@infrastructure/firebase/FirestoreCardUsageRepository';
+import { FirestoreCardUsageRepository } from '@infrastructure/database/repositories/FirestoreCardUsageRepository';
 import { DiscordNotifier } from '@shared/infrastructure/discord/DiscordNotifier';
 import { ProcessEmailUseCase } from '@usecase/email/ProcessEmailUseCase';
 import { ProcessCardCompanyEmailUseCase } from '@usecase/email/ProcessCardCompanyEmailUseCase';
@@ -22,6 +22,7 @@ export class DependencyContainer implements IDependencyContainer {
   private processEmailUseCase: ProcessEmailUseCase;
   private processCardCompanyEmailUseCase: ProcessCardCompanyEmailUseCase;
   private notifyCardUsageUseCase: NotifyCardUsageUseCase;
+  private cardUsage
   private emailController: EmailController;
 
   /**

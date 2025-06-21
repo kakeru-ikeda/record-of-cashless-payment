@@ -90,15 +90,6 @@ const dailyReportService = new DailyReportService(firestoreService, discordNotif
 const monthlyReportService = new MonthlyReportService(firestoreService, discordNotifier);
 
 /**
- * APIエンドポイント
- * Cloud FunctionsのHTTPトリガーを使用してAPIを公開
- */
-export const api = functions.https
-    .onRequest({
-        region: 'asia-northeast1',
-    }, apiApp);
-
-/**
  * Firestoreドキュメント作成時に実行
  */
 export const onFirestoreWrite = functions.firestore
