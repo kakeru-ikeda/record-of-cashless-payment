@@ -63,14 +63,18 @@ export class FirestoreCardUsageUseCase {
         try {
             if (typeof cardUsageData.datetime_of_use === 'string') {
                 const dateObj = new Date(cardUsageData.datetime_of_use);
+                if (isNaN(dateObj.getTime())) {
+                    throw new Error('Invalid date string');
+                }
                 datetime_of_use = Timestamp.fromDate(dateObj);
             } else if (cardUsageData.datetime_of_use &&
                 (cardUsageData.datetime_of_use._seconds !== undefined ||
                     cardUsageData.datetime_of_use.seconds !== undefined)) {
-                datetime_of_use = new Timestamp(
-                    cardUsageData.datetime_of_use._seconds || cardUsageData.datetime_of_use.seconds,
-                    cardUsageData.datetime_of_use._nanoseconds || cardUsageData.datetime_of_use.nanoseconds
-                );
+                // Timestampオブジェクト形式の場合、millisecondsに変換してからTimestamp.fromMillis()を使用
+                const seconds = cardUsageData.datetime_of_use._seconds || cardUsageData.datetime_of_use.seconds;
+                const nanoseconds = cardUsageData.datetime_of_use._nanoseconds || cardUsageData.datetime_of_use.nanoseconds || 0;
+                const milliseconds = seconds * 1000 + Math.floor(nanoseconds / 1000000);
+                datetime_of_use = Timestamp.fromMillis(milliseconds);
             } else {
                 throw new AppError('日付形式が無効です', ErrorType.VALIDATION);
             }
