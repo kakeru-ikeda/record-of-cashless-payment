@@ -183,10 +183,10 @@ export class ReportUseCase {
     @ErrorHandler.errorDecorator('ReportUseCase', {
         defaultMessage: '週次レポートの作成に失敗しました'
     })
-    async createWeeklyReport(reportData: WeeklyReport, year: string, month: string, term: string): Promise<string> {
-        logger.info(`週次レポート作成: ${year}年${month}月term${term}`, this.serviceContext);
+    async createWeeklyReport(reportData: WeeklyReport, year: string, month: string): Promise<string> {
+        logger.info(`週次レポート作成: ${year}年${month}月`, this.serviceContext);
 
-        const path = await this.reportRepository.saveWeeklyReport(reportData, year, month, term);
+        const path = await this.reportRepository.saveWeeklyReport(reportData, year, month);
         logger.info(`週次レポートを作成しました: ${path}`, this.serviceContext);
 
         return path;

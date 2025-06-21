@@ -70,7 +70,7 @@ export interface IReportCrudRepository {
      * @param term ターム（週番号）
      * @returns 保存されたパス
      */
-    saveWeeklyReport(report: WeeklyReport, year: string, month: string, term: string): Promise<string>;
+    saveWeeklyReport(report: WeeklyReport, year: string, month: string): Promise<string>;
 
     /**
      * 月次レポートを保存する
