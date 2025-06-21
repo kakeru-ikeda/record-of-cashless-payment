@@ -396,12 +396,53 @@ IDでカード利用データを論理削除します（`is_active`を`false`に
 }
 ```
 
-#### GET /api/reports/weekly/:year/:weekNumber
-週次レポートを取得します。認証が必要です。
+#### GET /api/reports/daily/:year/:month
+月内の全日次レポートを取得します。認証が必要です。
 
 **パラメータ**:
 - `year`: 年（例: 2025）
-- `weekNumber`: 週番号（例: 25）
+- `month`: 月（例: 5）
+
+**レスポンス**:
+```json
+{
+  "status": 200,
+  "success": true,
+  "message": "月内日次レポート一覧を取得しました",
+  "data": [
+    {
+      "date": "01",
+      "total_amount": 12000,
+      "card_counts": {
+        "楽天カード": 1,
+        "イオンカード": 1
+      },
+      "card_amounts": {
+        "楽天カード": 7000,
+        "イオンカード": 5000
+      }
+    },
+    {
+      "date": "02",
+      "total_amount": 8000,
+      "card_counts": {
+        "楽天カード": 1
+      },
+      "card_amounts": {
+        "楽天カード": 8000
+      }
+    }
+  ]
+}
+```
+
+#### GET /api/reports/weekly/:year/:month/:term
+特定の週次レポートを取得します。認証が必要です。
+
+**パラメータ**:
+- `year`: 年（例: 2025）
+- `month`: 月（例: 5）
+- `term`: 週番号（term1, term2, term3, term4）
 
 **レスポンス**:
 ```json
@@ -425,6 +466,58 @@ IDでカード利用データを論理削除します（`is_active`を`false`に
       "03": 15000
     }
   }
+}
+```
+
+#### GET /api/reports/weekly/:year/:month
+月内の全週次レポートを取得します。認証が必要です。
+
+**パラメータ**:
+- `year`: 年（例: 2025）
+- `month`: 月（例: 5）
+
+**レスポンス**:
+```json
+{
+  "status": 200,
+  "success": true,
+  "message": "月内週次レポート一覧を取得しました",
+  "data": [
+    {
+      "term": "term1",
+      "total_amount": 35000,
+      "card_counts": {
+        "楽天カード": 4,
+        "イオンカード": 2
+      },
+      "card_amounts": {
+        "楽天カード": 25000,
+        "イオンカード": 10000
+      },
+      "daily_amounts": {
+        "01": 12000,
+        "02": 8000,
+        "03": 15000
+      }
+    },
+    {
+      "term": "term2",
+      "total_amount": 42000,
+      "card_counts": {
+        "楽天カード": 3,
+        "イオンカード": 3
+      },
+      "card_amounts": {
+        "楽天カード": 22000,
+        "イオンカード": 20000
+      },
+      "daily_amounts": {
+        "08": 10000,
+        "09": 12000,
+        "10": 20000
+      }
+    }
+  ]
 }
 ```
 
@@ -483,8 +576,20 @@ interface WeeklyReport extends BaseReport {
 ### 月次レポート
 ```typescript
 interface MonthlyReport extends BaseReport {
-  weekly_amounts: Record<string, number>; // 週別金額
+  weekly_amounts: Record<string, number>; // 週別金額（term1, term2, term3, term4）
   daily_amounts: Record<string, number>;  // 日別金額
+}
+```
+
+### 複数レポート（月内全日次・全週次）
+```typescript
+interface DailyReportItem extends BaseReport {
+  date: string; // 日付（01, 02, ...）
+}
+
+interface WeeklyReportItem extends BaseReport {
+  term: string; // 週番号（term1, term2, term3, term4）
+  daily_amounts: Record<string, number>; // 日別金額
 }
 ```
 
@@ -543,6 +648,28 @@ const response = await fetch('/api/reports/monthly/2025/6', {
   }
 });
 const report = await response.json();
+```
+
+### 週次レポートの取得（特定の週）
+```javascript
+const response = await fetch('/api/reports/weekly/2025/6/term2', {
+  headers: {
+    'Authorization': 'Bearer YOUR_FIREBASE_TOKEN',
+    'Content-Type': 'application/json'
+  }
+});
+const report = await response.json();
+```
+
+### 月内全日次レポートの取得
+```javascript
+const response = await fetch('/api/reports/daily/2025/6', {
+  headers: {
+    'Authorization': 'Bearer YOUR_FIREBASE_TOKEN',
+    'Content-Type': 'application/json'
+  }
+});
+const reports = await response.json();
 ```
 
 ### サービスの制御（メール監視の開始）
