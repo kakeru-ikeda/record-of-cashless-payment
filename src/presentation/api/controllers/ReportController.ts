@@ -3,7 +3,7 @@ import { FirestoreService } from '@shared/infrastructure/database/FirestoreServi
 import { AppError, ErrorType } from '@shared/errors/AppError';
 import { ErrorHandler } from '@shared/infrastructure/errors/ErrorHandler';
 import { ResponseHelper } from '@shared/presentation/responses/ResponseHelper';
-import { FirestoreCardUsageRepository } from '@infrastructure/firebase/FirestoreCardUsageRepository';
+import { FirestorePathUtil } from '@shared/utils/FirestorePathUtil';
 
 /**
  * レポートデータを操作するためのコントローラークラス
@@ -29,7 +29,7 @@ export class ReportController {
             const date = this.validateDate(year, month, day);
 
             // FirestoreCardUsageRepositoryを使用してパスを取得
-            const pathInfo = FirestoreCardUsageRepository.getFirestorePath(date);
+            const pathInfo = FirestorePathUtil.getFirestorePath(date);
             const dailyReportPath = pathInfo.dailyReportPath;
 
             // レポートデータを取得
@@ -61,7 +61,7 @@ export class ReportController {
             const date = this.validateYearMonth(year, month);
 
             // FirestoreCardUsageRepositoryを使用してパスを取得
-            const pathInfo = FirestoreCardUsageRepository.getFirestorePath(date);
+            const pathInfo = FirestorePathUtil.getFirestorePath(date);
             const monthlyReportPath = pathInfo.monthlyReportPath;
 
             // レポートデータを取得
