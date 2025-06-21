@@ -173,8 +173,9 @@ pipeline {
                             echo "新しいコンテナを一時的にポート3001で起動してテスト中..."
                             DEPLOY_SUCCESS=false
                             
-                            # 一時的なテストコンテナを起動
+                                # 一時的なテストコンテナを起動
                             docker run -d --name \$TEMP_CONTAINER_NAME -p 3001:3000 \\
+                            --network jenkins \\
                             -e IMAP_SERVER='${imapServer}' \\
                             -e IMAP_USER='${imapUser}' \\
                             -e IMAP_PASSWORD='${imapPassword}' \\
@@ -226,6 +227,7 @@ pipeline {
                                 
                                 # 本番コンテナを起動
                                 docker run -d --name ${imageName} -p 3000:3000 \\
+                                --network jenkins \\
                                 -e IMAP_SERVER='${imapServer}' \\
                                 -e IMAP_USER='${imapUser}' \\
                                 -e IMAP_PASSWORD='${imapPassword}' \\
@@ -258,6 +260,7 @@ pipeline {
                                         else
                                             echo "バックアップコンテナが見つからないため、イメージから再起動します"
                                             docker run -d --name ${imageName} -p 3000:3000 \\
+                                            --network jenkins \\
                                             -e IMAP_SERVER='${imapServer}' \\
                                             -e IMAP_USER='${imapUser}' \\
                                             -e IMAP_PASSWORD='${imapPassword}' \\
