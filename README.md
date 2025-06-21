@@ -114,10 +114,23 @@ DISCORD_REPORT_MONTHLY_WEBHOOK_URL=https://discord.com/api/webhooks/マンスリ
 - Firestoreへのデータ保存
 - リアルタイム通知の送信
 
-#### メインシステムAPI
-サーバーが提供するサービスへダイレクトにアクセスするためのAPI実装
-- **モニタリングAPI**: サービス状態確認、ヘルスチェック（`/monitoring/*`）
-- **サービス管理API**: メール監視の制御、強制実行（`/api/services/*`）
+#### メインシステムAPI（統合API）
+
+**提供API**:
+- **カード利用情報API** (`/api/card-usages/*`): カード利用データのCRUD操作
+- **レポートAPI** (`/api/reports/*`): 日次・週次・月次レポートの取得
+- **サービス管理API** (`/api/services/*`): メール監視の制御、強制実行
+- **モニタリングAPI** (`/monitoring/*`): サービス状態確認、ヘルスチェック
+
+詳細な仕様については、以下のドキュメントを参照してください：[API仕様書](src/presentation/api/README.md)
+
+**アーキテクチャ特徴**:
+- Clean Architecture（DDD）準拠
+- Firebase Authentication統合認証
+- 依存性注入パターン
+- 統一レスポンススキーマ
+- CORS対応
+- エラーハンドリング
 
 ##### レスポンススキーマ
 すべてのAPIは統一された標準レスポンス形式を返します：
@@ -191,13 +204,6 @@ DISCORD_REPORT_MONTHLY_WEBHOOK_URL=https://discord.com/api/webhooks/マンスリ
   - 前日のデイリーレポート送信
   - 週初めの場合は先週のウィークリーレポート送信
   - 月初めの場合は先月のマンスリーレポート送信
-- **api**: フロントエンドとの情報疎通のためにサーバーレスで実装
-  - カード利用情報のCRUD操作
-  - 日次/週次/月次レポートの取得
-  - ヘルスチェック
-  - 詳細な仕様についてはドキュメントを参照してください：[API仕様書](/functions/src/api/README.md)
-
-APIセットは共通の認証基盤（Firebase Authentication）を使用しており、一元化された権限管理を実現しています。すべてのAPIは、メインシステムAPIと同様の標準レスポンススキーマに準拠しています。
 
 ## 運用
 
