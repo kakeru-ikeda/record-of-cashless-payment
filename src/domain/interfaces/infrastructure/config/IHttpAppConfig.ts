@@ -5,6 +5,7 @@
 import { Application } from "express";
 import { Server } from "http";
 import { EmailController } from "@presentation/email/controllers/EmailController";
+import { IDependencyContainer } from "@domain/interfaces/infrastructure/config/IDependencyContainer";
 
 export interface IHttpAppConfig {
     /**
@@ -34,4 +35,10 @@ export interface IHttpAppConfig {
      * @returns Expressアプリケーションインスタンス
      */
     getApp(): Application;
+
+    /**
+     * 依存性注入されたコントローラーを初期化する
+     * @param dependencyContainer 依存性管理コンテナ
+     */
+    initializeControllers(dependencyContainer: IDependencyContainer): void;
 }

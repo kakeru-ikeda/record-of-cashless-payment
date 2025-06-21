@@ -30,12 +30,15 @@ export class Application implements IApplication {
     // 依存関係を初期化
     await this.dependencyContainer.initialize();
 
+    // コントローラーに依存性を注入
+    this.httpAppConfig.initializeControllers(this.dependencyContainer);
+
     // モニタリングルートを設定
     this.httpAppConfig.setupMonitoringRoutes();
 
-    // サービスルートを設定
+    // サービスルートとAPIルートを設定
     const emailController = this.dependencyContainer.getEmailController();
-    this.httpAppConfig.setupServiceRoutes(emailController);
+    this.httpAppConfig.setupAllApiRoutes(emailController);
 
     // サーバーを起動
     this.server = this.httpAppConfig.startServer();
