@@ -1,6 +1,6 @@
 import { DependencyContainer } from '../../../../src/infrastructure/config/DependencyContainer';
 import { ImapEmailService } from '../../../../src/infrastructure/email/ImapEmailService';
-import { FirestoreCardUsageRepository } from '../../../../src/infrastructure/firebase/FirestoreCardUsageRepository';
+import { FirestoreCardUsageRepository } from '../../../../src/infrastructure/database/repositories/FirestoreCardUsageRepository';
 import { DiscordNotifier } from '../../../../shared/infrastructure/discord/DiscordNotifier';
 import { ProcessEmailUseCase } from '../../../../src/usecases/email/ProcessEmailUseCase';
 import { EmailController } from '../../../../src/presentation/email/controllers/EmailController';
@@ -34,7 +34,7 @@ jest.mock('../../../../shared/infrastructure/config/Environment', () => ({
 
 // 依存コンポーネントをモック
 jest.mock('../../../../src/infrastructure/email/ImapEmailService');
-jest.mock('../../../../src/infrastructure/firebase/FirestoreCardUsageRepository');
+jest.mock('../../../../src/infrastructure/database/repositories/FirestoreCardUsageRepository');
 jest.mock('../../../../shared/infrastructure/discord/DiscordNotifier');
 jest.mock('../../../../src/usecases/email/ProcessEmailUseCase');
 jest.mock('../../../../src/presentation/email/controllers/EmailController');

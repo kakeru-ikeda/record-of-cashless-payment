@@ -1,12 +1,13 @@
 import * as admin from 'firebase-admin';
 import { Firestore } from 'firebase-admin/firestore';
-import { FirestoreCardUsageRepository } from '../../../../src/infrastructure/firebase/FirestoreCardUsageRepository';
+import { FirestoreCardUsageRepository } from '../../../../src/infrastructure/database/repositories/FirestoreCardUsageRepository';
 import { CardUsage } from '../../../../shared/domain/entities/CardUsage';
 import { FirestoreService } from '../../../../shared/infrastructure/database/FirestoreService';
 import { DateUtil } from '../../../../shared/utils/DateUtil';
 import { Environment } from '../../../../shared/infrastructure/config/Environment';
 import { CardUsageMapper } from '../../../../shared/infrastructure/mappers/CardUsageMapper';
 import { AppError } from '../../../../shared/errors/AppError';
+import { FirestorePathUtil } from '../../../../shared/utils/FirestorePathUtil';
 
 // モック
 jest.mock('../../../../shared/infrastructure/database/FirestoreService');
@@ -100,7 +101,7 @@ describe('FirestoreCardUsageRepository', () => {
     (DateUtil.getDateInfo as jest.Mock).mockReturnValue(mockDateInfo);
 
     // getFirestorePathメソッドのモックを追加
-    jest.spyOn(FirestoreCardUsageRepository, 'getFirestorePath').mockImplementation(() => {
+    jest.spyOn(FirestorePathUtil, 'getFirestorePath').mockImplementation(() => {
       return {
         // testPathInfoの既存のプロパティ
         path: testPathInfo.path,
@@ -152,7 +153,7 @@ describe('FirestoreCardUsageRepository', () => {
   describe('getFirestorePathFromDate', () => {
     test('正常系: 日付からFirestoreのパスが正しく生成されること', () => {
       // スパイを元に戻す（このテストでは実際の実装を使用するため）
-      jest.spyOn(FirestoreCardUsageRepository, 'getFirestorePath').mockRestore();
+      jest.spyOn(FirestorePathUtil, 'getFirestorePath').mockRestore();
 
       // Date.nowをモック化してタイムスタンプを固定
       const originalNow = Date.now;
@@ -160,7 +161,7 @@ describe('FirestoreCardUsageRepository', () => {
 
       try {
         const sampleDate = new Date('2025-05-10T15:30:00');
-        const result = FirestoreCardUsageRepository.getFirestorePath(sampleDate);
+        const result = FirestorePathUtil.getFirestorePath(sampleDate);
 
         // タイムスタンプ部分以外の構造を検証
         expect(result.path).toMatch(`details/2025/05/term2/10/`);
