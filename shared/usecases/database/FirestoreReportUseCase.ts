@@ -7,7 +7,7 @@ import { AppError, ErrorType } from '@shared/errors/AppError';
 /**
  * レポート機能のユースケースクラス
  */
-export class ReportUseCase {
+export class FirestoreReportUseCase {
     private reportRepository: IReportCrudRepository;
     private readonly serviceContext = 'ReportUseCase';
 

@@ -2,20 +2,20 @@ import { Request, Response } from 'express';
 import { ResponseHelper } from '@shared/presentation/responses/ResponseHelper';
 import { ErrorHandler } from '@shared/infrastructure/errors/ErrorHandler';
 import { FirestoreReportRepository } from '@shared/infrastructure/database/repositories/FirestoreReportRepository';
-import { ReportUseCase } from '@shared/usecases/ReportUseCase';
+import { FirestoreReportUseCase } from '@shared/usecases/database/FirestoreReportUseCase';
 
 /**
  * レポートデータを操作するためのコントローラークラス
  */
 export class ReportController {
-    private reportUseCase: ReportUseCase;
+    private reportUseCase: FirestoreReportUseCase;
 
     /**
      * コンストラクタ
      */
     constructor() {
         const reportRepository = new FirestoreReportRepository();
-        this.reportUseCase = new ReportUseCase(reportRepository);
+        this.reportUseCase = new FirestoreReportUseCase(reportRepository);
     }
 
     /**
