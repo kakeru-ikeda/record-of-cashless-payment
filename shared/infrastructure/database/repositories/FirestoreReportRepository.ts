@@ -1,5 +1,5 @@
 import { Firestore } from 'firebase-admin/firestore';
-import { DailyReport, WeeklyReport, MonthlyReport } from '@shared/domain/entities/Report';
+import { DailyReport, WeeklyReport, MonthlyReport } from '@shared/domain/entities/Reports';
 import { IReportCrudRepository } from '@shared/domain/interfaces/database/repositories/IReportCrudRepository';
 import { Environment } from '@shared/infrastructure/config/Environment';
 import { FirestoreService } from '@shared/infrastructure/database/FirestoreService';

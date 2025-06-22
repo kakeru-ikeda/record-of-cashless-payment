@@ -1,4 +1,4 @@
-import { DailyReport, WeeklyReport, MonthlyReport } from '@shared/domain/entities/Report';
+import { DailyReport, WeeklyReport, MonthlyReport } from '@shared/domain/entities/Reports';
 
 /**
  * レポート情報のCRUD操作を提供するリポジトリインターフェース

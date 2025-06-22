@@ -1,4 +1,4 @@
-import { DailyReport, WeeklyReport, MonthlyReport } from '@shared/domain/entities/Report';
+import { DailyReport, WeeklyReport, MonthlyReport } from '@shared/domain/entities/Reports';
 import { IReportCrudRepository } from '@shared/domain/interfaces/database/repositories/IReportCrudRepository';
 import { ErrorHandler } from '@shared/infrastructure/errors/ErrorHandler';
 import { logger } from '@shared/infrastructure/logging/Logger';
