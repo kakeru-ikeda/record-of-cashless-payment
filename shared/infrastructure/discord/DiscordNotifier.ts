@@ -1,10 +1,10 @@
 import axios from 'axios';
 import { CardUsageNotificationDTO } from '@shared/domain/dto/CardUsageNotificationDTO';
 import {
-    WeeklyReportNotification,
-    DailyReportNotification,
-    MonthlyReportNotification,
-} from '@shared/domain/entities/ReportNotifications';
+    WeeklyReportNotificationDTO,
+    DailyReportNotificationDTO,
+    MonthlyReportNotificationDTO,
+} from '@shared/domain/dto/ReportNotificationDTOs';
 import { logger } from '@shared/infrastructure/logging/Logger';
 import { AppError, ErrorType } from '@shared/errors/AppError';
 import { IDiscordNotifier } from '@shared/domain/interfaces/discord/IDiscordNotifier';
@@ -209,7 +209,7 @@ export class DiscordNotifier implements IDiscordNotifier {
      * @param data ウィークリーレポート情報
      * @returns 通知の成功または失敗を表すブール値
      */
-    async notifyWeeklyReport(data: WeeklyReportNotification): Promise<boolean> {
+    async notifyWeeklyReport(data: WeeklyReportNotificationDTO): Promise<boolean> {
         try {
             // アラートレベルが0より大きいならアラート通知、それ以外は定期レポート
             const notificationType = data.alertLevel > 0 ? NotificationType.ALERT_WEEKLY : NotificationType.REPORT_WEEKLY;
@@ -290,7 +290,7 @@ export class DiscordNotifier implements IDiscordNotifier {
      * @param data デイリーレポート情報
      * @returns 通知の成功または失敗を表すブール値
      */
-    async notifyDailyReport(data: DailyReportNotification): Promise<boolean> {
+    async notifyDailyReport(data: DailyReportNotificationDTO): Promise<boolean> {
         try {
             const webhookUrl = this.getWebhookUrl(NotificationType.REPORT_DAILY);
 
@@ -343,7 +343,7 @@ export class DiscordNotifier implements IDiscordNotifier {
      * @param data マンスリーレポート情報
      * @returns 通知の成功または失敗を表すブール値
      */
-    async notifyMonthlyReport(data: MonthlyReportNotification): Promise<boolean> {
+    async notifyMonthlyReport(data: MonthlyReportNotificationDTO): Promise<boolean> {
         try {
             // アラートレベルが0より大きいならアラート通知、それ以外は定期レポート
             const notificationType = data.alertLevel > 0 ? NotificationType.ALERT_MONTHLY : NotificationType.REPORT_MONTHLY;

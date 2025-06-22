@@ -1,5 +1,5 @@
 import { CardUsageNotificationDTO } from "@shared/domain/dto/CardUsageNotificationDTO";
-import { DailyReportNotification, MonthlyReportNotification, WeeklyReportNotification } from "@shared/domain/entities/ReportNotifications";
+import { DailyReportNotificationDTO, MonthlyReportNotificationDTO, WeeklyReportNotificationDTO } from "@shared/domain/dto/ReportNotificationDTOs";
 import { AppError } from "@shared/errors/AppError";
 
 /**
@@ -18,21 +18,21 @@ export interface IDiscordNotifier {
      * @param data ウィークリーレポート情報
      * @returns 通知の成功または失敗を表すブール値
      */
-    notifyWeeklyReport(data: WeeklyReportNotification): Promise<boolean>;
+    notifyWeeklyReport(data: WeeklyReportNotificationDTO): Promise<boolean>;
 
     /**
      * デイリーレポートを通知する
      * @param data デイリーレポート情報
      * @returns 通知の成功または失敗を表すブール値
      */
-    notifyDailyReport(data: DailyReportNotification): Promise<boolean>;
+    notifyDailyReport(data: DailyReportNotificationDTO): Promise<boolean>;
 
     /**
      * マンスリーレポートを通知する
      * @param data マンスリーレポート情報
      * @returns 通知の成功または失敗を表すブール値
      */
-    notifyMonthlyReport(data: MonthlyReportNotification): Promise<boolean>;
+    notifyMonthlyReport(data: MonthlyReportNotificationDTO): Promise<boolean>;
 
     /**
      * エラー情報を通知する

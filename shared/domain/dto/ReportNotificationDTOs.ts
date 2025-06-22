@@ -2,7 +2,7 @@
  * ウィークリーレポート通知用のデータモデル
  * カード利用通知とは異なり、週次集計情報を格納する
  */
-export interface WeeklyReportNotification {
+export interface WeeklyReportNotificationDTO {
     // レポートタイトル（例: 2025年4月 第2週 レポート）
     title: string;
 
@@ -25,7 +25,7 @@ export interface WeeklyReportNotification {
 /**
  * デイリーレポート通知用のデータモデル
  */
-export interface DailyReportNotification {
+export interface DailyReportNotificationDTO {
     // レポートタイトル（例: 2025年4月19日 デイリーレポート）
     title: string;
 
@@ -45,7 +45,7 @@ export interface DailyReportNotification {
 /**
  * マンスリーレポート通知用のデータモデル
  */
-export interface MonthlyReportNotification {
+export interface MonthlyReportNotificationDTO {
     // レポートタイトル（例: 2025年4月 マンスリーレポート）
     title: string;
 
@@ -61,30 +61,6 @@ export interface MonthlyReportNotification {
     // アラートレベル（0: 通常、1: 4000円超過、2: 20000円超過、3: 40000円超過）
     alertLevel: number;
 
-    // 追加情報（任意）
-    additionalInfo?: string;
-}
-
-/**
- * レポート通知 - 統合型
- * 複数のレポートタイプに対応できる共通インターフェース
- */
-export interface ReportNotification {
-    // レポートタイトル
-    title: string;
-    
-    // 対象期間または日付
-    period: string;
-    
-    // 合計金額
-    totalAmount: number;
-    
-    // 利用件数
-    totalCount: number;
-    
-    // アラートレベル（0: 通常、1-3: 段階的な警告レベル）
-    alertLevel: number;
-    
     // 追加情報（任意）
     additionalInfo?: string;
 }
