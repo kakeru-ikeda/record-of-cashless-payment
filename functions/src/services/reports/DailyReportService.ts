@@ -4,6 +4,7 @@ import { BaseReportService } from './BaseReportService';
 import { AppError, ErrorType } from '../../../../shared/errors/AppError';
 import { DateUtil } from '../../../../shared/utils/DateUtil';
 import { DailyReportNotification } from '../../../../shared/domain/entities/ReportNotifications';
+import { FirestorePathUtil } from 'shared/utils/FirestorePathUtil';
 
 
 /**
@@ -39,7 +40,7 @@ export class DailyReportService extends BaseReportService {
 
             // DateUtilを使用してパスを取得
             const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-            const pathInfo = DateUtil.getFirestorePath(dateObj);
+            const pathInfo = FirestorePathUtil.getFirestorePath(dateObj);
             const dailyReportPath = pathInfo.dailyReportPath;
 
             // ドキュメントのフルパスを生成
@@ -109,7 +110,7 @@ export class DailyReportService extends BaseReportService {
 
             // DateUtilを使用してパスを取得
             const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-            const pathInfo = DateUtil.getFirestorePath(dateObj);
+            const pathInfo = FirestorePathUtil.getFirestorePath(dateObj);
             const dailyReportPath = pathInfo.dailyReportPath;
 
             // ドキュメントのフルパスを生成
@@ -163,7 +164,7 @@ export class DailyReportService extends BaseReportService {
 
             // DateUtilを使用してパスを取得
             const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-            const pathInfo = DateUtil.getFirestorePath(dateObj);
+            const pathInfo = FirestorePathUtil.getFirestorePath(dateObj);
             const dailyReportPath = pathInfo.dailyReportPath;
 
             // ドキュメントのフルパスを生成
@@ -219,7 +220,7 @@ export class DailyReportService extends BaseReportService {
 
             // DateUtilを使用してパスを取得
             const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-            const pathInfo = DateUtil.getFirestorePath(dateObj);
+            const pathInfo = FirestorePathUtil.getFirestorePath(dateObj);
             const dailyReportPath = pathInfo.dailyReportPath;
 
             // ドキュメントのフルパスを生成
@@ -300,7 +301,7 @@ export class DailyReportService extends BaseReportService {
 
             // DateUtilを使用してパスを取得
             const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-            const pathInfo = DateUtil.getFirestorePath(dateObj);
+            const pathInfo = FirestorePathUtil.getFirestorePath(dateObj);
             const dailyReportPath = pathInfo.dailyReportPath;
 
             // レポートデータを取得

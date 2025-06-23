@@ -284,4 +284,77 @@ export class FirestoreReportRepository implements IReportCrudRepository {
 
         return new Date(yearNum, monthNum - 1, 1);
     }
+
+    // Update Operations
+    /**
+     * 日次レポートを更新する
+     */
+    @ErrorHandler.errorDecorator('FirestoreReportRepository', {
+        defaultMessage: '日次レポートの更新に失敗しました'
+    })
+    async updateDailyReport(report: Partial<DailyReport>, year: string, month: string, day: string): Promise<string> {
+        await this.initialize();
+
+        // 日付のバリデーション
+        const date = this.validateDate(year, month, day);
+
+        // パス情報を取得
+        const pathInfo = FirestorePathUtil.getFirestorePath(date);
+        const documentPath = pathInfo.dailyReportPath;
+
+        logger.info(`日次レポート更新: ${documentPath}`, this.serviceContext);
+
+        await this.firestoreService.updateDocument(documentPath, report);
+
+        logger.info(`日次レポートを更新しました: ${documentPath}`, this.serviceContext);
+        return documentPath;
+    }
+
+    /**
+     * 週次レポートを更新する
+     */
+    @ErrorHandler.errorDecorator('FirestoreReportRepository', {
+        defaultMessage: '週次レポートの更新に失敗しました'
+    })
+    async updateWeeklyReport(report: Partial<WeeklyReport>, year: string, month: string, term: string): Promise<string> {
+        await this.initialize();
+
+        // 日付のバリデーション
+        const date = this.validateYearMonth(year, month);
+
+        // パス情報を取得
+        const pathInfo = FirestorePathUtil.getFirestorePath(date);
+        const documentPath = pathInfo.weeklyReportPath;
+
+        logger.info(`週次レポート更新: ${documentPath}`, this.serviceContext);
+
+        await this.firestoreService.updateDocument(documentPath, report);
+
+        logger.info(`週次レポートを更新しました: ${documentPath}`, this.serviceContext);
+        return documentPath;
+    }
+
+    /**
+     * 月次レポートを更新する
+     */
+    @ErrorHandler.errorDecorator('FirestoreReportRepository', {
+        defaultMessage: '月次レポートの更新に失敗しました'
+    })
+    async updateMonthlyReport(report: Partial<MonthlyReport>, year: string, month: string): Promise<string> {
+        await this.initialize();
+
+        // 日付のバリデーション
+        const date = this.validateYearMonth(year, month);
+
+        // パス情報を取得
+        const pathInfo = FirestorePathUtil.getFirestorePath(date);
+        const documentPath = pathInfo.monthlyReportPath;
+
+        logger.info(`月次レポート更新: ${documentPath}`, this.serviceContext);
+
+        await this.firestoreService.updateDocument(documentPath, report);
+
+        logger.info(`月次レポートを更新しました: ${documentPath}`, this.serviceContext);
+        return documentPath;
+    }
 }
