@@ -1,5 +1,6 @@
 import { FirestoreReportUseCase } from '../../../../shared/usecases/database/FirestoreReportUseCase';
 import { NotifyReportUseCase } from '../../../../shared/usecases/notification/NotifyReportUseCase';
+import { logger } from '../../../../shared/infrastructure/logging/Logger';
 import { DateUtil } from '../../../../shared/utils/DateUtil';
 import { FirestorePathUtil } from '../../../../shared/utils/FirestorePathUtil';
 import { DailyReportNotificationDTO, WeeklyReportNotificationDTO, MonthlyReportNotificationDTO } from '../../../../shared/domain/dto/ReportNotificationDTOs';
@@ -45,12 +46,12 @@ export class ReportSchedulingService {
                 // 送信済みフラグを更新
                 await this.updateReportSentFlag('daily', yesterdayInfo);
 
-                console.log('✅ デイリーレポートを送信しました');
+                logger.info('デイリーレポートを送信しました', 'Report Scheduling Service');
             } else {
-                console.log('⏭️ デイリーレポートは送信済みのためスキップします');
+                logger.info('デイリーレポートは送信済みのためスキップします', 'Report Scheduling Service');
             }
         } catch (error) {
-            console.log('⚠️ デイリーレポートが見つかりません。送信をスキップします');
+            logger.warn('デイリーレポートが見つかりません。送信をスキップします', 'Report Scheduling Service');
         }
     }
 
@@ -84,12 +85,12 @@ export class ReportSchedulingService {
                 // 送信済みフラグを更新
                 await this.updateReportSentFlag('weekly', yesterdayInfo);
 
-                console.log('✅ ウィークリーレポートを送信しました');
+                logger.info('ウィークリーレポートを送信しました', 'Report Scheduling Service');
             } else {
-                console.log('⏭️ ウィークリーレポートは送信済みのためスキップします');
+                logger.info('ウィークリーレポートは送信済みのためスキップします', 'Report Scheduling Service');
             }
         } catch (error) {
-            console.log('⚠️ ウィークリーレポートが見つかりません。送信をスキップします');
+            logger.warn('ウィークリーレポートが見つかりません。送信をスキップします', 'Report Scheduling Service');
         }
     }
 
@@ -121,12 +122,12 @@ export class ReportSchedulingService {
                 // 送信済みフラグを更新
                 await this.updateReportSentFlag('monthly', yesterdayInfo);
 
-                console.log('✅ マンスリーレポートを送信しました');
+                logger.info('マンスリーレポートを送信しました', 'Report Scheduling Service');
             } else {
-                console.log('⏭️ マンスリーレポートは送信済みのためスキップします');
+                logger.info('マンスリーレポートは送信済みのためスキップします', 'Report Scheduling Service');
             }
         } catch (error) {
-            console.log('⚠️ マンスリーレポートが見つかりません。送信をスキップします');
+            logger.warn('マンスリーレポートが見つかりません。送信をスキップします', 'Report Scheduling Service');
         }
     }
 
@@ -135,7 +136,7 @@ export class ReportSchedulingService {
      * dailyReportSchedule関数から呼び出される統合メソッド
      */
     async executeScheduledReports(): Promise<void> {
-        console.log('🕛 毎日定期実行: レポート自動送信処理を開始します');
+        logger.info('毎日定期実行: レポート自動送信処理を開始します', 'Report Scheduling Service');
 
         // 日本時間の「今日」を取得
         const today = DateUtil.getJSTDate();
@@ -145,7 +146,7 @@ export class ReportSchedulingService {
 
         const yesterdayInfo = DateUtil.getDateInfo(yesterday);
 
-        console.log(`📅 処理日: ${yesterdayInfo.year}年${yesterdayInfo.month}月${yesterdayInfo.day}日`);
+        logger.info(`処理日: ${yesterdayInfo.year}年${yesterdayInfo.month}月${yesterdayInfo.day}日`, 'Report Scheduling Service');
 
         // 1. デイリーレポート送信
         await this.sendDailyReport(yesterdayInfo);
@@ -160,7 +161,7 @@ export class ReportSchedulingService {
             await this.sendMonthlyReport(yesterdayInfo);
         }
 
-        console.log('✅ 定期レポート送信処理が完了しました');
+        logger.info('定期レポート送信処理が完了しました', 'Report Scheduling Service');
     }
 
     /**

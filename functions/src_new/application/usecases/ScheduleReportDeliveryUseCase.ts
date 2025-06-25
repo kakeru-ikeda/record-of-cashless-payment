@@ -1,6 +1,7 @@
 import * as functions from 'firebase-functions';
 import { ResponseHelper } from '../../../../shared/presentation/responses/ResponseHelper';
 import { AppError, ErrorType } from '../../../../shared/errors/AppError';
+import { logger } from '../../../../shared/infrastructure/logging/Logger';
 import { ReportSchedulingService } from '../services/ReportSchedulingService';
 
 /**
@@ -16,7 +17,8 @@ export class ScheduleReportDeliveryUseCase {
      * スケジュール配信イベントを処理
      */
     async execute(context): Promise<any> {
-        console.log('📅 スケジュール配信処理開始 - イベント:', context);
+        logger.info('スケジュール配信処理開始', 'Schedule Report Delivery UseCase');
+        logger.debug(`イベント: ${JSON.stringify(context)}`, 'Schedule Report Delivery UseCase');
 
         try {
             // ReportSchedulingServiceの統合メソッドを呼び出し
@@ -27,7 +29,7 @@ export class ScheduleReportDeliveryUseCase {
             });
 
         } catch (error) {
-            console.error('❌ スケジュール配信処理でエラーが発生:', error);
+            logger.error(error as Error, 'Schedule Report Delivery UseCase');
             throw new AppError(
                 `スケジュール配信処理でエラーが発生しました: ${error instanceof Error ? error.message : String(error)}`,
                 ErrorType.GENERAL

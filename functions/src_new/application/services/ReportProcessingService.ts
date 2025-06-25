@@ -1,6 +1,7 @@
 import * as functions from 'firebase-functions';
 import { IDiscordNotifier } from '../../../../shared/domain/interfaces/discord/IDiscordNotifier';
 import { FirestoreReportUseCase } from '../../../../shared/usecases/database/FirestoreReportUseCase';
+import { logger } from '../../../../shared/infrastructure/logging/Logger';
 import { FirestorePathUtil } from '../../../../shared/utils/FirestorePathUtil';
 import { DailyReportFactory, WeeklyReportFactory, MonthlyReportFactory } from '../../../../shared/domain/factories/ReportsFactory';
 import { DailyReport, WeeklyReport, MonthlyReport } from '../../../../shared/domain/entities/Reports';
@@ -44,7 +45,7 @@ export class ReportProcessingService {
             });
 
             await this.reportUseCase.updateDailyReport(updatedReport, year, month.padStart(2, '0'), day.padStart(2, '0'));
-            console.log(`✅ デイリーレポート更新完了: ${year}年${month}月${day}日`);
+            logger.info(`デイリーレポート更新完了: ${year}年${month}月${day}日`, 'Report Processing Service');
 
             return updatedReport;
         } else {
@@ -59,7 +60,7 @@ export class ReportProcessingService {
             );
 
             await this.reportUseCase.createDailyReport(dailyReport, year, month.padStart(2, '0'), day.padStart(2, '0'));
-            console.log(`✅ デイリーレポート作成完了: ${year}年${month}月${day}日`);
+            logger.info(`デイリーレポート作成完了: ${year}年${month}月${day}日`, 'Report Processing Service');
 
             return dailyReport;
         }
@@ -97,7 +98,7 @@ export class ReportProcessingService {
             });
 
             await this.reportUseCase.updateWeeklyReport(updatedReport, year, month.padStart(2, '0'), term);
-            console.log(`✅ ウィークリーレポート更新完了: ${year}年${month}月第${term}週`);
+            logger.info(`ウィークリーレポート更新完了: ${year}年${month}月第${term}週`, 'Report Processing Service');
 
             // アラート条件チェック
             await this.checkAndSendAlert(
@@ -120,7 +121,7 @@ export class ReportProcessingService {
             );
 
             await this.reportUseCase.createWeeklyReport(weeklyReport, year, month.padStart(2, '0'));
-            console.log(`✅ ウィークリーレポート作成完了: ${year}年${month}月第${term}週`);
+            logger.info(`ウィークリーレポート作成完了: ${year}年${month}月第${term}週`, 'Report Processing Service');
 
             // アラート条件チェック
             await this.checkAndSendAlert(
@@ -161,7 +162,7 @@ export class ReportProcessingService {
             });
 
             await this.reportUseCase.updateMonthlyReport(updatedReport, year, month.padStart(2, '0'));
-            console.log(`✅ マンスリーレポート更新完了: ${year}年${month}月`);
+            logger.info(`マンスリーレポート更新完了: ${year}年${month}月`, 'Report Processing Service');
 
             // アラート条件チェック
             await this.checkAndSendAlert(
@@ -187,7 +188,7 @@ export class ReportProcessingService {
             );
 
             await this.reportUseCase.createMonthlyReport(monthlyReport, year, month.padStart(2, '0'));
-            console.log(`✅ マンスリーレポート作成完了: ${year}年${month}月`);
+            logger.info(`マンスリーレポート作成完了: ${year}年${month}月`, 'Report Processing Service');
 
             // アラート条件チェック
             await this.checkAndSendAlert(
@@ -260,7 +261,7 @@ export class ReportProcessingService {
                 }
             }
         } catch (error) {
-            console.error(`❌ ${reportType}レポート通知処理中にエラーが発生しました:`, error);
+            logger.error(error as Error, 'Report Processing Service');
         }
     }
 
@@ -287,7 +288,7 @@ export class ReportProcessingService {
             );
 
             await this.discordNotifier.notifyWeeklyReport(alertNotification);
-            console.log(`📢 ウィークリーアラートレベル${alertLevel}を送信しました`);
+            logger.info(`ウィークリーアラートレベル${alertLevel}を送信しました`, 'Report Processing Service');
         } else if (reportType === 'MONTHLY' && 'monthStartDate' in report) {
             const alertNotification = ReportNotificationMapper.toMonthlyAlertNotification(
                 report,
@@ -298,7 +299,7 @@ export class ReportProcessingService {
             );
 
             await this.discordNotifier.notifyMonthlyReport(alertNotification);
-            console.log(`📢 マンスリーアラートレベル${alertLevel}を送信しました`);
+            logger.info(`マンスリーアラートレベル${alertLevel}を送信しました`, 'Report Processing Service');
         }
     }
 }

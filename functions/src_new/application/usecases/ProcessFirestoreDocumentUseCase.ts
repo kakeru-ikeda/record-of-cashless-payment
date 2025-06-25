@@ -1,5 +1,6 @@
 import { ResponseHelper } from '../../../../shared/presentation/responses/ResponseHelper';
 import { AppError, ErrorType } from '../../../../shared/errors/AppError';
+import { logger } from '../../../../shared/infrastructure/logging/Logger';
 import { ReportProcessingService } from '../services/ReportProcessingService';
 
 /**
@@ -15,14 +16,15 @@ export class ProcessFirestoreDocumentUseCase {
      * Firestoreドキュメント作成イベントを処理
      */
     async execute(event): Promise<any> {
-        console.log('🚀 処理開始 - ドキュメントパス:', event.params);
+        logger.info('処理開始', 'Firestore Document UseCase');
+        logger.debug(`ドキュメントパス: ${JSON.stringify(event.params)}`, 'Firestore Document UseCase');
 
         // パスチェック
         const path = event.data?.ref.path;
-        console.log('📂 ドキュメントパス:', path);
+        logger.debug(`ドキュメントパス: ${path}`, 'Firestore Document UseCase');
 
         if (path && path.includes('/reports')) {
-            console.log('⚠️ レポートドキュメントには処理をスキップします:', path);
+            logger.warn(`レポートドキュメントには処理をスキップします: ${path}`, 'Firestore Document UseCase');
             return ResponseHelper.success('レポートドキュメントのため処理をスキップしました', {});
         }
 
@@ -38,18 +40,18 @@ export class ProcessFirestoreDocumentUseCase {
             throw new AppError('ドキュメントデータが存在しません', ErrorType.NOT_FOUND);
         }
 
-        console.log('📊 レポート処理を開始します...');
+        logger.info('レポート処理を開始します', 'Firestore Document UseCase');
 
         // 1. デイリーレポート処理
-        console.log('📆 デイリーレポート処理中...');
+        logger.debug('デイリーレポート処理中', 'Firestore Document UseCase');
         const dailyReport = await this.reportProcessingService.processDailyReport(document, data, params);
 
         // 2. ウィークリーレポート処理
-        console.log('📅 ウィークリーレポート処理中...');
+        logger.debug('ウィークリーレポート処理中', 'Firestore Document UseCase');
         const weeklyReport = await this.reportProcessingService.processWeeklyReport(document, data, params);
 
         // 3. マンスリーレポート処理
-        console.log('📅 マンスリーレポート処理中...');
+        logger.debug('マンスリーレポート処理中', 'Firestore Document UseCase');
         const monthlyReport = await this.reportProcessingService.processMonthlyReport(document, data, params);
 
         // 処理結果を返す
