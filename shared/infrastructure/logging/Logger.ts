@@ -170,23 +170,6 @@ export class Logger implements ILogger {
   }
 
   /**
-   * テスト用のロガーインスタンスを取得
-   * タイマーを設定しないインスタンスを返す
-   */
-  public static getTestInstance(): Logger {
-    // テスト環境であることを明示
-    process.env.NODE_ENV = 'test';
-
-    // 既存のインスタンスをリセット
-    if (Logger.instance) {
-      Logger.instance.clearTimers();
-      Logger.instance = undefined;
-    }
-
-    return Logger.getInstance();
-  }
-
-  /**
    * 設定を更新
    */
   public setConfig(config: Partial<LoggerConfig>): void {

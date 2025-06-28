@@ -40,7 +40,7 @@ describe('Logger', () => {
         Object.values(consoleSpy).forEach(spy => spy.mockClear());
 
         // テスト用のLogger取得
-        logger = Logger.getTestInstance();
+        logger = Logger.getInstance();
     });
 
     afterAll(() => {
