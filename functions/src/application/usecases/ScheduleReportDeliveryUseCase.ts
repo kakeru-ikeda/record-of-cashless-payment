@@ -1,4 +1,3 @@
-import * as functions from 'firebase-functions';
 import { ResponseHelper } from '../../../../shared/presentation/responses/ResponseHelper';
 import { AppError, ErrorType } from '../../../../shared/errors/AppError';
 import { logger } from '../../../../shared/infrastructure/logging/Logger';
@@ -16,7 +15,7 @@ export class ScheduleReportDeliveryUseCase {
     /**
      * スケジュール配信イベントを処理
      */
-    async execute(context): Promise<any> {
+    async execute(context: any): Promise<any> {
         logger.info('スケジュール配信処理開始', 'Schedule Report Delivery UseCase');
         logger.debug(`イベント: ${JSON.stringify(context)}`, 'Schedule Report Delivery UseCase');
 
@@ -25,9 +24,8 @@ export class ScheduleReportDeliveryUseCase {
             await this.reportSchedulingService.executeScheduledReports();
 
             return ResponseHelper.success('スケジュール配信処理が完了しました', {
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
             });
-
         } catch (error) {
             logger.error(error as Error, 'Schedule Report Delivery UseCase');
             throw new AppError(

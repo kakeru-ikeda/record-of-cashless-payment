@@ -18,7 +18,7 @@ export abstract class BaseHttpHandler extends BaseEventHandler<{ req: Request; r
         logger.info('HTTP処理開始', this.handlerName, {
             method: event.req.method,
             path: event.req.path,
-            suppressConsole: false
+            suppressConsole: false,
         });
 
         try {
@@ -32,7 +32,6 @@ export abstract class BaseHttpHandler extends BaseEventHandler<{ req: Request; r
             await this.afterProcess(event, undefined);
 
             logger.info('HTTP処理完了', this.handlerName);
-
         } catch (error) {
             logger.error(error as Error, this.handlerName);
             await this.handleHttpError(error, event.res);

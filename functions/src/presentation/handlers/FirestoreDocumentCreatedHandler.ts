@@ -1,4 +1,3 @@
-import * as functions from 'firebase-functions';
 import { BaseEventHandler } from './base/BaseEventHandler';
 import { logger } from '../../../../shared/infrastructure/logging/Logger';
 import { ProcessFirestoreDocumentUseCase } from '../../application/usecases/ProcessFirestoreDocumentUseCase';

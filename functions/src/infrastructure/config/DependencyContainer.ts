@@ -14,11 +14,11 @@ import { ReportProcessingService } from '../../application/services/ReportProces
 export class DependencyContainer {
     private static instance: DependencyContainer;
 
-    private _firestoreService: FirestoreService;
-    private _reportRepository: FirestoreReportRepository;
-    private _discordNotifier: IDiscordNotifier;
-    private _reportUseCase: FirestoreReportUseCase;
-    private _notifyReportUseCase: NotifyReportUseCase;
+    private _firestoreService!: FirestoreService;
+    private _reportRepository!: FirestoreReportRepository;
+    private _discordNotifier!: IDiscordNotifier;
+    private _reportUseCase!: FirestoreReportUseCase;
+    private _notifyReportUseCase!: NotifyReportUseCase;
 
     private constructor() {
         this.initializeDependencies();

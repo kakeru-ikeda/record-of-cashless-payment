@@ -3,7 +3,6 @@ import { NotifyReportUseCase } from '../../../../shared/usecases/notification/No
 import { logger } from '../../../../shared/infrastructure/logging/Logger';
 import { DateUtil } from '../../../../shared/utils/DateUtil';
 import { FirestorePathUtil } from '../../../../shared/utils/FirestorePathUtil';
-import { DailyReportNotificationDTO, WeeklyReportNotificationDTO, MonthlyReportNotificationDTO } from '../../../../shared/domain/dto/ReportNotificationDTOs';
 import { ReportNotificationMapper } from '../../../../shared/infrastructure/mappers/ReportNotificationMapper';
 
 /**

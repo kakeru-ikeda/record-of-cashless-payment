@@ -18,7 +18,7 @@ export abstract class BaseEventHandler<TEvent, TResult> {
      */
     async handle(event: TEvent): Promise<TResult> {
         logger.info('処理開始', this.handlerName, {
-            suppressConsole: false
+            suppressConsole: false,
         });
 
         try {
@@ -33,7 +33,6 @@ export abstract class BaseEventHandler<TEvent, TResult> {
 
             logger.info('処理完了', this.handlerName);
             return result;
-
         } catch (error) {
             logger.error(error as Error, this.handlerName);
             return await this.handleError(error);

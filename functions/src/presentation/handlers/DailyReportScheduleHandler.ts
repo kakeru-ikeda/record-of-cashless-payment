@@ -1,4 +1,3 @@
-import * as functions from 'firebase-functions';
 import { BaseEventHandler } from './base/BaseEventHandler';
 import { logger } from '../../../../shared/infrastructure/logging/Logger';
 import { ScheduleReportDeliveryUseCase } from '../../application/usecases/ScheduleReportDeliveryUseCase';
@@ -34,7 +33,7 @@ export class DailyReportScheduleHandler extends BaseEventHandler<any, any> {
     protected async afterProcess(context: any, result: any): Promise<void> {
         logger.info('スケジュール配信処理が正常に完了しました', this.handlerName, {
             timestamp: new Date().toISOString(),
-            result
+            result,
         });
     }
 }
