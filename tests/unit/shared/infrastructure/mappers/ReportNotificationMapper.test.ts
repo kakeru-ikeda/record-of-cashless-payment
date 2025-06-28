@@ -309,7 +309,7 @@ describe('ReportNotificationMapper', () => {
 
             // Assert
             expect(result).toEqual({
-                title: '🚨 週次支出アラート (レベル2) - 2025年6月 第1週',
+                title: '週次支出アラート (レベル2) - 2025年6月 第1週',
                 period: '2025/05/26 - 2025/06/01',
                 totalAmount: 35000,
                 totalCount: 20,
@@ -358,7 +358,7 @@ describe('ReportNotificationMapper', () => {
 
             // Assert
             expect(result).toEqual({
-                title: '🚨 月次支出アラート (レベル3) - 2025年5月',
+                title: '月次支出アラート (レベル3) - 2025年5月',
                 period: '2025/05/01 - 2025/05/31',
                 totalAmount: 120000,
                 totalCount: 60,

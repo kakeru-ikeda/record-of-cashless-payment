@@ -115,7 +115,7 @@ export class ReportNotificationMapper {
         weekNumber: number,
         thresholdValue: number
     ): WeeklyReportNotificationDTO {
-        const title = `🚨 週次支出アラート (レベル${alertLevel}) - ${year}年${month}月 第${weekNumber}週`;
+        const title = `週次支出アラート (レベル${alertLevel}) - ${year}年${month}月 第${weekNumber}週`;
         const additionalInfo = `しきい値 ${thresholdValue.toLocaleString()}円 を超過しました`;
 
         return this.toWeeklyNotification(entity, title, alertLevel, additionalInfo);
@@ -137,7 +137,7 @@ export class ReportNotificationMapper {
         month: string,
         thresholdValue: number
     ): MonthlyReportNotificationDTO {
-        const title = `🚨 月次支出アラート (レベル${alertLevel}) - ${year}年${month}月`;
+        const title = `月次支出アラート (レベル${alertLevel}) - ${year}年${month}月`;
         const additionalInfo = `しきい値 ${thresholdValue.toLocaleString()}円 を超過しました`;
 
         return this.toMonthlyNotification(entity, title, alertLevel, additionalInfo);
