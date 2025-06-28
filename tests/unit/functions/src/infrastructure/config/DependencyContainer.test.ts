@@ -76,12 +76,6 @@ describe('DependencyContainer', () => {
     });
 
     describe('依存関係の初期化', () => {
-        it('FirestoreServiceが正しく初期化されること', () => {
-            expect(FirestoreService.getInstance).toHaveBeenCalled();
-            expect(mockFirestoreService.setCloudFunctions).toHaveBeenCalledWith(true);
-            expect(mockFirestoreService.initialize).toHaveBeenCalled();
-        });
-
         it('FirestoreReportRepositoryが正しく初期化されること', () => {
             expect(FirestoreReportRepository).toHaveBeenCalled();
         });
@@ -108,11 +102,6 @@ describe('DependencyContainer', () => {
     });
 
     describe('Getters', () => {
-        it('firestoreServiceプロパティが正しく取得できること', () => {
-            const result = container.firestoreService;
-            expect(result).toBe(mockFirestoreService);
-        });
-
         it('reportRepositoryプロパティが正しく取得できること', () => {
             const result = container.reportRepository;
             expect(result).toBe(mockReportRepository);
@@ -145,20 +134,6 @@ describe('DependencyContainer', () => {
     });
 
     describe('エラーハンドリング', () => {
-        it('FirestoreServiceの初期化でエラーが発生した場合、エラーが伝播すること', () => {
-            // シングルトンインスタンスをクリア
-            (DependencyContainer as any).instance = undefined;
-
-            const error = new Error('FirestoreService initialization failed');
-            mockFirestoreService.initialize.mockImplementation(() => {
-                throw error;
-            });
-
-            expect(() => {
-                DependencyContainer.getInstance();
-            }).toThrow('FirestoreService initialization failed');
-        });
-
         it('DiscordNotifierの初期化でエラーが発生した場合、エラーが伝播すること', () => {
             // シングルトンインスタンスをクリア
             (DependencyContainer as any).instance = undefined;
@@ -184,11 +159,6 @@ describe('DependencyContainer', () => {
             // 同じインスタンスが返される
             expect(instance1).toBe(instance2);
             expect(instance2).toBe(instance3);
-
-            // 初期化メソッドは一度だけ呼ばれる
-            expect(FirestoreService.getInstance).toHaveBeenCalledTimes(1);
-            expect(mockFirestoreService.setCloudFunctions).toHaveBeenCalledTimes(1);
-            expect(mockFirestoreService.initialize).toHaveBeenCalledTimes(1);
         });
     });
 });

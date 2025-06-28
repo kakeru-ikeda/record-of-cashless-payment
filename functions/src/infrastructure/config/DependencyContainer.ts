@@ -1,6 +1,5 @@
 import { IDiscordNotifier } from '../../../../shared/domain/interfaces/discord/IDiscordNotifier';
 import { DiscordNotifier } from '../../../../shared/infrastructure/discord/DiscordNotifier';
-import { FirestoreService } from '../../../../shared/infrastructure/database/FirestoreService';
 import { FirestoreReportRepository } from
     '../../../../shared/infrastructure/database/repositories/FirestoreReportRepository';
 import { FirestoreReportUseCase } from '../../../../shared/usecases/database/FirestoreReportUseCase';
@@ -15,7 +14,6 @@ import { ReportProcessingService } from '../../application/services/ReportProces
 export class DependencyContainer {
     private static instance: DependencyContainer;
 
-    private _firestoreService!: FirestoreService;
     private _reportRepository!: FirestoreReportRepository;
     private _discordNotifier!: IDiscordNotifier;
     private _reportUseCase!: FirestoreReportUseCase;
@@ -42,11 +40,6 @@ export class DependencyContainer {
      * 依存関係を初期化
      */
     private initializeDependencies(): void {
-        // Firestoreサービスの初期化
-        this._firestoreService = FirestoreService.getInstance();
-        this._firestoreService.setCloudFunctions(true);
-        this._firestoreService.initialize();
-
         // リポジトリの初期化
         this._reportRepository = new FirestoreReportRepository();
 
@@ -67,14 +60,6 @@ export class DependencyContainer {
     }
 
     // Getters
-    /**
-     * Firestoreサービスを取得
-     * @returns FirestoreService
-     */
-    public get firestoreService(): FirestoreService {
-        return this._firestoreService;
-    }
-
     /**
      * レポートリポジトリを取得
      * @returns FirestoreReportRepository

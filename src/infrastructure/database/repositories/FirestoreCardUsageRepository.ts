@@ -25,12 +25,18 @@ export class FirestoreCardUsageRepository implements ICardUsageCrudRepository {
     defaultMessage: 'Firestoreの初期化に失敗しました'
   })
   async initialize(): Promise<Firestore> {
-    // サービスアカウントの秘密鍵のパスを取得
-    const serviceAccountPath = Environment.getFirebaseAdminKeyPath();
+    // Cloud Functions環境の判定
+    const isCloudFunctions = Environment.isCloudFunctions();
+    this.firestoreService.setCloudFunctions(isCloudFunctions);
 
-    // ローカル環境として初期化
-    this.firestoreService.setCloudFunctions(Environment.isCloudFunctions());
-    return await this.firestoreService.initialize(serviceAccountPath);
+    if (isCloudFunctions) {
+      // Cloud Functions環境ではサービスアカウントキーは不要
+      return await this.firestoreService.initialize();
+    } else {
+      // ローカル環境ではサービスアカウントキーが必要
+      const serviceAccountPath = Environment.getFirebaseAdminKeyPath();
+      return await this.firestoreService.initialize(serviceAccountPath);
+    }
   }
 
   /**

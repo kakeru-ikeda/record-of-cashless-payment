@@ -96,10 +96,10 @@ describe('FirestoreService', () => {
     describe('setCloudFunctions', () => {
         it('Cloud Functions環境フラグを設定できること', () => {
             firestoreService.setCloudFunctions(true);
-            expect(firestoreService['isCloudFunctions']).toBe(true);
+            expect(firestoreService['_isCloudFunctions']).toBe(true);
 
             firestoreService.setCloudFunctions(false);
-            expect(firestoreService['isCloudFunctions']).toBe(false);
+            expect(firestoreService['_isCloudFunctions']).toBe(false);
         });
     });
 

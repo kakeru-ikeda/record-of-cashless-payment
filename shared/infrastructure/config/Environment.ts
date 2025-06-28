@@ -40,8 +40,14 @@ export class Environment {
         || path.resolve(process.cwd(), 'firebase-admin-key.json');
 
     // Cloud Functions関連の設定
-    static readonly IS_CLOUD_FUNCTIONS = process.env.FUNCTIONS_EMULATOR === 'true'
-        || process.env.FUNCTION_TARGET != null;
+    static readonly IS_CLOUD_FUNCTIONS =
+        process.env.IS_CLOUD_FUNCTIONS === 'true'
+        || process.env.FUNCTIONS_EMULATOR === 'true'
+        || process.env.FUNCTION_TARGET != null
+        || process.env.FIREBASE_CONFIG != null
+        || process.env.K_SERVICE != null
+        || process.env.FUNCTION_NAME != null
+        || process.env.GOOGLE_CLOUD_PROJECT != null;
 
     // ログ関連の設定
     static readonly LOG_LEVEL = process.env.LOG_LEVEL || 'INFO';
