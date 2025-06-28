@@ -75,12 +75,23 @@ describe('DependencyContainer', () => {
         });
     });
 
-    describe('依存関係の初期化', () => {
-        it('FirestoreReportRepositoryが正しく初期化されること', () => {
-            expect(FirestoreReportRepository).toHaveBeenCalled();
+    describe('遅延初期化', () => {
+        it('コンストラクタ時点では依存関係が初期化されないこと', () => {
+            // getInstance()時点では依存関係は初期化されない
+            expect(FirestoreReportRepository).not.toHaveBeenCalled();
+            expect(DiscordNotifier).not.toHaveBeenCalled();
+            expect(FirestoreReportUseCase).not.toHaveBeenCalled();
+            expect(NotifyReportUseCase).not.toHaveBeenCalled();
         });
 
-        it('DiscordNotifierが正しく初期化されること', () => {
+        it('reportRepositoryアクセス時にFirestoreReportRepositoryが初期化されること', () => {
+            const result = container.reportRepository;
+            expect(FirestoreReportRepository).toHaveBeenCalled();
+            expect(result).toBe(mockReportRepository);
+        });
+
+        it('discordNotifierアクセス時にDiscordNotifierが初期化されること', () => {
+            const result = container.discordNotifier;
             expect(DiscordNotifier).toHaveBeenCalledWith({
                 usageWebhookUrl: 'https://discord.com/webhook1',
                 loggingWebhookUrl: 'https://discord.com/webhook2',
@@ -90,14 +101,19 @@ describe('DependencyContainer', () => {
                 reportWeeklyWebhookUrl: 'https://discord.com/webhook6',
                 reportMonthlyWebhookUrl: 'https://discord.com/webhook7',
             });
+            expect(result).toBe(mockDiscordNotifier);
         });
 
-        it('FirestoreReportUseCaseが正しく初期化されること', () => {
+        it('reportUseCaseアクセス時にFirestoreReportUseCaseが初期化されること', () => {
+            const result = container.reportUseCase;
             expect(FirestoreReportUseCase).toHaveBeenCalledWith(mockReportRepository);
+            expect(result).toBe(mockReportUseCase);
         });
 
-        it('NotifyReportUseCaseが正しく初期化されること', () => {
+        it('notifyReportUseCaseアクセス時にNotifyReportUseCaseが初期化されること', () => {
+            const result = container.notifyReportUseCase;
             expect(NotifyReportUseCase).toHaveBeenCalledWith(mockDiscordNotifier);
+            expect(result).toBe(mockNotifyReportUseCase);
         });
     });
 
@@ -135,30 +151,47 @@ describe('DependencyContainer', () => {
 
     describe('エラーハンドリング', () => {
         it('DiscordNotifierの初期化でエラーが発生した場合、エラーが伝播すること', () => {
-            // シングルトンインスタンスをクリア
-            (DependencyContainer as any).instance = undefined;
-
             const error = new Error('DiscordNotifier initialization failed');
             (DiscordNotifier as jest.Mock).mockImplementation(() => {
                 throw error;
             });
 
             expect(() => {
-                DependencyContainer.getInstance();
+                container.discordNotifier;
             }).toThrow('DiscordNotifier initialization failed');
         });
     });
 
-    describe('複数回の初期化', () => {
-        it('複数回getInstanceを呼び出しても、初期化は一度だけ実行されること', () => {
-            // 最初のgetInstanceの呼び出し
-            const instance1 = DependencyContainer.getInstance();
-            const instance2 = DependencyContainer.getInstance();
-            const instance3 = DependencyContainer.getInstance();
+    describe('複数回アクセス時の動作', () => {
+        it('同一プロパティに複数回アクセスしても、初期化は一度だけ実行されること', () => {
+            // 複数回アクセス
+            const repo1 = container.reportRepository;
+            const repo2 = container.reportRepository;
+            const repo3 = container.reportRepository;
 
             // 同じインスタンスが返される
-            expect(instance1).toBe(instance2);
-            expect(instance2).toBe(instance3);
+            expect(repo1).toBe(repo2);
+            expect(repo2).toBe(repo3);
+
+            // 初期化は一度だけ
+            expect(FirestoreReportRepository).toHaveBeenCalledTimes(1);
+        });
+
+        it('異なるプロパティにアクセスしたときは、それぞれ初期化されること', () => {
+            // 異なるプロパティにアクセス
+            const repo = container.reportRepository;
+            const notifier = container.discordNotifier;
+            const useCase = container.reportUseCase;
+
+            // それぞれ初期化される
+            expect(FirestoreReportRepository).toHaveBeenCalledTimes(1);
+            expect(DiscordNotifier).toHaveBeenCalledTimes(1);
+            expect(FirestoreReportUseCase).toHaveBeenCalledTimes(1);
+
+            // 正しいインスタンスが返される
+            expect(repo).toBe(mockReportRepository);
+            expect(notifier).toBe(mockDiscordNotifier);
+            expect(useCase).toBe(mockReportUseCase);
         });
     });
 });

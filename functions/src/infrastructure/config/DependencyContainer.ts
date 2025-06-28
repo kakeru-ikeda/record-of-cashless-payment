@@ -14,16 +14,16 @@ import { ReportProcessingService } from '../../application/services/ReportProces
 export class DependencyContainer {
     private static instance: DependencyContainer;
 
-    private _reportRepository!: FirestoreReportRepository;
-    private _discordNotifier!: IDiscordNotifier;
-    private _reportUseCase!: FirestoreReportUseCase;
-    private _notifyReportUseCase!: NotifyReportUseCase;
+    private _reportRepository?: FirestoreReportRepository;
+    private _discordNotifier?: IDiscordNotifier;
+    private _reportUseCase?: FirestoreReportUseCase;
+    private _notifyReportUseCase?: NotifyReportUseCase;
 
     /**
      * プライベートコンストラクタ（シングルトンパターンのため）
      */
     private constructor() {
-        this.initializeDependencies();
+        // 依存関係の即座の初期化は行わず、遅延初期化を採用
     }
 
     /**
@@ -36,35 +36,15 @@ export class DependencyContainer {
         return DependencyContainer.instance;
     }
 
-    /**
-     * 依存関係を初期化
-     */
-    private initializeDependencies(): void {
-        // リポジトリの初期化
-        this._reportRepository = new FirestoreReportRepository();
-
-        // Discord通知の設定
-        this._discordNotifier = new DiscordNotifier({
-            usageWebhookUrl: Environment.getDiscordWebhookUrl(),
-            loggingWebhookUrl: Environment.getDiscordLoggingWebhookUrl(),
-            alertWeeklyWebhookUrl: Environment.getDiscordAlertWeeklyWebhookUrl(),
-            alertMonthlyWebhookUrl: Environment.getDiscordAlertMonthlyWebhookUrl(),
-            reportDailyWebhookUrl: Environment.getDiscordReportDailyWebhookUrl(),
-            reportWeeklyWebhookUrl: Environment.getDiscordReportWeeklyWebhookUrl(),
-            reportMonthlyWebhookUrl: Environment.getDiscordReportMonthlyWebhookUrl(),
-        });
-
-        // ユースケースの初期化
-        this._reportUseCase = new FirestoreReportUseCase(this._reportRepository);
-        this._notifyReportUseCase = new NotifyReportUseCase(this._discordNotifier);
-    }
-
     // Getters
     /**
      * レポートリポジトリを取得
      * @returns FirestoreReportRepository
      */
     public get reportRepository(): FirestoreReportRepository {
+        if (!this._reportRepository) {
+            this._reportRepository = new FirestoreReportRepository();
+        }
         return this._reportRepository;
     }
 
@@ -73,6 +53,17 @@ export class DependencyContainer {
      * @returns IDiscordNotifier
      */
     public get discordNotifier(): IDiscordNotifier {
+        if (!this._discordNotifier) {
+            this._discordNotifier = new DiscordNotifier({
+                usageWebhookUrl: Environment.getDiscordWebhookUrl(),
+                loggingWebhookUrl: Environment.getDiscordLoggingWebhookUrl(),
+                alertWeeklyWebhookUrl: Environment.getDiscordAlertWeeklyWebhookUrl(),
+                alertMonthlyWebhookUrl: Environment.getDiscordAlertMonthlyWebhookUrl(),
+                reportDailyWebhookUrl: Environment.getDiscordReportDailyWebhookUrl(),
+                reportWeeklyWebhookUrl: Environment.getDiscordReportWeeklyWebhookUrl(),
+                reportMonthlyWebhookUrl: Environment.getDiscordReportMonthlyWebhookUrl(),
+            });
+        }
         return this._discordNotifier;
     }
 
@@ -81,6 +72,9 @@ export class DependencyContainer {
      * @returns FirestoreReportUseCase
      */
     public get reportUseCase(): FirestoreReportUseCase {
+        if (!this._reportUseCase) {
+            this._reportUseCase = new FirestoreReportUseCase(this.reportRepository);
+        }
         return this._reportUseCase;
     }
 
@@ -89,6 +83,9 @@ export class DependencyContainer {
      * @returns NotifyReportUseCase
      */
     public get notifyReportUseCase(): NotifyReportUseCase {
+        if (!this._notifyReportUseCase) {
+            this._notifyReportUseCase = new NotifyReportUseCase(this.discordNotifier);
+        }
         return this._notifyReportUseCase;
     }
 
@@ -98,8 +95,8 @@ export class DependencyContainer {
      */
     public get reportProcessingService(): ReportProcessingService {
         return new ReportProcessingService(
-            this._discordNotifier,
-            this._reportUseCase
+            this.discordNotifier,
+            this.reportUseCase
         );
     }
 }

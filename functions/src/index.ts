@@ -1,6 +1,12 @@
 import * as functions from 'firebase-functions';
+import * as admin from 'firebase-admin';
 import { EventHandlerFactory } from './presentation/handlers/EventHandlerFactory';
 // import { createExpressApp } from './presentation/api/ExpressApp';
+
+// Cloud Functions環境でのFirebase Admin SDK初期化
+if (!admin.apps.length) {
+    admin.initializeApp();
+}
 
 /**
  * Firestoreドキュメント作成時に実行

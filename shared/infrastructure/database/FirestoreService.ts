@@ -105,41 +105,48 @@ export class FirestoreService {
             // 環境変数の状態をログ出力（デバッグ用）
             logger.info(`Firebase初期化: Cloud Functions判定=${this.isCloudFunctions()}, FUNCTION_TARGET=${process.env.FUNCTION_TARGET}, FIREBASE_CONFIG=${process.env.FIREBASE_CONFIG ? '設定済み' : '未設定'}, GOOGLE_CLOUD_PROJECT=${process.env.GOOGLE_CLOUD_PROJECT}`, this.serviceContext);
 
-            // Firebase初期化がまだの場合のみ初期化
-            if (!admin.apps || admin.apps.length === 0) {
-                if (this.isCloudFunctions()) {
-                    // Cloud Functions環境では自動的に初期化される
+            if (this.isCloudFunctions()) {
+                // Cloud Functions環境では、Firebase Admin SDKが自動初期化されているかチェック
+                if (!admin.apps || admin.apps.length === 0) {
+                    // 自動初期化されていない場合、手動で初期化
                     admin.initializeApp();
-                    logger.info('Cloud Functions環境でFirestoreに接続しました', this.serviceContext);
-                } else if (serviceAccountPath) {
-                    // ローカル環境では秘密鍵ファイルで初期化
-                    try {
-                        admin.initializeApp({
-                            credential: admin.credential.cert(
-                                JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'))
-                            )
-                        });
-                        logger.info('ローカル環境でFirestoreに接続しました', this.serviceContext);
-                    } catch (error) {
+                    logger.info('Cloud Functions環境でFirebase Admin SDKを手動初期化しました', this.serviceContext);
+                } else {
+                    logger.info('Cloud Functions環境でFirebase Admin SDKは既に初期化されています', this.serviceContext);
+                }
+            } else {
+                // ローカル環境での初期化
+                if (!admin.apps || admin.apps.length === 0) {
+                    if (serviceAccountPath) {
+                        try {
+                            admin.initializeApp({
+                                credential: admin.credential.cert(
+                                    JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'))
+                                )
+                            });
+                            logger.info('ローカル環境でFirestoreに接続しました', this.serviceContext);
+                        } catch (error) {
+                            throw new AppError(
+                                'サービスアカウントキーでの初期化に失敗しました',
+                                ErrorType.FIREBASE,
+                                { path: serviceAccountPath },
+                                error instanceof Error ? error : undefined
+                            );
+                        }
+                    } else {
                         throw new AppError(
-                            'サービスアカウントキーでの初期化に失敗しました',
-                            ErrorType.FIREBASE,
-                            { path: serviceAccountPath },
-                            error instanceof Error ? error : undefined
+                            'サービスアカウントキーのパスが指定されていません',
+                            ErrorType.CONFIGURATION
                         );
                     }
                 } else {
-                    throw new AppError(
-                        'サービスアカウントキーのパスが指定されていません',
-                        ErrorType.CONFIGURATION
-                    );
+                    logger.info('Firebase Admin SDKは既に初期化されています', this.serviceContext);
                 }
-            } else {
-                logger.info('Firebase Admin SDKは既に初期化されています', this.serviceContext);
             }
 
-            // Firestoreインスタンスを返す
+            // Firestoreインスタンスを作成
             this.db = admin.firestore();
+            logger.info('Firestoreインスタンスを正常に作成しました', this.serviceContext);
             return this.db;
         } catch (error) {
             // AppErrorでない場合は変換

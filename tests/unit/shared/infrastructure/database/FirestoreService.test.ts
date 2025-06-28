@@ -95,332 +95,444 @@ describe('FirestoreService', () => {
 
     describe('setCloudFunctions', () => {
         it('Cloud Functions環境フラグを設定できること', () => {
+            // モックをクリア
+            jest.clearAllMocks();
+
+            // 警告メッセージが出力されることを確認
             firestoreService.setCloudFunctions(true);
-            expect(firestoreService['_isCloudFunctions']).toBe(true);
+            expect(logger.warn).toHaveBeenCalledWith(
+                'setCloudFunctions()は非推奨です。環境変数による自動判定を使用してください。',
+                'FirestoreService'
+            );
+
+            // 再度クリア
+            jest.clearAllMocks();
 
             firestoreService.setCloudFunctions(false);
-            expect(firestoreService['_isCloudFunctions']).toBe(false);
+            expect(logger.warn).toHaveBeenCalledWith(
+                'setCloudFunctions()は非推奨です。環境変数による自動判定を使用してください。',
+                'FirestoreService'
+            );
         });
     });
 
-    describe('initialize', () => {
-        describe('Cloud Functions環境', () => {
-            beforeEach(() => {
-                firestoreService.setCloudFunctions(true);
-            });
-
-            it('Cloud Functions環境でFirestoreを初期化できること', async () => {
-                const result = await firestoreService.initialize();
-
-                expect(admin.initializeApp).toHaveBeenCalledWith();
-                expect(admin.firestore).toHaveBeenCalled();
-                expect(result).toBe(mockFirestore);
-                expect(logger.info).toHaveBeenCalledWith('Cloud Functions環境でFirestoreに接続しました', 'FirestoreService');
-            });
-
-            it('既に初期化済みの場合は既存のインスタンスを返すこと', async () => {
-                // 最初の初期化
-                await firestoreService.initialize();
-
-                // モックをクリア
-                jest.clearAllMocks();
-
-                // 2回目の初期化
-                const result = await firestoreService.initialize();
-
-                expect(admin.initializeApp).not.toHaveBeenCalled();
-                expect(result).toBe(mockFirestore);
-            });
+    describe('isCloudFunctions判定', () => {
+        beforeEach(() => {
+            // 環境変数をクリア
+            delete process.env.FUNCTION_TARGET;
+            delete process.env.FIREBASE_CONFIG;
+            delete process.env.K_SERVICE;
+            delete process.env.FUNCTION_NAME;
+            delete process.env.FUNCTIONS_EMULATOR;
+            delete process.env.IS_CLOUD_FUNCTIONS;
+            delete process.env.GOOGLE_CLOUD_PROJECT;
+            delete process.env.GCLOUD_PROJECT;
         });
 
-        describe('ローカル環境', () => {
-            const serviceAccountPath = '/path/to/service-account.json';
-            const mockServiceAccount = {
-                type: 'service_account',
-                project_id: 'test-project'
-            };
+        it('FUNCTION_TARGET環境変数が設定されている場合はCloud Functions環境と判定される', async () => {
+            process.env.FUNCTION_TARGET = 'onFirestoreWrite';
+            const firestoreService = FirestoreService.getInstance();
 
-            beforeEach(() => {
-                firestoreService.setCloudFunctions(false);
-                (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(mockServiceAccount));
-            });
-
-            it('サービスアカウントキーでFirestoreを初期化できること', async () => {
-                const result = await firestoreService.initialize(serviceAccountPath);
-
-                expect(fs.readFileSync).toHaveBeenCalledWith(serviceAccountPath, 'utf8');
-                expect(admin.credential.cert).toHaveBeenCalledWith(mockServiceAccount);
-                expect(admin.initializeApp).toHaveBeenCalledWith({
-                    credential: 'mock-credential'
-                });
-                expect(admin.firestore).toHaveBeenCalled();
-                expect(result).toBe(mockFirestore);
-                expect(logger.info).toHaveBeenCalledWith('ローカル環境でFirestoreに接続しました', 'FirestoreService');
-            });
-
-            it('サービスアカウントキーのパスが指定されていない場合はエラーを投げること', async () => {
-                await expect(firestoreService.initialize()).rejects.toThrow(AppError);
-                await expect(firestoreService.initialize()).rejects.toThrow('サービスアカウントキーのパスが指定されていません');
-            });
-
-            it('サービスアカウントキーの読み込みに失敗した場合はエラーを投げること', async () => {
-                (fs.readFileSync as jest.Mock).mockImplementation(() => {
-                    throw new Error('File not found');
-                });
-
-                await expect(firestoreService.initialize(serviceAccountPath)).rejects.toThrow(AppError);
-                await expect(firestoreService.initialize(serviceAccountPath)).rejects.toThrow('サービスアカウントキーでの初期化に失敗しました');
-            });
-        });
-
-        describe('既にFirebaseアプリが初期化済みの場合', () => {
-            beforeEach(() => {
-                // 既に初期化済みの状態をシミュレート
-                (admin.apps as any).length = 1;
-            });
-
-            it('再初期化せずにFirestoreインスタンスを返すこと', async () => {
-                const result = await firestoreService.initialize();
-
-                expect(admin.initializeApp).not.toHaveBeenCalled();
-                expect(admin.firestore).toHaveBeenCalled();
-                expect(result).toBe(mockFirestore);
-            });
-        });
-    });
-
-    describe('getDb', () => {
-        it('初期化済みの場合はFirestoreインスタンスを返すこと', async () => {
-            // 初期化
-            firestoreService.setCloudFunctions(true);
             await firestoreService.initialize();
 
-            const result = await firestoreService.getDb();
+            expect(logger.info).toHaveBeenCalledWith(
+                expect.stringContaining('Firebase初期化: Cloud Functions判定=true'),
+                'FirestoreService'
+            );
+        });
+
+        it('FIREBASE_CONFIG環境変数が設定されている場合はCloud Functions環境と判定される', async () => {
+            process.env.FIREBASE_CONFIG = '{"projectId":"test-project"}';
+            const firestoreService = FirestoreService.getInstance();
+
+            await firestoreService.initialize();
+
+            expect(logger.info).toHaveBeenCalledWith(
+                expect.stringContaining('Firebase初期化: Cloud Functions判定=true'),
+                'FirestoreService'
+            );
+        });
+
+        it('GOOGLE_CLOUD_PROJECT環境変数が設定されている場合はCloud Functions環境と判定される', async () => {
+            process.env.GOOGLE_CLOUD_PROJECT = 'test-project';
+            const firestoreService = FirestoreService.getInstance();
+
+            await firestoreService.initialize();
+
+            expect(logger.info).toHaveBeenCalledWith(
+                expect.stringContaining('Firebase初期化: Cloud Functions判定=true'),
+                'FirestoreService'
+            );
+        });
+    });
+    describe('Cloud Functions環境', () => {
+        beforeEach(() => {
+            firestoreService.setCloudFunctions(true);
+            // 環境変数をモック
+            process.env.FUNCTION_TARGET = 'onFirestoreWrite';
+            process.env.FIREBASE_CONFIG = '{"projectId":"test-project"}';
+            process.env.GOOGLE_CLOUD_PROJECT = 'test-project';
+        });
+
+        afterEach(() => {
+            // 環境変数をクリア
+            delete process.env.FUNCTION_TARGET;
+            delete process.env.FIREBASE_CONFIG;
+            delete process.env.GOOGLE_CLOUD_PROJECT;
+        });
+
+        it('Cloud Functions環境でFirestoreを初期化できること', async () => {
+            const result = await firestoreService.initialize();
+
+            expect(admin.initializeApp).toHaveBeenCalledWith();
+            expect(admin.firestore).toHaveBeenCalled();
+            expect(result).toBe(mockFirestore);
+
+            // デバッグログが出力されることを確認
+            expect(logger.info).toHaveBeenCalledWith(
+                expect.stringContaining('Firebase初期化: Cloud Functions判定=true'),
+                'FirestoreService'
+            );
+            // 初期化ログが出力されることを確認
+            expect(logger.info).toHaveBeenCalledWith('Cloud Functions環境でFirebase Admin SDKを手動初期化しました', 'FirestoreService');
+            // Firestoreインスタンス作成ログが出力されることを確認
+            expect(logger.info).toHaveBeenCalledWith('Firestoreインスタンスを正常に作成しました', 'FirestoreService');
+        });
+
+        it('既にFirebase Admin SDKが初期化されている場合は再初期化しないこと', async () => {
+            // 既に初期化済みの状態をシミュレート
+            (admin.apps as any).length = 1;
+
+            const result = await firestoreService.initialize();
+
+            expect(admin.initializeApp).not.toHaveBeenCalled();
+            expect(admin.firestore).toHaveBeenCalled();
+            expect(result).toBe(mockFirestore);
+            expect(logger.info).toHaveBeenCalledWith('Cloud Functions環境でFirebase Admin SDKは既に初期化されています', 'FirestoreService');
+        });
+
+        it('既に初期化済みの場合は既存のインスタンスを返すこと', async () => {
+            // 最初の初期化
+            await firestoreService.initialize();
+
+            // モックをクリア
+            jest.clearAllMocks();
+
+            // 2回目の初期化
+            const result = await firestoreService.initialize();
+
+            expect(admin.initializeApp).not.toHaveBeenCalled();
             expect(result).toBe(mockFirestore);
         });
-
-        it('未初期化の場合はエラーを投げること', async () => {
-            await expect(firestoreService.getDb()).rejects.toThrow(AppError);
-            await expect(firestoreService.getDb()).rejects.toThrow('Firestoreが初期化されていません。initialize()を先に呼び出してください。');
-        });
     });
 
-    describe('saveDocument', () => {
-        beforeEach(async () => {
-            firestoreService.setCloudFunctions(true);
-            await firestoreService.initialize();
+    describe('ローカル環境', () => {
+        const serviceAccountPath = '/path/to/service-account.json';
+        const mockServiceAccount = {
+            type: 'service_account',
+            project_id: 'test-project'
+        };
+
+        beforeEach(() => {
+            firestoreService.setCloudFunctions(false);
+            (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(mockServiceAccount));
         });
 
-        it('ドキュメントを保存できること', async () => {
-            const path = 'users/user1';
-            const data = { name: 'Test User', age: 30 };
+        it('サービスアカウントキーでFirestoreを初期化できること', async () => {
+            const result = await firestoreService.initialize(serviceAccountPath);
 
-            await firestoreService.saveDocument(path, data);
-
-            expect(mockFirestore.doc).toHaveBeenCalledWith(path);
-            expect(mockDoc.set).toHaveBeenCalledWith(data);
-            expect(logger.info).toHaveBeenCalledWith('ドキュメントを保存しました: users/user1', 'FirestoreService');
+            expect(fs.readFileSync).toHaveBeenCalledWith(serviceAccountPath, 'utf8');
+            expect(admin.credential.cert).toHaveBeenCalledWith(mockServiceAccount);
+            expect(admin.initializeApp).toHaveBeenCalledWith({
+                credential: 'mock-credential'
+            });
+            expect(admin.firestore).toHaveBeenCalled();
+            expect(result).toBe(mockFirestore);
+            expect(logger.info).toHaveBeenCalledWith('ローカル環境でFirestoreに接続しました', 'FirestoreService');
+            expect(logger.info).toHaveBeenCalledWith('Firestoreインスタンスを正常に作成しました', 'FirestoreService');
         });
 
-        it('保存エラーの場合はAppErrorを投げること', async () => {
-            const path = 'users/user1';
-            const data = { name: 'Test User' };
-            const error = new Error('Firestore error');
-
-            mockDoc.set.mockRejectedValue(error);
-
-            await expect(firestoreService.saveDocument(path, data)).rejects.toThrow(AppError);
-        });
-    });
-
-    describe('updateDocument', () => {
-        beforeEach(async () => {
-            firestoreService.setCloudFunctions(true);
-            await firestoreService.initialize();
+        it('サービスアカウントキーのパスが指定されていない場合はエラーを投げること', async () => {
+            await expect(firestoreService.initialize()).rejects.toThrow(AppError);
+            await expect(firestoreService.initialize()).rejects.toThrow('サービスアカウントキーのパスが指定されていません');
         });
 
-        it('ドキュメントを更新できること', async () => {
-            const path = 'users/user1';
-            const data = { age: 31 };
-
-            await firestoreService.updateDocument(path, data);
-
-            expect(mockFirestore.doc).toHaveBeenCalledWith(path);
-            expect(mockDoc.update).toHaveBeenCalledWith(data);
-            expect(logger.info).toHaveBeenCalledWith('ドキュメントを更新しました: users/user1', 'FirestoreService');
-        });
-
-        it('更新エラーの場合はAppErrorを投げること', async () => {
-            const path = 'users/user1';
-            const data = { age: 31 };
-            const error = new Error('Firestore error');
-
-            mockDoc.update.mockRejectedValue(error);
-
-            await expect(firestoreService.updateDocument(path, data)).rejects.toThrow(AppError);
-        });
-    });
-
-    describe('getDocument', () => {
-        beforeEach(async () => {
-            firestoreService.setCloudFunctions(true);
-            await firestoreService.initialize();
-        });
-
-        it('ドキュメントが存在する場合はデータを返すこと', async () => {
-            const path = 'users/user1';
-            const expectedData = { name: 'Test User', age: 30 };
-
-            mockDoc.get.mockResolvedValue({
-                exists: true,
-                data: () => expectedData
+        it('サービスアカウントキーの読み込みに失敗した場合はエラーを投げること', async () => {
+            (fs.readFileSync as jest.Mock).mockImplementation(() => {
+                throw new Error('File not found');
             });
 
-            const result = await firestoreService.getDocument<typeof expectedData>(path);
+            await expect(firestoreService.initialize(serviceAccountPath)).rejects.toThrow(AppError);
+            await expect(firestoreService.initialize(serviceAccountPath)).rejects.toThrow('サービスアカウントキーでの初期化に失敗しました');
+        });
+    });
 
-            expect(mockFirestore.doc).toHaveBeenCalledWith(path);
-            expect(mockDoc.get).toHaveBeenCalled();
-            expect(result).toEqual(expectedData);
+    describe('既にFirebaseアプリが初期化済みの場合', () => {
+        beforeEach(() => {
+            // Cloud Functions環境として設定
+            firestoreService.setCloudFunctions(true);
+            // 既に初期化済みの状態をシミュレート
+            (admin.apps as any).length = 1;
+            // 環境変数も設定
+            process.env.FUNCTION_TARGET = 'onFirestoreWrite';
+            process.env.FIREBASE_CONFIG = '{"projectId":"test-project"}';
         });
 
-        it('ドキュメントが存在しない場合はnullを返すこと', async () => {
-            const path = 'users/nonexistent';
+        afterEach(() => {
+            delete process.env.FUNCTION_TARGET;
+            delete process.env.FIREBASE_CONFIG;
+        });
 
-            mockDoc.get.mockResolvedValue({
-                exists: false
+        it('再初期化せずにFirestoreインスタンスを返すこと', async () => {
+            // モックをクリア
+            jest.clearAllMocks();
+
+            const result = await firestoreService.initialize();
+
+            expect(admin.initializeApp).not.toHaveBeenCalled();
+            expect(admin.firestore).toHaveBeenCalled();
+            expect(result).toBe(mockFirestore);
+            expect(logger.info).toHaveBeenCalledWith(
+                expect.stringContaining('Firebase初期化: Cloud Functions判定=true'),
+                'FirestoreService'
+            );
+            expect(logger.info).toHaveBeenCalledWith('Cloud Functions環境でFirebase Admin SDKは既に初期化されています', 'FirestoreService');
+        });
+
+
+        describe('getDb', () => {
+            it('初期化済みの場合はFirestoreインスタンスを返すこと', async () => {
+                // 初期化
+                firestoreService.setCloudFunctions(true);
+                await firestoreService.initialize();
+
+                const result = await firestoreService.getDb();
+                expect(result).toBe(mockFirestore);
             });
 
-            const result = await firestoreService.getDocument(path);
-
-            expect(result).toBeNull();
-            expect(logger.info).toHaveBeenCalledWith('ドキュメントが見つかりません: users/nonexistent', 'FirestoreService');
+            it('未初期化の場合はエラーを投げること', async () => {
+                await expect(firestoreService.getDb()).rejects.toThrow(AppError);
+                await expect(firestoreService.getDb()).rejects.toThrow('Firestoreが初期化されていません。initialize()を先に呼び出してください。');
+            });
         });
 
-        it('取得エラーの場合はAppErrorを投げること', async () => {
-            const path = 'users/user1';
-            const error = new Error('Firestore error');
+        describe('saveDocument', () => {
+            beforeEach(async () => {
+                firestoreService.setCloudFunctions(true);
+                await firestoreService.initialize();
+            });
 
-            mockDoc.get.mockRejectedValue(error);
+            it('ドキュメントを保存できること', async () => {
+                const path = 'users/user1';
+                const data = { name: 'Test User', age: 30 };
 
-            await expect(firestoreService.getDocument(path)).rejects.toThrow(AppError);
-        });
-    });
+                await firestoreService.saveDocument(path, data);
 
-    describe('getDocumentRef', () => {
-        beforeEach(async () => {
-            firestoreService.setCloudFunctions(true);
-            await firestoreService.initialize();
-        });
+                expect(mockFirestore.doc).toHaveBeenCalledWith(path);
+                expect(mockDoc.set).toHaveBeenCalledWith(data);
+                expect(logger.info).toHaveBeenCalledWith('ドキュメントを保存しました: users/user1', 'FirestoreService');
+            });
 
-        it('ドキュメント参照を取得できること', async () => {
-            const path = 'users/user1';
+            it('保存エラーの場合はAppErrorを投げること', async () => {
+                const path = 'users/user1';
+                const data = { name: 'Test User' };
+                const error = new Error('Firestore error');
 
-            const result = await firestoreService.getDocumentRef(path);
+                mockDoc.set.mockRejectedValue(error);
 
-            expect(mockFirestore.doc).toHaveBeenCalledWith(path);
-            expect(result).toBe(mockDoc);
-        });
-    });
-
-    describe('deleteDocument', () => {
-        beforeEach(async () => {
-            firestoreService.setCloudFunctions(true);
-            await firestoreService.initialize();
+                await expect(firestoreService.saveDocument(path, data)).rejects.toThrow(AppError);
+            });
         });
 
-        it('ドキュメントを削除できること', async () => {
-            const path = 'users/user1';
+        describe('updateDocument', () => {
+            beforeEach(async () => {
+                firestoreService.setCloudFunctions(true);
+                await firestoreService.initialize();
+            });
 
-            await firestoreService.deleteDocument(path);
+            it('ドキュメントを更新できること', async () => {
+                const path = 'users/user1';
+                const data = { age: 31 };
 
-            expect(mockFirestore.doc).toHaveBeenCalledWith(path);
-            expect(mockDoc.delete).toHaveBeenCalled();
-            expect(logger.info).toHaveBeenCalledWith('ドキュメントを削除しました: users/user1', 'FirestoreService');
+                await firestoreService.updateDocument(path, data);
+
+                expect(mockFirestore.doc).toHaveBeenCalledWith(path);
+                expect(mockDoc.update).toHaveBeenCalledWith(data);
+                expect(logger.info).toHaveBeenCalledWith('ドキュメントを更新しました: users/user1', 'FirestoreService');
+            });
+
+            it('更新エラーの場合はAppErrorを投げること', async () => {
+                const path = 'users/user1';
+                const data = { age: 31 };
+                const error = new Error('Firestore error');
+
+                mockDoc.update.mockRejectedValue(error);
+
+                await expect(firestoreService.updateDocument(path, data)).rejects.toThrow(AppError);
+            });
         });
 
-        it('削除エラーの場合はAppErrorを投げること', async () => {
-            const path = 'users/user1';
-            const error = new Error('Firestore error');
+        describe('getDocument', () => {
+            beforeEach(async () => {
+                firestoreService.setCloudFunctions(true);
+                await firestoreService.initialize();
+            });
 
-            mockDoc.delete.mockRejectedValue(error);
+            it('ドキュメントが存在する場合はデータを返すこと', async () => {
+                const path = 'users/user1';
+                const expectedData = { name: 'Test User', age: 30 };
 
-            await expect(firestoreService.deleteDocument(path)).rejects.toThrow(AppError);
-        });
-    });
+                mockDoc.get.mockResolvedValue({
+                    exists: true,
+                    data: () => expectedData
+                });
 
-    describe('query', () => {
-        beforeEach(async () => {
-            firestoreService.setCloudFunctions(true);
-            await firestoreService.initialize();
-        });
+                const result = await firestoreService.getDocument<typeof expectedData>(path);
 
-        it('クエリを実行して結果を返すこと', async () => {
-            const collectionPath = 'users';
-            const queryFn = (collection: any) => collection.where('age', '>=', 18);
+                expect(mockFirestore.doc).toHaveBeenCalledWith(path);
+                expect(mockDoc.get).toHaveBeenCalled();
+                expect(result).toEqual(expectedData);
+            });
 
-            const mockSnapshot = {
-                docs: [
-                    {
-                        id: 'doc1',
-                        data: jest.fn().mockReturnValue({ field1: 'value1' })
-                    },
-                    {
-                        id: 'doc2',
-                        data: jest.fn().mockReturnValue({ field2: 'value2' })
-                    }
-                ]
-            };
+            it('ドキュメントが存在しない場合はnullを返すこと', async () => {
+                const path = 'users/nonexistent';
 
-            const mockQuery = {
-                get: jest.fn().mockResolvedValue(mockSnapshot)
-            };
+                mockDoc.get.mockResolvedValue({
+                    exists: false
+                });
 
-            mockCollection.where.mockReturnValue(mockQuery);
+                const result = await firestoreService.getDocument(path);
 
-            const result = await firestoreService.query(collectionPath, queryFn);
+                expect(result).toBeNull();
+                expect(logger.info).toHaveBeenCalledWith('ドキュメントが見つかりません: users/nonexistent', 'FirestoreService');
+            });
 
-            expect(mockFirestore.collection).toHaveBeenCalledWith(collectionPath);
-            expect(mockQuery.get).toHaveBeenCalled();
-            expect(result).toEqual([
-                { id: 'doc1', field1: 'value1' },
-                { id: 'doc2', field2: 'value2' }
-            ]);
+            it('取得エラーの場合はAppErrorを投げること', async () => {
+                const path = 'users/user1';
+                const error = new Error('Firestore error');
+
+                mockDoc.get.mockRejectedValue(error);
+
+                await expect(firestoreService.getDocument(path)).rejects.toThrow(AppError);
+            });
         });
 
-        it('クエリエラーの場合はAppErrorを投げること', async () => {
-            const collectionPath = 'users';
-            const queryFn = (collection: any) => collection.where('age', '>=', 18);
-            const error = new Error('Query error');
+        describe('getDocumentRef', () => {
+            beforeEach(async () => {
+                firestoreService.setCloudFunctions(true);
+                await firestoreService.initialize();
+            });
 
-            const mockQuery = {
-                get: jest.fn().mockRejectedValue(error)
-            };
+            it('ドキュメント参照を取得できること', async () => {
+                const path = 'users/user1';
 
-            mockCollection.where.mockReturnValue(mockQuery);
+                const result = await firestoreService.getDocumentRef(path);
 
-            await expect(firestoreService.query(collectionPath, queryFn)).rejects.toThrow(AppError);
+                expect(mockFirestore.doc).toHaveBeenCalledWith(path);
+                expect(result).toBe(mockDoc);
+            });
         });
-    });
 
-    describe('getServerTimestamp', () => {
-        it('サーバータイムスタンプを取得できること', () => {
-            const result = firestoreService.getServerTimestamp();
+        describe('deleteDocument', () => {
+            beforeEach(async () => {
+                firestoreService.setCloudFunctions(true);
+                await firestoreService.initialize();
+            });
 
-            expect(admin.firestore.FieldValue.serverTimestamp).toHaveBeenCalled();
-            expect(result).toBe('server-timestamp');
+            it('ドキュメントを削除できること', async () => {
+                const path = 'users/user1';
+
+                await firestoreService.deleteDocument(path);
+
+                expect(mockFirestore.doc).toHaveBeenCalledWith(path);
+                expect(mockDoc.delete).toHaveBeenCalled();
+                expect(logger.info).toHaveBeenCalledWith('ドキュメントを削除しました: users/user1', 'FirestoreService');
+            });
+
+            it('削除エラーの場合はAppErrorを投げること', async () => {
+                const path = 'users/user1';
+                const error = new Error('Firestore error');
+
+                mockDoc.delete.mockRejectedValue(error);
+
+                await expect(firestoreService.deleteDocument(path)).rejects.toThrow(AppError);
+            });
         });
-    });
 
-    describe('getTimestampFromDate', () => {
-        it('日付からタイムスタンプを作成できること', () => {
-            const date = new Date('2025-05-30T10:00:00Z');
+        describe('query', () => {
+            beforeEach(async () => {
+                firestoreService.setCloudFunctions(true);
+                await firestoreService.initialize();
+            });
 
-            const result = firestoreService.getTimestampFromDate(date);
+            it('クエリを実行して結果を返すこと', async () => {
+                const collectionPath = 'users';
+                const queryFn = (collection: any) => collection.where('age', '>=', 18);
 
-            expect(admin.firestore.Timestamp.fromDate).toHaveBeenCalledWith(date);
-            expect(result).toEqual({
-                seconds: Math.floor(date.getTime() / 1000),
-                nanoseconds: 0
+                const mockSnapshot = {
+                    docs: [
+                        {
+                            id: 'doc1',
+                            data: jest.fn().mockReturnValue({ field1: 'value1' })
+                        },
+                        {
+                            id: 'doc2',
+                            data: jest.fn().mockReturnValue({ field2: 'value2' })
+                        }
+                    ]
+                };
+
+                const mockQuery = {
+                    get: jest.fn().mockResolvedValue(mockSnapshot)
+                };
+
+                mockCollection.where.mockReturnValue(mockQuery);
+
+                const result = await firestoreService.query(collectionPath, queryFn);
+
+                expect(mockFirestore.collection).toHaveBeenCalledWith(collectionPath);
+                expect(mockQuery.get).toHaveBeenCalled();
+                expect(result).toEqual([
+                    { id: 'doc1', field1: 'value1' },
+                    { id: 'doc2', field2: 'value2' }
+                ]);
+            });
+
+            it('クエリエラーの場合はAppErrorを投げること', async () => {
+                const collectionPath = 'users';
+                const queryFn = (collection: any) => collection.where('age', '>=', 18);
+                const error = new Error('Query error');
+
+                const mockQuery = {
+                    get: jest.fn().mockRejectedValue(error)
+                };
+
+                mockCollection.where.mockReturnValue(mockQuery);
+
+                await expect(firestoreService.query(collectionPath, queryFn)).rejects.toThrow(AppError);
+            });
+        });
+
+        describe('getServerTimestamp', () => {
+            it('サーバータイムスタンプを取得できること', () => {
+                const result = firestoreService.getServerTimestamp();
+
+                expect(admin.firestore.FieldValue.serverTimestamp).toHaveBeenCalled();
+                expect(result).toBe('server-timestamp');
+            });
+        });
+
+        describe('getTimestampFromDate', () => {
+            it('日付からタイムスタンプを作成できること', () => {
+                const date = new Date('2025-05-30T10:00:00Z');
+
+                const result = firestoreService.getTimestampFromDate(date);
+
+                expect(admin.firestore.Timestamp.fromDate).toHaveBeenCalledWith(date);
+                expect(result).toEqual({
+                    seconds: Math.floor(date.getTime() / 1000),
+                    nanoseconds: 0
+                });
             });
         });
     });
