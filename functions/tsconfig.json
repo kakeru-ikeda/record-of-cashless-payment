@@ -11,7 +11,13 @@
     "target": "es2017",
     "skipLibCheck": true,
     "rootDir": "..",
-    "baseUrl": ".."
+    "baseUrl": "..",
+    "paths": {
+      "@shared/*": [
+        "shared/*"
+      ]
+    },
+    "experimentalDecorators": true
   },
   "compileOnSave": true,
   "include": [

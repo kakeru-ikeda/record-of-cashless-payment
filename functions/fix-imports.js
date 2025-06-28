@@ -1,215 +1,114 @@
 /**
- * ビルド後のJavaScriptファイルの相対パスを修正するスクリプト
+ * ビルド後のJavaScriptファイルのsharedインポートパスを修正するスクリプト
+ * 
+ * 目的: sharedフォルダの相対パス参照を、コピーされたsharedフォルダへの正しいパスに変更
+ * 構造: lib/functions/src/ から lib/shared/ への参照に変更
  */
 const fs = require('fs');
 const path = require('path');
+const glob = require('glob');
 
-// 修正対象のファイル
-const targetFile = path.join(__dirname, 'lib', 'index.js');
-const cardUsageControllerFile = path.join(__dirname, 'lib', 'functions', 'src', 'api', 'controllers', 'CardUsageController.js');
-const cardUsageMapperFile = path.join(__dirname, 'lib', 'functions', 'src', 'shared', 'domain', 'mappers', 'CardUsageMapper.js');
+console.log('🔧 sharedインポートパスを修正中...');
 
-console.log('🔧 インポートパスを修正中...');
+// lib/functions/src 配下のすべてのJSファイルを取得
+const jsFiles = glob.sync(path.join(__dirname, 'lib', 'functions', 'src', '**', '*.js'));
 
-// index.jsファイルを修正
-try {
-    let content = fs.readFileSync(targetFile, 'utf8');
+console.log(`� 対象ファイル数: ${jsFiles.length}`);
 
-    // discord関連のインポートパスを修正
-    content = content.replace(
-        /require\("\.\.\/\.\.\/shared\/discord\/DiscordNotifier"\)/g,
-        'require("./shared/discord/DiscordNotifier")'
-    );
+let modifiedCount = 0;
 
-    // domain関連のインポートパスを修正
-    content = content.replace(
-        /require\("\.\.\/\.\.\/shared\/domain\/entities\/ReportNotifications"\)/g,
-        'require("./shared/domain/entities/ReportNotifications")'
-    );
+jsFiles.forEach(filePath => {
+    try {
+        const content = fs.readFileSync(filePath, 'utf8');
+        let modifiedContent = content;
+        let hasModifications = false;
 
-    content = content.replace(
-        /require\("\.\.\/\.\.\/shared\/domain\/entities\/CardUsageNotification"\)/g,
-        'require("./shared/domain/entities/CardUsageNotification")'
-    );
+        // パスの深さを計算（lib/functions/src からの相対位置）
+        const relativePath = path.relative(path.join(__dirname, 'lib', 'functions', 'src'), filePath);
+        const depth = relativePath.split(path.sep).length - 1; // ファイル名を除く
 
-    // utils関連のインポートパスを修正
-    content = content.replace(
-        /require\("\.\.\/\.\.\/shared\/utils\/DateUtil"\)/g,
-        'require("./shared/utils/DateUtil")'
-    );
+        // shared への相対パスを構築
+        const pathToShared = '../'.repeat(depth + 2) + 'shared'; // +2 は functions/src を遡る分
 
-    content = content.replace(
-        /require\("\.\.\/\.\.\/shared\/utils\/ResponseHelper"\)/g,
-        'require("./shared/utils/ResponseHelper")'
-    );
+        // sharedへの参照パターンをすべて置換
+        const sharedPatterns = [
+            // 4階層上がってsharedに行くパターン (lib/functions/src/xxx/ から)
+            {
+                from: /require\("\.\.\/\.\.\/\.\.\/\.\.\/shared\/(.*?)"\)/g,
+                to: `require("../../shared/$1")`
+            },
+            // 5階層上がってsharedに行くパターン (lib/functions/src/xxx/yyy/ から)
+            {
+                from: /require\("\.\.\/\.\.\/\.\.\/\.\.\/\.\.\/shared\/(.*?)"\)/g,
+                to: `require("../../../shared/$1")`
+            },
+            // 6階層上がってsharedに行くパターン (lib/functions/src/xxx/yyy/zzz/ から)
+            {
+                from: /require\("\.\.\/\.\.\/\.\.\/\.\.\/\.\.\/\.\.\/shared\/(.*?)"\)/g,
+                to: `require("../../../../shared/$1")`
+            }
+        ];
 
-    // firebase関連のインポートパスを修正
-    content = content.replace(
-        /require\("\.\.\/\.\.\/shared\/firebase\/FirestoreService"\)/g,
-        'require("./shared/firebase/FirestoreService")'
-    );
+        sharedPatterns.forEach(pattern => {
+            const beforeReplace = modifiedContent;
+            modifiedContent = modifiedContent.replace(pattern.from, pattern.to);
+            if (beforeReplace !== modifiedContent) {
+                hasModifications = true;
+            }
+        });
 
-    // 認証ミドルウェアのインポートパスを修正
-    content = content.replace(
-        /require\("\.\.\/\.\.\/shared\/firebase\/AuthMiddleware"\)/g,
-        'require("./shared/firebase/AuthMiddleware")'
-    );
+        if (hasModifications) {
+            fs.writeFileSync(filePath, modifiedContent);
+            modifiedCount++;
 
-    // errors関連のインポートパスを修正
-    content = content.replace(
-        /require\("\.\.\/\.\.\/shared\/errors\/AppError"\)/g,
-        'require("./shared/errors/AppError")'
-    );
+            const relativeFilePath = path.relative(__dirname, filePath);
+            console.log(`✅ 修正: ${relativeFilePath}`);
+        }
 
-    content = content.replace(
-        /require\("\.\.\/\.\.\/shared\/errors\/ErrorHandler"\)/g,
-        'require("./shared/errors/ErrorHandler")'
-    );
-
-    // config関連のインポートパスを修正
-    content = content.replace(
-        /require\("\.\.\/\.\.\/shared\/config\/Environment"\)/g,
-        'require("./shared/config/Environment")'
-    );
-
-    // mappers関連のインポートパスを修正
-    content = content.replace(
-        /require\("\.\.\/\.\.\/shared\/domain\/mappers\/CardUsageMapper"\)/g,
-        'require("./shared/domain/mappers/CardUsageMapper")'
-    );
-
-    // レポートサービス関連のインポートパスを修正 - ビルド後のパスに合わせて変更
-    content = content.replace(
-        /require\("\.\/services\/reports\/BaseReportService"\)/g,
-        'require("./functions/src/services/reports/BaseReportService")'
-    );
-
-    content = content.replace(
-        /require\("\.\/services\/reports\/DailyReportService"\)/g,
-        'require("./functions/src/services/reports/DailyReportService")'
-    );
-
-    content = content.replace(
-        /require\("\.\/services\/reports\/WeeklyReportService"\)/g,
-        'require("./functions/src/services/reports/WeeklyReportService")'
-    );
-
-    content = content.replace(
-        /require\("\.\/services\/reports\/MonthlyReportService"\)/g,
-        'require("./functions/src/services/reports/MonthlyReportService")'
-    );
-
-    // API関連のインポートパスを修正
-    content = content.replace(
-        /require\("\.\/api\/app\"\)/g,
-        'require("./functions/src/api/app")'
-    );
-
-    content = content.replace(
-        /require\("\.\/api\/controllers\/cardUsageController"\)/g,
-        'require("./functions/src/api/controllers/cardUsageController")'
-    );
-
-    content = content.replace(
-        /require\("\.\/api\/routes\/cardUsageRoutes"\)/g,
-        'require("./functions/src/api/routes/cardUsageRoutes")'
-    );
-
-    content = content.replace(
-        /require\("\.\/api\/middlewares\/"\)/g,
-        'require("./functions/src/api/middlewares/")'
-    );
-
-    // 修正内容を書き込む
-    fs.writeFileSync(targetFile, content);
-    console.log('✅ index.jsのインポートパスの修正が完了しました');
-} catch (error) {
-    console.error('❌ index.jsのインポートパスの修正に失敗しました:', error);
-    process.exit(1);
-}
-
-// CardUsageController.jsファイルを修正
-try {
-    if (fs.existsSync(cardUsageControllerFile)) {
-        let content = fs.readFileSync(cardUsageControllerFile, 'utf8');
-
-        // CardUsageController内のDiscordNotifierのインポートパスを修正
-        content = content.replace(
-            /require\("shared\/discord\/DiscordNotifier"\)/g,
-            'require("../../../shared/discord/DiscordNotifier")'
-        );
-
-        // 他の相対パスも必要に応じて修正
-        content = content.replace(
-            /require\("shared\/firebase\/FirestoreService"\)/g,
-            'require("../../../shared/firebase/FirestoreService")'
-        );
-
-        content = content.replace(
-            /require\("shared\/utils\/DateUtil"\)/g,
-            'require("../../../shared/utils/DateUtil")'
-        );
-
-        content = content.replace(
-            /require\("shared\/utils\/ResponseHelper"\)/g,
-            'require("../../../shared/utils/ResponseHelper")'
-        );
-
-        content = content.replace(
-            /require\("shared\/errors\/AppError"\)/g,
-            'require("../../../shared/errors/AppError")'
-        );
-
-        content = content.replace(
-            /require\("shared\/domain\/entities\/ReportNotifications"\)/g,
-            'require("../../../shared/domain/entities/ReportNotifications")'
-        );
-
-        // CardUsageMapperのインポートパス修正（複数のパターンに対応）
-        content = content.replace(
-            /require\("shared\/domain\/mappers\/CardUsageMapper"\)/g,
-            'require("../../../shared/domain/mappers/CardUsageMapper")'
-        );
-
-        // コンパイル後のCardUsageMapperの間違ったパスを修正
-        content = content.replace(
-            /require\("\.\.\/\.\.\/\.\.\/shared\/domain\/mappers\/CardUsageMapper"\)/g,
-            'require("../../../../shared/domain/mappers/CardUsageMapper")'
-        );
-
-        // 既にコンパイルされたJSファイルでも間違ったパスになっていたら修正
-        content = content.replace(
-            /require\("\.\.\/\.\.\/\.\.\/\.\.\/\.\.\/shared\/domain\/mappers\/CardUsageMapper"\)/g,
-            'require("../../../../shared/domain/mappers/CardUsageMapper")'
-        );
-
-        // 修正内容を書き込む
-        fs.writeFileSync(cardUsageControllerFile, content);
-        console.log('✅ CardUsageController.jsのインポートパスの修正が完了しました');
-    } else {
-        console.warn('⚠️ CardUsageController.jsファイルが見つかりません');
+    } catch (error) {
+        console.error(`❌ ファイル処理エラー: ${filePath}`, error.message);
     }
-} catch (error) {
-    console.error('❌ CardUsageController.jsのインポートパスの修正に失敗しました:', error);
-}
+});
 
-// CardUsageMapper.jsファイルを修正
-try {
-    if (fs.existsSync(cardUsageMapperFile)) {
-        let content = fs.readFileSync(cardUsageMapperFile, 'utf8');
+console.log(`🎉 修正完了: ${modifiedCount}個のファイルを修正しました`);
 
-        // CardUsageMapperのインポートパスを修正
-        content = content.replace(
-            /require\("\.\.\/\.\.\/\.\.\/src\/domain\/entities\/CardUsage"\)/g,
-            'require("../entities/CardUsage")'
-        );
+// 修正結果の検証
+console.log('\n🔍 修正結果を検証中...');
+const verificationFiles = glob.sync(path.join(__dirname, 'lib', 'functions', 'src', '**', '*.js'));
+let remainingIssues = 0;
 
-        // 修正内容を書き込む
-        fs.writeFileSync(cardUsageMapperFile, content);
-        console.log('✅ CardUsageMapper.jsのインポートパスの修正が完了しました');
-    } else {
-        console.warn('⚠️ CardUsageMapper.jsファイルが見つかりません');
+verificationFiles.forEach(filePath => {
+    try {
+        const content = fs.readFileSync(filePath, 'utf8');
+
+        // 未修正のsharedパスがあるかチェック
+        const badPatterns = [
+            /require\("\.\.\/\.\.\/\.\.\/\.\.\/shared\//g,
+            /require\("\.\.\/\.\.\/\.\.\/\.\.\/\.\.\/shared\//g,
+            /require\("\.\.\/\.\.\/\.\.\/\.\.\/\.\.\/\.\.\/shared\//g
+        ];
+
+        badPatterns.forEach(pattern => {
+            const matches = content.match(pattern);
+            if (matches) {
+                remainingIssues += matches.length;
+                const relativeFilePath = path.relative(__dirname, filePath);
+                console.warn(`⚠️  未修正のパスが残っています: ${relativeFilePath} (${matches.length}箇所)`);
+            }
+        });
+
+    } catch (error) {
+        console.error(`❌ 検証エラー: ${filePath}`, error.message);
     }
-} catch (error) {
-    console.error('❌ CardUsageMapper.jsのインポートパスの修正に失敗しました:', error);
+});
+
+if (remainingIssues === 0) {
+    console.log('✅ すべてのsharedパスが正しく修正されました');
+} else {
+    console.warn(`⚠️  ${remainingIssues}箇所の未修正パスが残っています`);
 }
+
+console.log('\n📋 修正サマリー:');
+console.log(`- 対象ファイル: ${jsFiles.length}個`);
+console.log(`- 修正済み: ${modifiedCount}個`);
+console.log(`- 未修正問題: ${remainingIssues}箇所`);
