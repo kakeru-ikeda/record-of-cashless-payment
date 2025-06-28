@@ -8,6 +8,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "test:main": "jest --config jest.main.config.js",
+    "test:main:coverage": "jest --config jest.main.config.js --coverage",
     "docker:build:cloud": "docker build --platform linux/amd64 -t gcr.io/mufg-usage-details-mailbot/rocp .",
     "docker:push": "docker push gcr.io/mufg-usage-details-mailbot/rocp",
     "gcloud:config": "gcloud config set project mufg-usage-details-mailbot && gcloud auth configure-docker && gcloud auth configure-docker asia-northeast1-docker.pkg.dev",
