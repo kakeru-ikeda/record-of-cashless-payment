@@ -1,6 +1,6 @@
 import { Firestore } from 'firebase-admin/firestore';
 import { FirestoreReportRepository } from '../../../../../../shared/infrastructure/database/repositories/FirestoreReportRepository';
-import { DailyReport, WeeklyReport, MonthlyReport } from '../../../../../../shared/domain/entities/Report';
+import { DailyReport, WeeklyReport, MonthlyReport } from '../../../../../../shared/domain/entities/Reports';
 import { FirestoreService } from '../../../../../../shared/infrastructure/database/FirestoreService';
 import { Environment } from '../../../../../../shared/infrastructure/config/Environment';
 import { FirestorePathUtil } from '../../../../../../shared/utils/FirestorePathUtil';
