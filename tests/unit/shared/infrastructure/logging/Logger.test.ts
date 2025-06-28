@@ -201,6 +201,96 @@ describe('Logger', () => {
         });
     });
 
+    describe('エラーハンドリング', () => {
+        beforeEach(() => {
+            // エラー履歴をクリア
+            // @ts-ignore - privateプロパティにアクセスするため
+            logger['errorHistory'] = [];
+
+            // エラー統計をクリア
+            // @ts-ignore - privateプロパティにアクセスするため
+            logger['serviceErrorStats'].clear();
+
+            // ログレベルをDEBUGに設定してすべてのログが出力されるようにし、compactModeを無効にする
+            logger.setConfig({ level: LogLevel.DEBUG, compactMode: false });
+
+            // コンソールスパイをクリア
+            Object.values(consoleSpy).forEach(spy => spy.mockClear());
+        });
+
+        it('AppErrorが正しく処理されるべき', () => {
+            const appError = new AppError('AppError テスト', ErrorType.VALIDATION);
+            logger.error(appError, 'TestService');
+
+            expect(consoleSpy.log).toHaveBeenCalledWith(expect.stringContaining('AppError テスト'));
+            expect(consoleSpy.error).toHaveBeenCalled();
+
+            // エラー履歴に記録されているか確認
+            // @ts-ignore - privateプロパティにアクセスするため
+            const errorHistory = logger['errorHistory'];
+            expect(errorHistory.length).toBe(1);
+            expect(errorHistory[0].message).toBe('AppError テスト');
+            expect(errorHistory[0].errorType).toBe(ErrorType.VALIDATION);
+        });
+
+        it('通常のErrorがAppErrorに変換されて処理されるべき', () => {
+            const normalError = new Error('通常のエラー');
+            logger.error(normalError, 'TestService');
+
+            expect(consoleSpy.log).toHaveBeenCalledWith(expect.stringContaining('通常のエラー'));
+            expect(consoleSpy.error).toHaveBeenCalled();
+
+            // エラー履歴に記録されているか確認
+            // @ts-ignore - privateプロパティにアクセスするため
+            const errorHistory = logger['errorHistory'];
+            expect(errorHistory.length).toBe(1);
+            expect(errorHistory[0].message).toBe('通常のエラー');
+            expect(errorHistory[0].errorType).toBe(ErrorType.GENERAL);
+        });
+
+        it('nullエラーが安全に処理されるべき', () => {
+            logger.error(null, 'TestService');
+
+            expect(consoleSpy.log).toHaveBeenCalledWith(expect.stringContaining('Unknown error occurred'));
+            expect(consoleSpy.error).toHaveBeenCalled();
+
+            // エラー履歴に記録されているか確認
+            // @ts-ignore - privateプロパティにアクセスするため
+            const errorHistory = logger['errorHistory'];
+            expect(errorHistory.length).toBe(1);
+            expect(errorHistory[0].message).toBe('Unknown error occurred');
+            expect(errorHistory[0].errorType).toBe(ErrorType.GENERAL);
+        });
+
+        it('undefinedエラーが安全に処理されるべき', () => {
+            logger.error(undefined, 'TestService');
+
+            expect(consoleSpy.log).toHaveBeenCalledWith(expect.stringContaining('Unknown error occurred'));
+            expect(consoleSpy.error).toHaveBeenCalled();
+
+            // エラー履歴に記録されているか確認
+            // @ts-ignore - privateプロパティにアクセスするため
+            const errorHistory = logger['errorHistory'];
+            expect(errorHistory.length).toBe(1);
+            expect(errorHistory[0].message).toBe('Unknown error occurred');
+            expect(errorHistory[0].errorType).toBe(ErrorType.GENERAL);
+        });
+
+        it('エラー統計が正しく更新されるべき', () => {
+            logger.error(new Error('統計テスト'), 'StatService');
+
+            // プライベートプロパティにアクセス
+            // @ts-ignore - privateプロパティにアクセスするため
+            const serviceErrorStats = logger['serviceErrorStats'];
+
+            expect(serviceErrorStats.get('StatService')).toBeDefined();
+            const statServiceStats = serviceErrorStats.get('StatService');
+            expect(statServiceStats?.count).toBe(1);
+            expect(statServiceStats?.times).toHaveLength(1);
+            expect(statServiceStats?.times[0]).toBeInstanceOf(Date);
+        });
+    });
+
     describe('Discord通知', () => {
         it('DiscordNotifierが設定されている場合に通知が送信されるべき', () => {
             // DiscordNotifierのモックをインポート
@@ -267,6 +357,10 @@ describe('Logger', () => {
         });
 
         it('エラー統計が正しく記録されるべき', () => {
+            // エラー統計をクリア
+            // @ts-ignore - privateプロパティにアクセスするため
+            logger['serviceErrorStats'].clear();
+
             // エラーを複数回出力
             for (let i = 0; i < 3; i++) {
                 logger.error(new Error(`エラー ${i}`), 'StatService');

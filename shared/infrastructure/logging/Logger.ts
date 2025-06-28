@@ -244,14 +244,16 @@ export class Logger implements ILogger {
    * ERRORレベルのログを出力（任意でDiscord通知）
    */
   public error(
-    error: AppError | Error,
+    error: AppError | Error | null | undefined,
     context?: string,
     options?: LogNotifyOptions
   ): void {
     // エラーオブジェクトがAppErrorでない場合は新規作成
     if (!(error instanceof AppError)) {
+      // null/undefinedエラーの場合は安全なメッセージを設定
+      const errorMessage = error?.message || 'Unknown error occurred';
       error = new AppError(
-        error.message,
+        errorMessage,
         ErrorType.GENERAL,
         {},
         error instanceof Error ? error : undefined
