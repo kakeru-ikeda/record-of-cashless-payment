@@ -3,7 +3,7 @@
   "scripts": {
     "lint": "eslint --ext .js,.ts .",
     "lint:fix": "eslint --ext .js,.ts . --fix",
-    "build": "tsc && npm run fix-paths && node fix-imports.js",
+    "build": "tsc && node fix-imports.js",
     "fix-paths": "mkdir -p lib && cp -f lib/functions/src/index.js* lib/ || true",
     "prepare-shared": "npm run create-shared-dirs && npm run copy-shared-files",
     "create-shared-dirs": "mkdir -p src/shared/discord src/shared/domain/entities src/shared/domain/mappers src/shared/utils src/shared/firebase src/shared/errors src/shared/config",
