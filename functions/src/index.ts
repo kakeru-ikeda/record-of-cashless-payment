@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions';
 import { EventHandlerFactory } from './presentation/handlers/EventHandlerFactory';
-import { createExpressApp } from './presentation/api/ExpressApp';
+// import { createExpressApp } from './presentation/api/ExpressApp';
 
 /**
  * Firestoreドキュメント作成時に実行
@@ -43,7 +43,7 @@ export const dailyReportSchedule = functions.scheduler
  * HTTP API Functions
  * 各種処理をHTTP経由で実行するためのエンドポイント
  */
-export const api = functions.https
-    .onRequest({
-        region: 'asia-northeast1',
-    }, createExpressApp());
+// export const api = functions.https
+//     .onRequest({
+//         region: 'asia-northeast1',
+//     }, createExpressApp());
