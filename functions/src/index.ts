@@ -1,5 +1,6 @@
 import * as functions from 'firebase-functions';
 import { EventHandlerFactory } from './presentation/handlers/EventHandlerFactory';
+import { createExpressApp } from './presentation/api/ExpressApp';
 
 /**
  * Firestoreドキュメント作成時に実行
@@ -37,3 +38,12 @@ export const dailyReportSchedule = functions.scheduler
         // Firebase Functions のスケジューラーは戻り値を期待しないため、明示的にvoidを返す
         return;
     });
+
+/**
+ * HTTP API Functions
+ * 各種処理をHTTP経由で実行するためのエンドポイント
+ */
+export const api = functions.https
+    .onRequest({
+        region: 'asia-northeast1',
+    }, createExpressApp());

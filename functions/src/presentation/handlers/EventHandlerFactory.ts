@@ -4,6 +4,8 @@ import { ScheduleReportDeliveryUseCase } from '../../application/usecases/Schedu
 import { ReportSchedulingService } from '../../application/services/ReportSchedulingService';
 import { FirestoreDocumentCreatedHandler } from './FirestoreDocumentCreatedHandler';
 import { DailyReportScheduleHandler } from './DailyReportScheduleHandler';
+import { ProcessFirestoreDocumentHttpHandler } from './http/ProcessFirestoreDocumentHttpHandler';
+import { DailyReportScheduleHttpHandler } from './http/DailyReportScheduleHttpHandler';
 
 /**
  * イベントハンドラーファクトリー
@@ -47,5 +49,27 @@ export class EventHandlerFactory {
         );
         const scheduleUseCase = new ScheduleReportDeliveryUseCase(reportSchedulingService);
         return new DailyReportScheduleHandler(scheduleUseCase);
+    }
+
+    /**
+     * Firestoreドキュメント処理HTTPハンドラーを作成
+     */
+    createProcessFirestoreDocumentHttpHandler(): ProcessFirestoreDocumentHttpHandler {
+        const processUseCase = new ProcessFirestoreDocumentUseCase(
+            this.container.reportProcessingService
+        );
+        return new ProcessFirestoreDocumentHttpHandler(processUseCase);
+    }
+
+    /**
+     * 日次レポートスケジュールHTTPハンドラーを作成
+     */
+    createDailyReportScheduleHttpHandler(): DailyReportScheduleHttpHandler {
+        const reportSchedulingService = new ReportSchedulingService(
+            this.container.reportUseCase,
+            this.container.notifyReportUseCase
+        );
+        const scheduleUseCase = new ScheduleReportDeliveryUseCase(reportSchedulingService);
+        return new DailyReportScheduleHttpHandler(scheduleUseCase);
     }
 }

@@ -15,6 +15,7 @@ module.exports = {
     "!**/node_modules/**",
     "!**/dist/**",
     "!**/*.d.ts",
+    "functions/src/**/*.ts",
   ],
   coverageDirectory: 'coverage',
   transform: {
