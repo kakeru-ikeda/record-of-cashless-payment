@@ -25,7 +25,7 @@ export class DailyReportScheduleHttpHandler extends BaseHttpHandler {
         const mockContext: ScheduleContext = {
             timestamp: new Date().toISOString(),
             eventId: `http-trigger-${Date.now()}`,
-            resource: 'projects/*/locations/*/functions/dailyReportSchedule'
+            resource: 'projects/*/locations/*/functions/dailyReportSchedule',
         } as any;
 
         try {

@@ -25,7 +25,7 @@ export class ProcessFirestoreDocumentHttpHandler extends BaseHttpHandler {
 
         if (!path) {
             const errorResponse = ResponseHelper.validationError('パスが指定されていません', {
-                error: 'path is required in request body'
+                error: 'path is required in request body',
             });
             res.status(errorResponse.status).json(errorResponse);
             return;
@@ -54,11 +54,11 @@ export class ProcessFirestoreDocumentHttpHandler extends BaseHttpHandler {
                     month: pathParts[2],
                     term: pathParts[3],
                     day: pathParts[4],
-                    timestamp: pathParts[5]
+                    timestamp: pathParts[5],
                 };
             } else {
                 const errorResponse = ResponseHelper.validationError('パスの形式が無効です', {
-                    error: 'path must be in format: details/{year}/{month}/{term}/{day}/{timestamp}'
+                    error: 'path must be in format: details/{year}/{month}/{term}/{day}/{timestamp}',
                 });
                 res.status(errorResponse.status).json(errorResponse);
                 return;
@@ -69,11 +69,11 @@ export class ProcessFirestoreDocumentHttpHandler extends BaseHttpHandler {
         const mockEvent: FirestoreDocumentCreatedEvent = {
             data: {
                 ref: {
-                    path: path
+                    path: path,
                 },
-                data: () => data || {}
+                data: () => data || {},
             },
-            params: params
+            params: params,
         } as any;
 
         try {

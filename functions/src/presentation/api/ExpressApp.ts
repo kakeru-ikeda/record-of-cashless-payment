@@ -39,7 +39,7 @@ export function createExpressApp(): express.Application {
      */
     app.get('/health', (req: Request, res: Response) => {
         const healthResponse = ResponseHelper.success('Functions API is healthy', {
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
         });
         res.status(healthResponse.status).json(healthResponse);
     });

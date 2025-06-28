@@ -15,7 +15,7 @@ export type FirestoreDocumentCreatedEvent = functions.firestore.FirestoreEvent<
 >;
 
 /**
- * Firebase Scheduler Context (Firebase Functions v2形式)  
+ * Firebase Scheduler Context (Firebase Functions v2形式)
  */
 export type ScheduleContext = functions.scheduler.ScheduledEvent;
 
