@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import { BaseEventHandler } from './BaseEventHandler';
 import { logger } from '../../../../../shared/infrastructure/logging/Logger';
-import { ResponseHelper } from '../../../../../shared/presentation/responses/ResponseHelper';
 
 /**
  * HTTPリクエストイベントハンドラーの基底クラス
@@ -15,18 +14,14 @@ export abstract class BaseHttpHandler extends BaseEventHandler<{ req: Request; r
      * HTTPハンドラー用のメイン処理オーバーライド
      */
     async handle(event: { req: Request; res: Response }): Promise<void> {
-        logger.info('HTTP処理開始', this.handlerName, {
-            method: event.req.method,
-            path: event.req.path,
-            suppressConsole: false,
-        });
+        logger.info('HTTP処理開始', this.handlerName);
 
         try {
             // 前処理
             await this.beforeProcess(event);
 
             // メイン処理
-            const result = await this.processHttp(event.req, event.res);
+            await this.processHttp(event.req, event.res);
 
             // 後処理
             await this.afterProcess(event, undefined);

@@ -3,16 +3,29 @@ import { IDiscordNotifier } from '../../../../shared/domain/interfaces/discord/I
 import { FirestoreReportUseCase } from '../../../../shared/usecases/database/FirestoreReportUseCase';
 import { logger } from '../../../../shared/infrastructure/logging/Logger';
 import { FirestorePathUtil } from '../../../../shared/utils/FirestorePathUtil';
-import { DailyReportFactory, WeeklyReportFactory, MonthlyReportFactory } from '../../../../shared/domain/factories/ReportsFactory';
+import {
+    DailyReportFactory,
+    WeeklyReportFactory,
+    MonthlyReportFactory,
+} from '../../../../shared/domain/factories/ReportsFactory';
 import { DailyReport, WeeklyReport, MonthlyReport } from '../../../../shared/domain/entities/Reports';
 import { ReportNotificationMapper } from '../../../../shared/infrastructure/mappers/ReportNotificationMapper';
-import { REPORT_THRESHOLDS, ThresholdLevel, ReportType } from '../../domain/constants/ReportThresholds';
+import {
+    REPORT_THRESHOLDS,
+    ThresholdLevel,
+    ReportType,
+} from '../../domain/constants/ReportThresholds';
 
 /**
  * レポート処理サービス
  * 各種レポート（日次・週次・月次）の作成・更新とアラート処理を行う
  */
 export class ReportProcessingService {
+    /**
+     * コンストラクタ
+     * @param discordNotifier Discord通知サービス
+     * @param reportUseCase レポートユースケース
+     */
     constructor(
         private readonly discordNotifier: IDiscordNotifier,
         private readonly reportUseCase: FirestoreReportUseCase
@@ -20,10 +33,14 @@ export class ReportProcessingService {
 
     /**
      * デイリーレポート処理
+     * @param document Firestoreドキュメント
+     * @param data カード利用データ
+     * @param params パラメータ（年、月、日）
+     * @returns 処理されたデイリーレポート
      */
     async processDailyReport(
         document: functions.firestore.DocumentSnapshot,
-        data: any,
+        data: { amount: number },
         params: Record<string, string>
     ): Promise<DailyReport> {
         const { year, month, day } = params;
@@ -32,7 +49,9 @@ export class ReportProcessingService {
         const documentFullPath = document.ref.path;
 
         // 既存のデイリーレポートを取得（存在チェック）
-        const existingReport = await this.reportUseCase.getDailyReport(year, month.padStart(2, '0'), day.padStart(2, '0')).catch(() => null);
+        const existingReport = await this.reportUseCase
+            .getDailyReport(year, month.padStart(2, '0'), day.padStart(2, '0'))
+            .catch(() => null);
 
         if (existingReport) {
             // 既存レポート更新 - ファクトリーを使用
@@ -44,8 +63,16 @@ export class ReportProcessingService {
                 documentIdList: [...existingReport.documentIdList, documentFullPath],
             });
 
-            await this.reportUseCase.updateDailyReport(updatedReport, year, month.padStart(2, '0'), day.padStart(2, '0'));
-            logger.info(`デイリーレポート更新完了: ${year}年${month}月${day}日`, 'Report Processing Service');
+            await this.reportUseCase.updateDailyReport(
+                updatedReport,
+                year,
+                month.padStart(2, '0'),
+                day.padStart(2, '0')
+            );
+            logger.info(
+                `デイリーレポート更新完了: ${year}年${month}月${day}日`,
+                'Report Processing Service'
+            );
 
             return updatedReport;
         } else {
@@ -68,10 +95,14 @@ export class ReportProcessingService {
 
     /**
      * ウィークリーレポート処理
+     * @param document Firestoreドキュメント
+     * @param data カード利用データ
+     * @param params パラメータ（年、月、日）
+     * @returns 処理されたウィークリーレポート
      */
     async processWeeklyReport(
         document: functions.firestore.DocumentSnapshot,
-        data: any,
+        data: { amount: number },
         params: Record<string, string>
     ): Promise<WeeklyReport> {
         const { year, month, day } = params;
@@ -85,7 +116,9 @@ export class ReportProcessingService {
         const term = pathInfo.weekNumber.toString();
 
         // 既存の週次レポートを取得（存在チェック）
-        const existingReport = await this.reportUseCase.getWeeklyReport(year, month.padStart(2, '0'), term).catch(() => null);
+        const existingReport = await this.reportUseCase
+            .getWeeklyReport(year, month.padStart(2, '0'), term)
+            .catch(() => null);
 
         if (existingReport) {
             // 既存レポート更新 - ファクトリーを使用
@@ -137,10 +170,14 @@ export class ReportProcessingService {
 
     /**
      * マンスリーレポート処理
+     * @param document Firestoreドキュメント
+     * @param data カード利用データ
+     * @param params パラメータ（年、月）
+     * @returns 処理されたマンスリーレポート
      */
     async processMonthlyReport(
         document: functions.firestore.DocumentSnapshot,
-        data: any,
+        data: { amount: number },
         params: Record<string, string>
     ): Promise<MonthlyReport> {
         const { year, month } = params;
@@ -149,7 +186,9 @@ export class ReportProcessingService {
         const documentFullPath = document.ref.path;
 
         // 既存の月次レポートを取得（存在チェック）
-        const existingReport = await this.reportUseCase.getMonthlyReport(year, month.padStart(2, '0')).catch(() => null);
+        const existingReport = await this.reportUseCase
+            .getMonthlyReport(year, month.padStart(2, '0'))
+            .catch(() => null);
 
         if (existingReport) {
             // 既存レポート更新 - ファクトリーを使用

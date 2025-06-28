@@ -1,7 +1,7 @@
 import { FirestoreReportUseCase } from '../../../../shared/usecases/database/FirestoreReportUseCase';
 import { NotifyReportUseCase } from '../../../../shared/usecases/notification/NotifyReportUseCase';
 import { logger } from '../../../../shared/infrastructure/logging/Logger';
-import { DateUtil } from '../../../../shared/utils/DateUtil';
+import { DateUtil, DateInfo } from '../../../../shared/utils/DateUtil';
 import { FirestorePathUtil } from '../../../../shared/utils/FirestorePathUtil';
 import { ReportNotificationMapper } from '../../../../shared/infrastructure/mappers/ReportNotificationMapper';
 
@@ -10,6 +10,11 @@ import { ReportNotificationMapper } from '../../../../shared/infrastructure/mapp
  * 定期実行によるレポート送信処理を管理
  */
 export class ReportSchedulingService {
+    /**
+     * コンストラクタ
+     * @param reportUseCase レポートユースケース
+     * @param notifyReportUseCase 通知レポートユースケース
+     */
     constructor(
         private readonly reportUseCase: FirestoreReportUseCase,
         private readonly notifyReportUseCase: NotifyReportUseCase
@@ -17,8 +22,9 @@ export class ReportSchedulingService {
 
     /**
      * 日次レポート送信処理
+     * @param yesterdayInfo 昨日の日付情報
      */
-    async sendDailyReport(yesterdayInfo: any): Promise<void> {
+    async sendDailyReport(yesterdayInfo: DateInfo): Promise<void> {
         try {
             const dailyReport = await this.reportUseCase.getDailyReport(
                 yesterdayInfo.year.toString(),
@@ -28,12 +34,13 @@ export class ReportSchedulingService {
 
             // レポートが既に送信済みでない場合のみ送信
             if (!dailyReport.hasNotified) {
-                const dailyNotificationDTO = ReportNotificationMapper.toDailyScheduledNotification(
-                    dailyReport,
-                    yesterdayInfo.year.toString(),
-                    yesterdayInfo.month.toString(),
-                    yesterdayInfo.day.toString()
-                );
+                const dailyNotificationDTO = ReportNotificationMapper
+                    .toDailyScheduledNotification(
+                        dailyReport,
+                        yesterdayInfo.year.toString(),
+                        yesterdayInfo.month.toString(),
+                        yesterdayInfo.day.toString()
+                    );
 
                 // 追加情報を設定
                 dailyNotificationDTO.additionalInfo = dailyReport.totalCount > 0
@@ -47,17 +54,24 @@ export class ReportSchedulingService {
 
                 logger.info('デイリーレポートを送信しました', 'Report Scheduling Service');
             } else {
-                logger.info('デイリーレポートは送信済みのためスキップします', 'Report Scheduling Service');
+                logger.info(
+                    'デイリーレポートは送信済みのためスキップします',
+                    'Report Scheduling Service'
+                );
             }
         } catch (error) {
-            logger.warn('デイリーレポートが見つかりません。送信をスキップします', 'Report Scheduling Service');
+            logger.warn(
+                'デイリーレポートが見つかりません。送信をスキップします',
+                'Report Scheduling Service'
+            );
         }
     }
 
     /**
      * 週次レポート送信処理
+     * @param yesterdayInfo 昨日の日付情報
      */
-    async sendWeeklyReport(yesterdayInfo: any): Promise<void> {
+    async sendWeeklyReport(yesterdayInfo: DateInfo): Promise<void> {
         try {
             const weeklyReport = await this.reportUseCase.getWeeklyReport(
                 yesterdayInfo.year.toString(),
@@ -67,12 +81,13 @@ export class ReportSchedulingService {
 
             // レポートが既に送信済みでない場合のみ送信
             if (!weeklyReport.hasReportSent) {
-                const weeklyNotificationDTO = ReportNotificationMapper.toWeeklyScheduledNotification(
-                    weeklyReport,
-                    yesterdayInfo.year.toString(),
-                    yesterdayInfo.month.toString(),
-                    yesterdayInfo.term
-                );
+                const weeklyNotificationDTO = ReportNotificationMapper
+                    .toWeeklyScheduledNotification(
+                        weeklyReport,
+                        yesterdayInfo.year.toString(),
+                        yesterdayInfo.month.toString(),
+                        yesterdayInfo.term
+                    );
 
                 // 追加情報を設定
                 weeklyNotificationDTO.additionalInfo = weeklyReport.totalCount > 0
@@ -86,17 +101,24 @@ export class ReportSchedulingService {
 
                 logger.info('ウィークリーレポートを送信しました', 'Report Scheduling Service');
             } else {
-                logger.info('ウィークリーレポートは送信済みのためスキップします', 'Report Scheduling Service');
+                logger.info(
+                    'ウィークリーレポートは送信済みのためスキップします',
+                    'Report Scheduling Service'
+                );
             }
         } catch (error) {
-            logger.warn('ウィークリーレポートが見つかりません。送信をスキップします', 'Report Scheduling Service');
+            logger.warn(
+                'ウィークリーレポートが見つかりません。送信をスキップします',
+                'Report Scheduling Service'
+            );
         }
     }
 
     /**
      * 月次レポート送信処理
+     * @param yesterdayInfo 昨日の日付情報
      */
-    async sendMonthlyReport(yesterdayInfo: any): Promise<void> {
+    async sendMonthlyReport(yesterdayInfo: DateInfo): Promise<void> {
         try {
             const monthlyReport = await this.reportUseCase.getMonthlyReport(
                 yesterdayInfo.year.toString(),
@@ -105,11 +127,12 @@ export class ReportSchedulingService {
 
             // レポートが既に送信済みでない場合のみ送信
             if (!monthlyReport.hasReportSent) {
-                const monthlyNotificationDTO = ReportNotificationMapper.toMonthlyScheduledNotification(
-                    monthlyReport,
-                    yesterdayInfo.year.toString(),
-                    yesterdayInfo.month.toString()
-                );
+                const monthlyNotificationDTO = ReportNotificationMapper
+                    .toMonthlyScheduledNotification(
+                        monthlyReport,
+                        yesterdayInfo.year.toString(),
+                        yesterdayInfo.month.toString()
+                    );
 
                 // 追加情報を設定
                 monthlyNotificationDTO.additionalInfo = monthlyReport.totalCount > 0
@@ -123,10 +146,16 @@ export class ReportSchedulingService {
 
                 logger.info('マンスリーレポートを送信しました', 'Report Scheduling Service');
             } else {
-                logger.info('マンスリーレポートは送信済みのためスキップします', 'Report Scheduling Service');
+                logger.info(
+                    'マンスリーレポートは送信済みのためスキップします',
+                    'Report Scheduling Service'
+                );
             }
         } catch (error) {
-            logger.warn('マンスリーレポートが見つかりません。送信をスキップします', 'Report Scheduling Service');
+            logger.warn(
+                'マンスリーレポートが見つかりません。送信をスキップします',
+                'Report Scheduling Service'
+            );
         }
     }
 
@@ -135,7 +164,10 @@ export class ReportSchedulingService {
      * dailyReportSchedule関数から呼び出される統合メソッド
      */
     async executeScheduledReports(): Promise<void> {
-        logger.info('毎日定期実行: レポート自動送信処理を開始します', 'Report Scheduling Service');
+        logger.info(
+            '毎日定期実行: レポート自動送信処理を開始します',
+            'Report Scheduling Service'
+        );
 
         // 日本時間の「今日」を取得
         const today = DateUtil.getJSTDate();
@@ -145,7 +177,10 @@ export class ReportSchedulingService {
 
         const yesterdayInfo = DateUtil.getDateInfo(yesterday);
 
-        logger.info(`処理日: ${yesterdayInfo.year}年${yesterdayInfo.month}月${yesterdayInfo.day}日`, 'Report Scheduling Service');
+        logger.info(
+            `処理日: ${yesterdayInfo.year}年${yesterdayInfo.month}月${yesterdayInfo.day}日`,
+            'Report Scheduling Service'
+        );
 
         // 1. デイリーレポート送信
         await this.sendDailyReport(yesterdayInfo);
@@ -165,19 +200,25 @@ export class ReportSchedulingService {
 
     /**
      * レポート送信済みフラグを更新
+     * @param reportType レポートタイプ
+     * @param dateInfo 日付情報
      */
     private async updateReportSentFlag(
         reportType: 'daily' | 'weekly' | 'monthly',
-        dateInfo: any
+        dateInfo: DateInfo
     ): Promise<void> {
         let dateObj: Date;
-        let pathInfo: any;
-        let updateData: any;
+        let pathInfo: ReturnType<typeof FirestorePathUtil.getFirestorePath>;
+        let updateData: Record<string, boolean>;
         let updateBy: string;
 
         switch (reportType) {
             case 'daily':
-                dateObj = new Date(parseInt(dateInfo.year.toString()), dateInfo.month - 1, dateInfo.day);
+                dateObj = new Date(
+                    parseInt(dateInfo.year.toString()),
+                    dateInfo.month - 1,
+                    dateInfo.day
+                );
                 pathInfo = FirestorePathUtil.getFirestorePath(dateObj);
                 updateData = { hasNotified: true };
                 updateBy = 'daily-report-schedule';
@@ -193,7 +234,11 @@ export class ReportSchedulingService {
                 break;
 
             case 'weekly':
-                dateObj = new Date(parseInt(dateInfo.year.toString()), dateInfo.month - 1, dateInfo.day);
+                dateObj = new Date(
+                    parseInt(dateInfo.year.toString()),
+                    dateInfo.month - 1,
+                    dateInfo.day
+                );
                 pathInfo = FirestorePathUtil.getFirestorePath(dateObj);
                 updateData = { hasReportSent: true };
                 updateBy = 'weekly-report-schedule';
@@ -209,7 +254,11 @@ export class ReportSchedulingService {
                 break;
 
             case 'monthly':
-                dateObj = new Date(parseInt(dateInfo.year.toString()), dateInfo.month - 1, 1);
+                dateObj = new Date(
+                    parseInt(dateInfo.year.toString()),
+                    dateInfo.month - 1,
+                    1
+                );
                 pathInfo = FirestorePathUtil.getFirestorePath(dateObj);
                 updateData = { hasReportSent: true };
                 updateBy = 'monthly-report-schedule';

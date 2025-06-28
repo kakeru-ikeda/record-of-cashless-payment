@@ -1,7 +1,8 @@
-import { ResponseHelper } from '../../../../shared/presentation/responses/ResponseHelper';
+import { ResponseHelper, Response } from '../../../../shared/presentation/responses/ResponseHelper';
 import { AppError, ErrorType } from '../../../../shared/errors/AppError';
 import { logger } from '../../../../shared/infrastructure/logging/Logger';
 import { ReportSchedulingService } from '../services/ReportSchedulingService';
+import { ScheduleContext } from '../../domain/types/FirebaseFunctionTypes';
 
 /**
  * スケジュールレポート配信ユースケース
@@ -15,7 +16,7 @@ export class ScheduleReportDeliveryUseCase {
     /**
      * スケジュール配信イベントを処理
      */
-    async execute(context: any): Promise<any> {
+    async execute(context: ScheduleContext): Promise<Response> {
         logger.info('スケジュール配信処理開始', 'Schedule Report Delivery UseCase');
         logger.debug(`イベント: ${JSON.stringify(context)}`, 'Schedule Report Delivery UseCase');
 

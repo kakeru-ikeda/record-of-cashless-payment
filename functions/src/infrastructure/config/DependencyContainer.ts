@@ -1,7 +1,8 @@
 import { IDiscordNotifier } from '../../../../shared/domain/interfaces/discord/IDiscordNotifier';
 import { DiscordNotifier } from '../../../../shared/infrastructure/discord/DiscordNotifier';
 import { FirestoreService } from '../../../../shared/infrastructure/database/FirestoreService';
-import { FirestoreReportRepository } from '../../../../shared/infrastructure/database/repositories/FirestoreReportRepository';
+import { FirestoreReportRepository } from
+    '../../../../shared/infrastructure/database/repositories/FirestoreReportRepository';
 import { FirestoreReportUseCase } from '../../../../shared/usecases/database/FirestoreReportUseCase';
 import { NotifyReportUseCase } from '../../../../shared/usecases/notification/NotifyReportUseCase';
 import { Environment } from '../../../../shared/infrastructure/config/Environment';
@@ -20,6 +21,9 @@ export class DependencyContainer {
     private _reportUseCase!: FirestoreReportUseCase;
     private _notifyReportUseCase!: NotifyReportUseCase;
 
+    /**
+     * プライベートコンストラクタ（シングルトンパターンのため）
+     */
     private constructor() {
         this.initializeDependencies();
     }
@@ -63,26 +67,50 @@ export class DependencyContainer {
     }
 
     // Getters
+    /**
+     * Firestoreサービスを取得
+     * @returns FirestoreService
+     */
     public get firestoreService(): FirestoreService {
         return this._firestoreService;
     }
 
+    /**
+     * レポートリポジトリを取得
+     * @returns FirestoreReportRepository
+     */
     public get reportRepository(): FirestoreReportRepository {
         return this._reportRepository;
     }
 
+    /**
+     * Discord通知器を取得
+     * @returns IDiscordNotifier
+     */
     public get discordNotifier(): IDiscordNotifier {
         return this._discordNotifier;
     }
 
+    /**
+     * レポートユースケースを取得
+     * @returns FirestoreReportUseCase
+     */
     public get reportUseCase(): FirestoreReportUseCase {
         return this._reportUseCase;
     }
 
+    /**
+     * 通知レポートユースケースを取得
+     * @returns NotifyReportUseCase
+     */
     public get notifyReportUseCase(): NotifyReportUseCase {
         return this._notifyReportUseCase;
     }
 
+    /**
+     * レポート処理サービスを取得
+     * @returns ReportProcessingService
+     */
     public get reportProcessingService(): ReportProcessingService {
         return new ReportProcessingService(
             this._discordNotifier,

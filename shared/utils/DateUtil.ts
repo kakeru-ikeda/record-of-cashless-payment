@@ -1,4 +1,29 @@
 /**
+ * 日付の詳細情報を表すインターフェース
+ */
+export interface DateInfo {
+    date: Date;
+    year: number;
+    month: number;
+    day: number;
+    weekNumber: number;
+    term: number;
+    weekStartDate: Date;
+    weekEndDate: Date;
+    timestamp: number;
+    isLastDayOfTerm: boolean;
+    isLastDayOfMonth: boolean;
+}
+
+/**
+ * 月と週番号の基本情報を表すインターフェース
+ */
+interface BasicTermInfo {
+    month: number;
+    term: number;
+}
+
+/**
  * 日付ユーティリティクラス
  * 日付に関連する共通処理を提供します
  */
@@ -10,7 +35,7 @@ export class DateUtil {
      * @returns 月と週番号の情報
      * @private
      */
-    private static getBasicTermInfo(date: Date): { month: number; term: number } {
+    private static getBasicTermInfo(date: Date): BasicTermInfo {
         const month = date.getMonth() + 1;
 
         // 週番号の計算
@@ -31,7 +56,7 @@ export class DateUtil {
      * @param date 対象の日付
      * @returns 日付の詳細情報
      */
-    static getDateInfo(date: Date) {
+    static getDateInfo(date: Date): DateInfo {
         // 基本的な日付情報
         const year = date.getFullYear();
         const month = date.getMonth() + 1;
@@ -73,7 +98,7 @@ export class DateUtil {
         // 日本時間で比較するため、UTCから日本時間に変換して判定
         const weekStartJST = new Date(weekStartDate.getTime() + 9 * 60 * 60 * 1000);
         const currentMonth = date.getMonth();
-        
+
         if (weekStartJST.getMonth() !== currentMonth) {
             // 週の開始日が前月の場合は、今月の1日から計算し直す（日本時間の午前0時）
             weekStartDate = new Date(Date.UTC(

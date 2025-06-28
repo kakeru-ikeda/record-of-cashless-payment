@@ -1,11 +1,13 @@
 import { BaseEventHandler } from './base/BaseEventHandler';
 import { logger } from '../../../../shared/infrastructure/logging/Logger';
 import { ProcessFirestoreDocumentUseCase } from '../../application/usecases/ProcessFirestoreDocumentUseCase';
+import { FirestoreDocumentCreatedEvent } from '../../domain/types/FirebaseFunctionTypes';
+import { Response } from '../../../../shared/presentation/responses/ResponseHelper';
 
 /**
  * Firestoreドキュメント作成イベントハンドラー
  */
-export class FirestoreDocumentCreatedHandler extends BaseEventHandler<any, any> {
+export class FirestoreDocumentCreatedHandler extends BaseEventHandler<FirestoreDocumentCreatedEvent, Response> {
     constructor(
         private readonly processUseCase: ProcessFirestoreDocumentUseCase
     ) {
@@ -15,7 +17,7 @@ export class FirestoreDocumentCreatedHandler extends BaseEventHandler<any, any> 
     /**
      * 前処理：パスバリデーション
      */
-    protected async beforeProcess(event: any): Promise<void> {
+    protected async beforeProcess(event: FirestoreDocumentCreatedEvent): Promise<void> {
         const path = event.data?.ref.path;
         logger.debug(`ドキュメントパス: ${path}`, this.handlerName);
 
@@ -29,14 +31,14 @@ export class FirestoreDocumentCreatedHandler extends BaseEventHandler<any, any> 
     /**
      * メイン処理：ユースケースを実行
      */
-    protected async process(event: any): Promise<any> {
+    protected async process(event: FirestoreDocumentCreatedEvent): Promise<Response> {
         return await this.processUseCase.execute(event);
     }
 
     /**
      * エラーハンドリング：スキップエラー用の特別処理
      */
-    protected async handleError(error: unknown): Promise<any> {
+    protected async handleError(error: unknown): Promise<Response> {
         if (error instanceof SkipProcessingError) {
             return this.createSuccessResponse(error.message, {});
         }

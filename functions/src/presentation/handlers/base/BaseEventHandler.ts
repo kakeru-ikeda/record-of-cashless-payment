@@ -1,4 +1,4 @@
-import { ResponseHelper } from '../../../../../shared/presentation/responses/ResponseHelper';
+import { ResponseHelper, Response } from '../../../../../shared/presentation/responses/ResponseHelper';
 import { ErrorHandler } from '../../../../../shared/infrastructure/errors/ErrorHandler';
 import { logger } from '../../../../../shared/infrastructure/logging/Logger';
 
@@ -68,7 +68,7 @@ export abstract class BaseEventHandler<TEvent, TResult> {
     /**
      * 成功レスポンスのヘルパー
      */
-    protected createSuccessResponse(message: string, data: any = {}): any {
+    protected createSuccessResponse(message: string, data: Record<string, unknown> = {}): Response {
         return ResponseHelper.success(message, data);
     }
 }

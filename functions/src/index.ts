@@ -32,5 +32,8 @@ export const dailyReportSchedule = functions.scheduler
         const handler = factory.createDailyReportScheduleHandler();
 
         // ハンドラーでイベントを処理
-        return await handler.handle(context);
+        await handler.handle(context);
+
+        // Firebase Functions のスケジューラーは戻り値を期待しないため、明示的にvoidを返す
+        return;
     });
