@@ -5,7 +5,7 @@ ENV TZ=Asia/Tokyo
 COPY package*.json ./
 RUN npm install
 COPY . .
-RUN npm test
+RUN npm run test:main
 
 # ベースイメージとして公式のNode.jsイメージを使用
 FROM node:18 AS build
