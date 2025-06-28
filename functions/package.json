@@ -3,18 +3,13 @@
   "scripts": {
     "lint": "eslint --ext .js,.ts .",
     "lint:fix": "eslint --ext .js,.ts . --fix",
-    "build": "tsc && npm run fix-paths && node fix-imports.js",
-    "fix-paths": "mkdir -p lib && cp -f lib/functions/src/index.js* lib/ || true",
-    "prepare-shared": "npm run create-shared-dirs && npm run copy-shared-files",
-    "create-shared-dirs": "mkdir -p src/shared/discord src/shared/domain/entities src/shared/domain/mappers src/shared/utils src/shared/firebase src/shared/errors src/shared/config",
-    "copy-shared-files": "cp -f ../shared/discord/*.ts src/shared/discord/ && cp -f ../shared/domain/entities/*.ts src/shared/domain/entities/ && cp -f ../shared/domain/mappers/*.ts src/shared/domain/mappers/ && cp -f ../shared/utils/*.ts src/shared/utils/ && cp -f ../shared/firebase/*.ts src/shared/firebase/ && cp -f ../shared/errors/*.ts src/shared/errors/ && cp -f ../shared/config/*.ts src/shared/config/",
-    "clean-shared": "rm -rf src/shared",
+    "build": "tsc && node fix-imports.js",
     "clean:lib": "rm -rf lib",
     "build:watch": "tsc --watch",
     "serve": "npm run build && firebase emulators:start --only functions",
     "shell": "npm run build && firebase functions:shell",
     "start": "npm run shell",
-    "predeploy": "npm run clean:lib && npm run prepare-shared && npm run build && npm run clean-shared",
+    "predeploy": "npm run clean:lib && npm run build",
     "deploy": "firebase deploy --only functions",
     "deploy:api": "firebase deploy --only functions:api",
     "logs": "firebase functions:log"
@@ -32,6 +27,8 @@
     "firebase-functions": "^6.0.1"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
     "@typescript-eslint/eslint-plugin": "^5.12.0",
     "@typescript-eslint/parser": "^5.12.0",
     "eslint": "^8.9.0",

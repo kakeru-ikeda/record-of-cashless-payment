@@ -36,5 +36,6 @@ module.exports = {
     'valid-jsdoc': 'off',
     'operator-linebreak': 'off',
     '@typescript-eslint/no-namespace': 'off',
+    'require-jsdoc': 'off',
   },
 };

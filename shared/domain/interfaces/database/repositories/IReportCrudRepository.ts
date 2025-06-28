@@ -1,4 +1,4 @@
-import { DailyReport, WeeklyReport, MonthlyReport } from '@shared/domain/entities/Report';
+import { DailyReport, WeeklyReport, MonthlyReport } from '@shared/domain/entities/Reports';
 
 /**
  * レポート情報のCRUD操作を提供するリポジトリインターフェース
@@ -80,4 +80,34 @@ export interface IReportCrudRepository {
      * @returns 保存されたパス
      */
     saveMonthlyReport(report: MonthlyReport, year: string, month: string): Promise<string>;
+
+    // Update Operations
+    /**
+     * 日次レポートを更新する
+     * @param report 日次レポート情報
+     * @param year 年
+     * @param month 月
+     * @param day 日
+     * @returns 更新されたパス
+     */
+    updateDailyReport(report: Partial<DailyReport>, year: string, month: string, day: string): Promise<string>;
+
+    /**
+     * 週次レポートを更新する
+     * @param report 週次レポート情報
+     * @param year 年
+     * @param month 月
+     * @param term ターム（週番号）
+     * @returns 更新されたパス
+     */
+    updateWeeklyReport(report: Partial<WeeklyReport>, year: string, month: string, term: string): Promise<string>;
+
+    /**
+     * 月次レポートを更新する
+     * @param report 月次レポート情報
+     * @param year 年
+     * @param month 月
+     * @returns 更新されたパス
+     */
+    updateMonthlyReport(report: Partial<MonthlyReport>, year: string, month: string): Promise<string>;
 }

@@ -170,23 +170,6 @@ export class Logger implements ILogger {
   }
 
   /**
-   * テスト用のロガーインスタンスを取得
-   * タイマーを設定しないインスタンスを返す
-   */
-  public static getTestInstance(): Logger {
-    // テスト環境であることを明示
-    process.env.NODE_ENV = 'test';
-
-    // 既存のインスタンスをリセット
-    if (Logger.instance) {
-      Logger.instance.clearTimers();
-      Logger.instance = undefined;
-    }
-
-    return Logger.getInstance();
-  }
-
-  /**
    * 設定を更新
    */
   public setConfig(config: Partial<LoggerConfig>): void {
@@ -261,14 +244,16 @@ export class Logger implements ILogger {
    * ERRORレベルのログを出力（任意でDiscord通知）
    */
   public error(
-    error: AppError | Error,
+    error: AppError | Error | null | undefined,
     context?: string,
     options?: LogNotifyOptions
   ): void {
     // エラーオブジェクトがAppErrorでない場合は新規作成
     if (!(error instanceof AppError)) {
+      // null/undefinedエラーの場合は安全なメッセージを設定
+      const errorMessage = error?.message || 'Unknown error occurred';
       error = new AppError(
-        error.message,
+        errorMessage,
         ErrorType.GENERAL,
         {},
         error instanceof Error ? error : undefined
@@ -550,17 +535,6 @@ export class Logger implements ILogger {
     if (this.errorStatsTimer) {
       clearInterval(this.errorStatsTimer);
       this.errorStatsTimer = null;
-    }
-  }
-
-  /**
-   * インスタンスを破棄する（テスト用）
-   * タイマーをクリアし、シングルトンインスタンスをリセット
-   */
-  public static resetInstance(): void {
-    if (Logger.instance) {
-      Logger.instance.clearTimers();
-      Logger.instance = undefined;
     }
   }
 

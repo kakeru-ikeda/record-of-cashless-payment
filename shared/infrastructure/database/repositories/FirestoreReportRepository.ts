@@ -1,5 +1,5 @@
 import { Firestore } from 'firebase-admin/firestore';
-import { DailyReport, WeeklyReport, MonthlyReport } from '@shared/domain/entities/Report';
+import { DailyReport, WeeklyReport, MonthlyReport } from '@shared/domain/entities/Reports';
 import { IReportCrudRepository } from '@shared/domain/interfaces/database/repositories/IReportCrudRepository';
 import { Environment } from '@shared/infrastructure/config/Environment';
 import { FirestoreService } from '@shared/infrastructure/database/FirestoreService';
@@ -26,12 +26,18 @@ export class FirestoreReportRepository implements IReportCrudRepository {
         defaultMessage: 'Firestoreの初期化に失敗しました'
     })
     async initialize(): Promise<Firestore> {
-        // サービスアカウントの秘密鍵のパスを取得
-        const serviceAccountPath = Environment.getFirebaseAdminKeyPath();
+        // Cloud Functions環境の判定
+        const isCloudFunctions = Environment.isCloudFunctions();
+        this.firestoreService.setCloudFunctions(isCloudFunctions);
 
-        // ローカル環境として初期化
-        this.firestoreService.setCloudFunctions(Environment.isCloudFunctions());
-        return await this.firestoreService.initialize(serviceAccountPath);
+        if (isCloudFunctions) {
+            // Cloud Functions環境ではサービスアカウントキーは不要
+            return await this.firestoreService.initialize();
+        } else {
+            // ローカル環境ではサービスアカウントキーが必要
+            const serviceAccountPath = Environment.getFirebaseAdminKeyPath();
+            return await this.firestoreService.initialize(serviceAccountPath);
+        }
     }
 
     /**
@@ -283,5 +289,78 @@ export class FirestoreReportRepository implements IReportCrudRepository {
         }
 
         return new Date(yearNum, monthNum - 1, 1);
+    }
+
+    // Update Operations
+    /**
+     * 日次レポートを更新する
+     */
+    @ErrorHandler.errorDecorator('FirestoreReportRepository', {
+        defaultMessage: '日次レポートの更新に失敗しました'
+    })
+    async updateDailyReport(report: Partial<DailyReport>, year: string, month: string, day: string): Promise<string> {
+        await this.initialize();
+
+        // 日付のバリデーション
+        const date = this.validateDate(year, month, day);
+
+        // パス情報を取得
+        const pathInfo = FirestorePathUtil.getFirestorePath(date);
+        const documentPath = pathInfo.dailyReportPath;
+
+        logger.info(`日次レポート更新: ${documentPath}`, this.serviceContext);
+
+        await this.firestoreService.updateDocument(documentPath, report);
+
+        logger.info(`日次レポートを更新しました: ${documentPath}`, this.serviceContext);
+        return documentPath;
+    }
+
+    /**
+     * 週次レポートを更新する
+     */
+    @ErrorHandler.errorDecorator('FirestoreReportRepository', {
+        defaultMessage: '週次レポートの更新に失敗しました'
+    })
+    async updateWeeklyReport(report: Partial<WeeklyReport>, year: string, month: string, term: string): Promise<string> {
+        await this.initialize();
+
+        // 日付のバリデーション
+        const date = this.validateYearMonth(year, month);
+
+        // パス情報を取得
+        const pathInfo = FirestorePathUtil.getFirestorePath(date);
+        const documentPath = pathInfo.weeklyReportPath;
+
+        logger.info(`週次レポート更新: ${documentPath}`, this.serviceContext);
+
+        await this.firestoreService.updateDocument(documentPath, report);
+
+        logger.info(`週次レポートを更新しました: ${documentPath}`, this.serviceContext);
+        return documentPath;
+    }
+
+    /**
+     * 月次レポートを更新する
+     */
+    @ErrorHandler.errorDecorator('FirestoreReportRepository', {
+        defaultMessage: '月次レポートの更新に失敗しました'
+    })
+    async updateMonthlyReport(report: Partial<MonthlyReport>, year: string, month: string): Promise<string> {
+        await this.initialize();
+
+        // 日付のバリデーション
+        const date = this.validateYearMonth(year, month);
+
+        // パス情報を取得
+        const pathInfo = FirestorePathUtil.getFirestorePath(date);
+        const documentPath = pathInfo.monthlyReportPath;
+
+        logger.info(`月次レポート更新: ${documentPath}`, this.serviceContext);
+
+        await this.firestoreService.updateDocument(documentPath, report);
+
+        logger.info(`月次レポートを更新しました: ${documentPath}`, this.serviceContext);
+        return documentPath;
     }
 }
