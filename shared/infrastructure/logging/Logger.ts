@@ -537,17 +537,6 @@ export class Logger implements ILogger {
   }
 
   /**
-   * インスタンスを破棄する（テスト用）
-   * タイマーをクリアし、シングルトンインスタンスをリセット
-   */
-  public static resetInstance(): void {
-    if (Logger.instance) {
-      Logger.instance.clearTimers();
-      Logger.instance = undefined;
-    }
-  }
-
-  /**
    * 経過時間を人間が読みやすい形式で返す
    */
   private getTimeAgo(date: Date): string {

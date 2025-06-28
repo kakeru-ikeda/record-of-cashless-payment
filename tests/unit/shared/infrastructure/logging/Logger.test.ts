@@ -33,9 +33,6 @@ describe('Logger', () => {
         // テスト中であることを明示
         process.env.NODE_ENV = 'test';
 
-        // 静的メソッドを使用してインスタンスをリセット（タイマーのクリアも行う）
-        Logger.resetInstance();
-
         // コンソールスパイをリセット
         Object.values(consoleSpy).forEach(spy => spy.mockClear());
 
@@ -48,8 +45,6 @@ describe('Logger', () => {
         process.env = originalEnv;
         // スパイをリストア
         Object.values(consoleSpy).forEach(spy => spy.mockRestore());
-        // Loggerのインスタンスをクリア（タイマーもクリアされる）
-        Logger.resetInstance();
     });
 
     describe('シングルトンパターン', () => {
