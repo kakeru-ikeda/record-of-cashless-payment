@@ -38,7 +38,7 @@ export class ProcessFirestoreDocumentUseCase {
         const path = event.data?.ref.path;
         logger.debug(`ドキュメントパス: ${path}`, 'Firestore Document UseCase');
 
-        if (path && path.includes('/reports')) {
+        if (path && path.includes('reports/')) {
             logger.warn(`レポートドキュメントには処理をスキップします: ${path}`, 'Firestore Document UseCase');
             return ResponseHelper.success('レポートドキュメントのため処理をスキップしました', {});
         }
