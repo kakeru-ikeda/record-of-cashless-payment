@@ -398,7 +398,7 @@ describe('ReportNotificationMapper', () => {
 
             // Assert
             expect(result).toEqual({
-                title: '📊 2025年5月30日 デイリーレポート',
+                title: '2025年5月30日 デイリーレポート',
                 date: '2025/05/30',
                 totalAmount: 4500,
                 totalCount: 2,
@@ -445,7 +445,7 @@ describe('ReportNotificationMapper', () => {
 
             // Assert
             expect(result).toEqual({
-                title: '📊 2025年6月 第1週 ウィークリーレポート',
+                title: '2025年6月 第1週 ウィークリーレポート',
                 period: '2025/05/26 - 2025/06/01',
                 totalAmount: 18000,
                 totalCount: 12,
@@ -492,7 +492,7 @@ describe('ReportNotificationMapper', () => {
 
             // Assert
             expect(result).toEqual({
-                title: '📊 2025年5月 マンスリーレポート',
+                title: '2025年5月 マンスリーレポート',
                 period: '2025/05/01 - 2025/05/31',
                 totalAmount: 95000,
                 totalCount: 50,
