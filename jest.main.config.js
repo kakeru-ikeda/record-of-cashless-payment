@@ -7,7 +7,8 @@ module.exports = {
     testPathIgnorePatterns: [
         '/node_modules/',
         '/functions/',
-        '<rootDir>/tests/unit/functions/'
+        '<rootDir>/tests/unit/functions/',
+        '<rootDir>/tests/integration/'
     ],
     verbose: true,
     // タイムゾーンを日本時間に設定
