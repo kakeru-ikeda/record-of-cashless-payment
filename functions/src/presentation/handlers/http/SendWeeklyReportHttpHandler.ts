@@ -41,7 +41,8 @@ export class SendWeeklyReportHttpHandler extends BaseHttpHandler {
             const dateInfo = DateUtil.getDateInfo(targetDate);
 
             logger.info(
-                `週次レポート送信テスト: ${year}年${month}月${day}日 (第${dateInfo.term}週) - ${dateInfo.year}/${dateInfo.month}/${dateInfo.day}`,
+                `週次レポート送信テスト: ${year}年${month}月${day}日 (第${dateInfo.term}週) ` +
+                `- ${dateInfo.year}/${dateInfo.month}/${dateInfo.day}`,
                 this.handlerName
             );
 
@@ -56,7 +57,7 @@ export class SendWeeklyReportHttpHandler extends BaseHttpHandler {
                     day,
                     term: dateInfo.term,
                     targetDate: dateInfo,
-                    timestamp: new Date().toISOString()
+                    timestamp: new Date().toISOString(),
                 }
             );
 

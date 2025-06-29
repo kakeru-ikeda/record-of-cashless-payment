@@ -32,7 +32,8 @@ export class ReportSchedulingService {
             );
 
             logger.info(
-                `デイリーレポート取得: ${dailyReport.totalAmount}円, 件数: ${dailyReport.totalCount}, hasNotified: ${dailyReport.hasNotified}`,
+                `デイリーレポート取得: ${dailyReport.totalAmount}円, ` +
+                `件数: ${dailyReport.totalCount}, hasNotified: ${dailyReport.hasNotified}`,
                 'Report Scheduling Service'
             );
 
@@ -84,7 +85,8 @@ export class ReportSchedulingService {
             );
 
             logger.info(
-                `週次レポート取得: ${weeklyReport.totalAmount}円, 件数: ${weeklyReport.totalCount}, hasReportSent: ${weeklyReport.hasReportSent}`,
+                `週次レポート取得: ${weeklyReport.totalAmount}円, ` +
+                `件数: ${weeklyReport.totalCount}, hasReportSent: ${weeklyReport.hasReportSent}`,
                 'Report Scheduling Service'
             );
 
@@ -135,7 +137,8 @@ export class ReportSchedulingService {
             );
 
             logger.info(
-                `マンスリーレポート取得: ${monthlyReport.totalAmount}円, 件数: ${monthlyReport.totalCount}, hasReportSent: ${monthlyReport.hasReportSent}`,
+                `マンスリーレポート取得: ${monthlyReport.totalAmount}円, ` +
+                `件数: ${monthlyReport.totalCount}, hasReportSent: ${monthlyReport.hasReportSent}`,
                 'Report Scheduling Service'
             );
 
