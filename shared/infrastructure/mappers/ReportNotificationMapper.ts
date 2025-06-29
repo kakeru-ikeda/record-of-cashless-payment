@@ -157,7 +157,7 @@ export class ReportNotificationMapper {
         month: string,
         day: string
     ): DailyReportNotificationDTO {
-        const title = `📊 ${year}年${month}月${day}日 デイリーレポート`;
+        const title = `${year}年${month}月${day}日 デイリーレポート`;
 
         return this.toDailyNotification(entity, title);
     }
@@ -176,7 +176,7 @@ export class ReportNotificationMapper {
         month: string,
         weekNumber: number
     ): WeeklyReportNotificationDTO {
-        const title = `📊 ${year}年${month}月 第${weekNumber}週 ウィークリーレポート`;
+        const title = `${year}年${month}月 第${weekNumber}週 ウィークリーレポート`;
 
         return this.toWeeklyNotification(entity, title);
     }
@@ -193,7 +193,7 @@ export class ReportNotificationMapper {
         year: string,
         month: string
     ): MonthlyReportNotificationDTO {
-        const title = `📊 ${year}年${month}月 マンスリーレポート`;
+        const title = `${year}年${month}月 マンスリーレポート`;
 
         return this.toMonthlyNotification(entity, title);
     }
