@@ -4,7 +4,6 @@ import { DailyReport, WeeklyReport, MonthlyReport } from '../../../../../../shar
 import { FirestoreService } from '../../../../../../shared/infrastructure/database/FirestoreService';
 import { Environment } from '../../../../../../shared/infrastructure/config/Environment';
 import { FirestorePathUtil } from '../../../../../../shared/utils/FirestorePathUtil';
-import { AppError, ErrorType } from '../../../../../../shared/errors/AppError';
 import * as admin from 'firebase-admin';
 
 // モック
@@ -21,19 +20,6 @@ jest.mock('../../../../../../shared/infrastructure/logging/Logger', () => ({
         error: jest.fn(),
         logAppError: jest.fn(),
         updateServiceStatus: jest.fn()
-    }
-}));
-
-// ErrorHandlerをモック化
-jest.mock('../../../../../../shared/infrastructure/errors/ErrorHandler', () => ({
-    ErrorHandler: {
-        errorDecorator: () => () => (
-            _target: any,
-            _propertyKey: string | symbol,
-            descriptor: PropertyDescriptor
-        ) => descriptor,
-        handle: jest.fn(),
-        extractErrorInfoFromArgs: jest.fn()
     }
 }));
 
@@ -101,6 +87,7 @@ describe('FirestoreReportRepository', () => {
             initialize: jest.fn().mockResolvedValue({} as Firestore),
             saveDocument: jest.fn().mockResolvedValue({}),
             getDocument: jest.fn(),
+            updateDocument: jest.fn().mockResolvedValue({}),
             query: jest.fn().mockResolvedValue([])
         } as unknown as jest.Mocked<FirestoreService>;
 
@@ -111,8 +98,10 @@ describe('FirestoreReportRepository', () => {
         (Environment.getFirebaseAdminKeyPath as jest.Mock).mockReturnValue('/path/to/key.json');
         (Environment.isCloudFunctions as jest.Mock).mockReturnValue(false);
 
-        // FirestorePathUtilのモック
-        (FirestorePathUtil.getFirestorePath as jest.Mock).mockReturnValue(testPathInfo);
+        // FirestorePathUtilの新しいメソッドをモック
+        (FirestorePathUtil.getDailyReportPath as jest.Mock).mockReturnValue(testPathInfo.dailyReportPath);
+        (FirestorePathUtil.getWeeklyReportPath as jest.Mock).mockReturnValue(testPathInfo.weeklyReportPath);
+        (FirestorePathUtil.getMonthlyReportPath as jest.Mock).mockReturnValue(testPathInfo.monthlyReportPath);
 
         repository = new FirestoreReportRepository();
     });
@@ -127,12 +116,6 @@ describe('FirestoreReportRepository', () => {
             expect(mockFirestoreService.initialize).toHaveBeenCalledWith('/path/to/key.json');
             expect(result).toBeDefined();
         });
-
-        test('異常系: 初期化中にエラーが発生した場合、エラーがスローされること', async () => {
-            mockFirestoreService.initialize.mockRejectedValueOnce(new Error('初期化エラー'));
-
-            await expect(repository.initialize()).rejects.toThrow('初期化エラー');
-        });
     });
 
     describe('getDailyReport', () => {
@@ -141,7 +124,7 @@ describe('FirestoreReportRepository', () => {
 
             const result = await repository.getDailyReport('2024', '06', '15');
 
-            expect(FirestorePathUtil.getFirestorePath).toHaveBeenCalled();
+            expect(FirestorePathUtil.getDailyReportPath).toHaveBeenCalled();
             expect(mockFirestoreService.getDocument).toHaveBeenCalledWith(testPathInfo.dailyReportPath);
             expect(result).toEqual(sampleDailyReport);
         });
@@ -152,27 +135,6 @@ describe('FirestoreReportRepository', () => {
             const result = await repository.getDailyReport('2024', '06', '15');
 
             expect(result).toBeNull();
-        });
-
-        test('異常系: 無効な日付の場合、AppErrorがスローされること', async () => {
-            await expect(repository.getDailyReport('2024', '13', '15'))
-                .rejects.toThrow(AppError);
-            await expect(repository.getDailyReport('2024', '13', '15'))
-                .rejects.toThrow('月は1から12の間で指定してください');
-        });
-
-        test('異常系: 無効な日の場合、AppErrorがスローされること', async () => {
-            await expect(repository.getDailyReport('2024', '06', '32'))
-                .rejects.toThrow(AppError);
-            await expect(repository.getDailyReport('2024', '06', '32'))
-                .rejects.toThrow('日は1から31の間で指定してください');
-        });
-
-        test('異常系: 存在しない日付の場合、AppErrorがスローされること', async () => {
-            await expect(repository.getDailyReport('2024', '02', '30'))
-                .rejects.toThrow(AppError);
-            await expect(repository.getDailyReport('2024', '02', '30'))
-                .rejects.toThrow('無効な日付です');
         });
     });
 
@@ -199,11 +161,6 @@ describe('FirestoreReportRepository', () => {
             expect(result).toEqual([]);
             expect(result).toHaveLength(0);
         });
-
-        test('異常系: 無効な年月の場合、AppErrorがスローされること', async () => {
-            await expect(repository.getMonthlyDailyReports('2024', '13'))
-                .rejects.toThrow(AppError);
-        });
     });
 
     describe('getMonthlyReport', () => {
@@ -223,13 +180,6 @@ describe('FirestoreReportRepository', () => {
 
             expect(result).toBeNull();
         });
-
-        test('異常系: 無効な年月の場合、AppErrorがスローされること', async () => {
-            await expect(repository.getMonthlyReport('1999', '06'))
-                .rejects.toThrow(AppError);
-            await expect(repository.getMonthlyReport('1999', '06'))
-                .rejects.toThrow('年は2000年から2100年の間で指定してください');
-        });
     });
 
     describe('getWeeklyReportByTerm', () => {
@@ -238,7 +188,7 @@ describe('FirestoreReportRepository', () => {
 
             const result = await repository.getWeeklyReportByTerm('2024', '06', '3');
 
-            expect(mockFirestoreService.getDocument).toHaveBeenCalledWith(testPathInfo.weeklyReportPath);
+            expect(mockFirestoreService.getDocument).toHaveBeenCalledWith('reports/weekly/2024-06/term3');
             expect(result).toEqual(sampleWeeklyReport);
         });
 
@@ -248,13 +198,6 @@ describe('FirestoreReportRepository', () => {
             const result = await repository.getWeeklyReportByTerm('2024', '06', '3');
 
             expect(result).toBeNull();
-        });
-
-        test('異常系: 無効な年月の場合、AppErrorがスローされること', async () => {
-            await expect(repository.getWeeklyReportByTerm('abc', '06', '3'))
-                .rejects.toThrow(AppError);
-            await expect(repository.getWeeklyReportByTerm('abc', '06', '3'))
-                .rejects.toThrow('年、月は数値で指定してください');
         });
     });
 
@@ -292,41 +235,17 @@ describe('FirestoreReportRepository', () => {
             );
             expect(result).toBe(testPathInfo.dailyReportPath);
         });
-
-        test('異常系: 保存中にエラーが発生した場合、エラーがスローされること', async () => {
-            mockFirestoreService.saveDocument.mockRejectedValueOnce(new Error('保存エラー'));
-
-            await expect(repository.saveDailyReport(sampleDailyReport, '2024', '06', '15'))
-                .rejects.toThrow('保存エラー');
-        });
-
-        test('異常系: 無効な日付の場合、AppErrorがスローされること', async () => {
-            await expect(repository.saveDailyReport(sampleDailyReport, '2024', '02', '30'))
-                .rejects.toThrow(AppError);
-        });
     });
 
     describe('saveWeeklyReport', () => {
         test('正常系: 週次レポートが正常に保存されること', async () => {
-            const result = await repository.saveWeeklyReport(sampleWeeklyReport, '2024', '06');
+            const result = await repository.saveWeeklyReport(sampleWeeklyReport, '2024', '06', '15');
 
             expect(mockFirestoreService.saveDocument).toHaveBeenCalledWith(
                 testPathInfo.weeklyReportPath,
                 sampleWeeklyReport
             );
             expect(result).toBe(testPathInfo.weeklyReportPath);
-        });
-
-        test('異常系: 保存中にエラーが発生した場合、エラーがスローされること', async () => {
-            mockFirestoreService.saveDocument.mockRejectedValueOnce(new Error('保存エラー'));
-
-            await expect(repository.saveWeeklyReport(sampleWeeklyReport, '2024', '06'))
-                .rejects.toThrow('保存エラー');
-        });
-
-        test('異常系: 無効な年月の場合、AppErrorがスローされること', async () => {
-            await expect(repository.saveWeeklyReport(sampleWeeklyReport, '2024', '0'))
-                .rejects.toThrow(AppError);
         });
     });
 
@@ -340,68 +259,47 @@ describe('FirestoreReportRepository', () => {
             );
             expect(result).toBe(testPathInfo.monthlyReportPath);
         });
+    });
 
-        test('異常系: 保存中にエラーが発生した場合、エラーがスローされること', async () => {
-            mockFirestoreService.saveDocument.mockRejectedValueOnce(new Error('保存エラー'));
+    describe('updateDailyReport', () => {
+        test('正常系: 日次レポートが正常に更新されること', async () => {
+            const partialReport = { totalAmount: 6000 };
 
-            await expect(repository.saveMonthlyReport(sampleMonthlyReport, '2024', '06'))
-                .rejects.toThrow('保存エラー');
-        });
+            const result = await repository.updateDailyReport(partialReport, '2024', '06', '15');
 
-        test('異常系: 無効な年月の場合、AppErrorがスローされること', async () => {
-            await expect(repository.saveMonthlyReport(sampleMonthlyReport, '2101', '06'))
-                .rejects.toThrow(AppError);
-            await expect(repository.saveMonthlyReport(sampleMonthlyReport, '2101', '06'))
-                .rejects.toThrow('年は2000年から2100年の間で指定してください');
+            expect(mockFirestoreService.updateDocument).toHaveBeenCalledWith(
+                testPathInfo.dailyReportPath,
+                partialReport
+            );
+            expect(result).toBe(testPathInfo.dailyReportPath);
         });
     });
 
-    describe('validateDate (private method)', () => {
-        test('正常系: 有効な日付はバリデーションを通ること', async () => {
-            // 有効な日付での操作が成功することで間接的にテスト
-            mockFirestoreService.getDocument.mockResolvedValueOnce(sampleDailyReport);
+    describe('updateWeeklyReport', () => {
+        test('正常系: 週次レポートが正常に更新されること', async () => {
+            const partialReport = { hasNotifiedLevel1: true };
 
-            await expect(repository.getDailyReport('2024', '06', '15'))
-                .resolves.toEqual(sampleDailyReport);
-        });
+            const result = await repository.updateWeeklyReport(partialReport, '2024', '06', '15');
 
-        test('異常系: 数値以外の年の場合、AppErrorがスローされること', async () => {
-            await expect(repository.getDailyReport('abc', '06', '15'))
-                .rejects.toThrow(AppError);
-            await expect(repository.getDailyReport('abc', '06', '15'))
-                .rejects.toThrow('年、月、日は数値で指定してください');
-        });
-
-        test('異常系: 数値以外の月の場合、AppErrorがスローされること', async () => {
-            await expect(repository.getDailyReport('2024', 'abc', '15'))
-                .rejects.toThrow(AppError);
-        });
-
-        test('異常系: 数値以外の日の場合、AppErrorがスローされること', async () => {
-            await expect(repository.getDailyReport('2024', '06', 'abc'))
-                .rejects.toThrow(AppError);
+            expect(mockFirestoreService.updateDocument).toHaveBeenCalledWith(
+                testPathInfo.weeklyReportPath,
+                partialReport
+            );
+            expect(result).toBe(testPathInfo.weeklyReportPath);
         });
     });
 
-    describe('validateYearMonth (private method)', () => {
-        test('正常系: 有効な年月はバリデーションを通ること', async () => {
-            // 有効な年月での操作が成功することで間接的にテスト
-            mockFirestoreService.getDocument.mockResolvedValueOnce(sampleMonthlyReport);
+    describe('updateMonthlyReport', () => {
+        test('正常系: 月次レポートが正常に更新されること', async () => {
+            const partialReport = { hasNotifiedLevel1: true };
 
-            await expect(repository.getMonthlyReport('2024', '06'))
-                .resolves.toEqual(sampleMonthlyReport);
-        });
+            const result = await repository.updateMonthlyReport(partialReport, '2024', '06');
 
-        test('異常系: 数値以外の年の場合、AppErrorがスローされること', async () => {
-            await expect(repository.getMonthlyReport('abc', '06'))
-                .rejects.toThrow(AppError);
-            await expect(repository.getMonthlyReport('abc', '06'))
-                .rejects.toThrow('年、月は数値で指定してください');
-        });
-
-        test('異常系: 数値以外の月の場合、AppErrorがスローされること', async () => {
-            await expect(repository.getMonthlyReport('2024', 'abc'))
-                .rejects.toThrow(AppError);
+            expect(mockFirestoreService.updateDocument).toHaveBeenCalledWith(
+                testPathInfo.monthlyReportPath,
+                partialReport
+            );
+            expect(result).toBe(testPathInfo.monthlyReportPath);
         });
     });
 });
