@@ -2,7 +2,6 @@ import { FirestoreReportUseCase } from '../../../../shared/usecases/database/Fir
 import { NotifyReportUseCase } from '../../../../shared/usecases/notification/NotifyReportUseCase';
 import { logger } from '../../../../shared/infrastructure/logging/Logger';
 import { DateUtil, DateInfo } from '../../../../shared/utils/DateUtil';
-import { FirestorePathUtil } from '../../../../shared/utils/FirestorePathUtil';
 import { ReportNotificationMapper } from '../../../../shared/infrastructure/mappers/ReportNotificationMapper';
 
 /**
@@ -30,6 +29,11 @@ export class ReportSchedulingService {
                 yesterdayInfo.year.toString(),
                 yesterdayInfo.month.toString().padStart(2, '0'),
                 yesterdayInfo.day.toString().padStart(2, '0')
+            );
+
+            logger.info(
+                `デイリーレポート取得: ${dailyReport.totalAmount}円, 件数: ${dailyReport.totalCount}, hasNotified: ${dailyReport.hasNotified}`,
+                'Report Scheduling Service'
             );
 
             // レポートが既に送信済みでない場合のみ送信
@@ -79,6 +83,11 @@ export class ReportSchedulingService {
                 yesterdayInfo.term.toString()
             );
 
+            logger.info(
+                `週次レポート取得: ${weeklyReport.totalAmount}円, 件数: ${weeklyReport.totalCount}, hasReportSent: ${weeklyReport.hasReportSent}`,
+                'Report Scheduling Service'
+            );
+
             // レポートが既に送信済みでない場合のみ送信
             if (!weeklyReport.hasReportSent) {
                 const weeklyNotificationDTO = ReportNotificationMapper
@@ -123,6 +132,11 @@ export class ReportSchedulingService {
             const monthlyReport = await this.reportUseCase.getMonthlyReport(
                 yesterdayInfo.year.toString(),
                 yesterdayInfo.month.toString().padStart(2, '0')
+            );
+
+            logger.info(
+                `マンスリーレポート取得: ${monthlyReport.totalAmount}円, 件数: ${monthlyReport.totalCount}, hasReportSent: ${monthlyReport.hasReportSent}`,
+                'Report Scheduling Service'
             );
 
             // レポートが既に送信済みでない場合のみ送信
@@ -207,19 +221,11 @@ export class ReportSchedulingService {
         reportType: 'daily' | 'weekly' | 'monthly',
         dateInfo: DateInfo
     ): Promise<void> {
-        let dateObj: Date;
-        let pathInfo: ReturnType<typeof FirestorePathUtil.getFirestorePath>;
         let updateData: Record<string, boolean>;
         let updateBy: string;
 
         switch (reportType) {
             case 'daily':
-                dateObj = new Date(
-                    parseInt(dateInfo.year.toString()),
-                    dateInfo.month - 1,
-                    dateInfo.day
-                );
-                pathInfo = FirestorePathUtil.getFirestorePath(dateObj);
                 updateData = { hasNotified: true };
                 updateBy = 'daily-report-schedule';
                 await this.reportUseCase.updateDailyReport(
@@ -234,12 +240,6 @@ export class ReportSchedulingService {
                 break;
 
             case 'weekly':
-                dateObj = new Date(
-                    parseInt(dateInfo.year.toString()),
-                    dateInfo.month - 1,
-                    dateInfo.day
-                );
-                pathInfo = FirestorePathUtil.getFirestorePath(dateObj);
                 updateData = { hasReportSent: true };
                 updateBy = 'weekly-report-schedule';
                 await this.reportUseCase.updateWeeklyReport(
@@ -249,17 +249,11 @@ export class ReportSchedulingService {
                     },
                     dateInfo.year.toString(),
                     dateInfo.month.toString().padStart(2, '0'),
-                    pathInfo.weekNumber.toString()
+                    dateInfo.day.toString().padStart(2, '0'),
                 );
                 break;
 
             case 'monthly':
-                dateObj = new Date(
-                    parseInt(dateInfo.year.toString()),
-                    dateInfo.month - 1,
-                    1
-                );
-                pathInfo = FirestorePathUtil.getFirestorePath(dateObj);
                 updateData = { hasReportSent: true };
                 updateBy = 'monthly-report-schedule';
                 await this.reportUseCase.updateMonthlyReport(
