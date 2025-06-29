@@ -26,6 +26,10 @@
     },
     "hub": {
       "port": 4402
-    }
+    },
+    "firestore": {
+      "port": 8100
+    },
+    "singleProjectMode": true
   }
 }
