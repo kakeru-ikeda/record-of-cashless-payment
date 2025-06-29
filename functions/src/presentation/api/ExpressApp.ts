@@ -6,7 +6,7 @@ import { ResponseHelper } from '../../../../shared/presentation/responses/Respon
 /**
  * Express アプリケーションを作成・設定
  */
-export function createExpressApp(): express.Application {
+export function createExpressApp(): express.Express {
     const app = express();
 
     // ミドルウェア設定
@@ -30,6 +30,16 @@ export function createExpressApp(): express.Application {
      */
     app.post('/daily-report-schedule', async (req: Request, res: Response) => {
         const handler = factory.createDailyReportScheduleHttpHandler();
+        await handler.handle({ req, res });
+    });
+
+    /**
+     * POST /send-weekly-report
+     * 週次レポート送信処理をHTTP経由で実行
+     * リクエストボディ: { year: number, month: number, day: number }
+     */
+    app.post('/send-weekly-report', async (req: Request, res: Response) => {
+        const handler = factory.createSendWeeklyReportHttpHandler();
         await handler.handle({ req, res });
     });
 
