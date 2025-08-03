@@ -4,7 +4,6 @@ import { IReportCrudRepository } from '@shared/domain/interfaces/database/reposi
 import { Environment } from '@shared/infrastructure/config/Environment';
 import { FirestoreService } from '@shared/infrastructure/database/FirestoreService';
 import { FirestorePathUtil } from '@shared/utils/FirestorePathUtil';
-import { DateUtil } from '@shared/utils/DateUtil';
 import { ErrorHandler } from '@shared/infrastructure/errors/ErrorHandler';
 import { logger } from '@shared/infrastructure/logging/Logger';
 
@@ -117,16 +116,7 @@ export class FirestoreReportRepository implements IReportCrudRepository {
     async getWeeklyReportByTerm(year: string, month: string, term: string): Promise<WeeklyReport | null> {
         await this.initialize();
 
-        // 年月とterm番号のバリデーション
-        this.validateYearMonth(year, month);
-        const termNum = parseInt(term, 10);
-        if (isNaN(termNum) || termNum < 1 || termNum > 6) {
-            throw new AppError('termは1から6の間で指定してください', ErrorType.VALIDATION);
-        }
-
-        // 指定されたterm番号を使って直接パスを構築
         const weeklyReportPath = `reports/weekly/${year}-${month.padStart(2, '0')}/term${term}`;
-
         logger.info(`週次レポート取得: パス=${weeklyReportPath}`, this.serviceContext);
 
         // レポートデータを取得
@@ -188,24 +178,8 @@ export class FirestoreReportRepository implements IReportCrudRepository {
     async saveWeeklyReport(report: WeeklyReport, year: string, month: string, day: string): Promise<string> {
         await this.initialize();
 
-        // 年月のバリデーション
-        this.validateYearMonth(year, month);
-
-        // レポートのtermStartDateから正しい週番号を計算
-        let termStartDate: Date;
-        if (report.termStartDate && typeof report.termStartDate.toDate === 'function') {
-            // Firestoreの Timestamp オブジェクトの場合
-            termStartDate = report.termStartDate.toDate();
-        } else if (report.termStartDate instanceof Date) {
-            // Date オブジェクトの場合
-            termStartDate = report.termStartDate;
-        } else {
-            throw new AppError('termStartDateが無効です', ErrorType.VALIDATION);
-        }
-
-        // DateUtilを使って正しい週番号を取得
-        const dateInfo = DateUtil.getDateInfo(termStartDate);
-        const weeklyReportPath = `reports/weekly/${year}-${month.padStart(2, '0')}/term${dateInfo.term}`;
+        // パス情報を取得（実際の日付を使用）
+        const weeklyReportPath = FirestorePathUtil.getWeeklyReportPath(year, month, day);
 
         await this.firestoreService.saveDocument(weeklyReportPath, report);
         logger.info(`週次レポートをFirestoreに保存しました: ${weeklyReportPath}`, this.serviceContext);
@@ -260,15 +234,7 @@ export class FirestoreReportRepository implements IReportCrudRepository {
     async updateWeeklyReport(report: Partial<WeeklyReport>, year: string, month: string, day: string): Promise<string> {
         await this.initialize();
 
-        // 年月とterm番号のバリデーション
-        this.validateYearMonth(year, month);
-        const termNum = parseInt(term, 10);
-        if (isNaN(termNum) || termNum < 1 || termNum > 6) {
-            throw new AppError('termは1から6の間で指定してください', ErrorType.VALIDATION);
-        }
-
-        // 指定されたterm番号を使って直接パスを構築
-        const documentPath = `reports/weekly/${year}-${month.padStart(2, '0')}/term${term}`;
+        const documentPath = FirestorePathUtil.getWeeklyReportPath(year, month, day);
 
         logger.info(`週次レポート更新: ${documentPath}`, this.serviceContext);
 
