@@ -315,10 +315,10 @@ describe('FirestoreReportUseCase', () => {
             mockReportRepository.saveWeeklyReport.mockResolvedValueOnce(expectedPath);
 
             // 実行
-            const result = await reportUseCase.createWeeklyReport(sampleWeeklyReport, '2024', '06');
+            const result = await reportUseCase.createWeeklyReport(sampleWeeklyReport, '2024', '06', '3');
 
             // 検証
-            expect(mockReportRepository.saveWeeklyReport).toHaveBeenCalledWith(sampleWeeklyReport, '2024', '06');
+            expect(mockReportRepository.saveWeeklyReport).toHaveBeenCalledWith(sampleWeeklyReport, '2024', '06', '3');
             expect(result).toBe(expectedPath);
         });
 
@@ -327,7 +327,7 @@ describe('FirestoreReportUseCase', () => {
             mockReportRepository.saveWeeklyReport.mockRejectedValueOnce(new Error('保存エラー'));
 
             // 実行と検証
-            await expect(reportUseCase.createWeeklyReport(sampleWeeklyReport, '2024', '06'))
+            await expect(reportUseCase.createWeeklyReport(sampleWeeklyReport, '2024', '06', '3'))
                 .rejects.toThrow('保存エラー');
         });
     });

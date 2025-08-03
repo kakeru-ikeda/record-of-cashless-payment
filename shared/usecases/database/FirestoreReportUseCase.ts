@@ -183,10 +183,10 @@ export class FirestoreReportUseCase {
     @ErrorHandler.errorDecorator('ReportUseCase', {
         defaultMessage: '週次レポートの作成に失敗しました'
     })
-    async createWeeklyReport(reportData: WeeklyReport, year: string, month: string): Promise<string> {
-        logger.info(`週次レポート作成: ${year}年${month}月`, this.serviceContext);
+    async createWeeklyReport(reportData: WeeklyReport, year: string, month: string, day: string): Promise<string> {
+        logger.info(`週次レポート作成: ${year}年${month}月${day}日`, this.serviceContext);
 
-        const path = await this.reportRepository.saveWeeklyReport(reportData, year, month);
+        const path = await this.reportRepository.saveWeeklyReport(reportData, year, month, day);
         logger.info(`週次レポートを作成しました: ${path}`, this.serviceContext);
 
         return path;
@@ -243,10 +243,10 @@ export class FirestoreReportUseCase {
     @ErrorHandler.errorDecorator('ReportUseCase', {
         defaultMessage: '週次レポートの更新に失敗しました'
     })
-    async updateWeeklyReport(reportData: Partial<WeeklyReport>, year: string, month: string, term: string): Promise<string> {
-        logger.info(`週次レポート更新: ${year}年${month}月term${term}`, this.serviceContext);
+    async updateWeeklyReport(reportData: Partial<WeeklyReport>, year: string, month: string, day: string): Promise<string> {
+        logger.info(`週次レポート更新: ${year}年${month}月${day}日`, this.serviceContext);
 
-        const path = await this.reportRepository.updateWeeklyReport(reportData, year, month, term);
+        const path = await this.reportRepository.updateWeeklyReport(reportData, year, month, day);
         logger.info(`週次レポートを更新しました: ${path}`, this.serviceContext);
 
         return path;
@@ -269,98 +269,6 @@ export class FirestoreReportUseCase {
         logger.info(`月次レポートを更新しました: ${path}`, this.serviceContext);
 
         return path;
-    }
-
-    /**
-     * 日次レポートを作成または更新する
-     * @param reportData 日次レポートデータ
-     * @param year 年
-     * @param month 月
-     * @param day 日
-     * @returns 保存されたパス
-     */
-    @ErrorHandler.errorDecorator('ReportUseCase', {
-        defaultMessage: '日次レポートの作成または更新に失敗しました'
-    })
-    async createOrUpdateDailyReport(reportData: DailyReport, year: string, month: string, day: string): Promise<string> {
-        logger.info(`日次レポート作成または更新: ${year}年${month}月${day}日`, this.serviceContext);
-
-        try {
-            // 既存レポートを取得
-            const existingReport = await this.reportRepository.getDailyReport(year, month, day);
-
-            if (existingReport) {
-                // 既存レポートを更新
-                return await this.updateDailyReport(reportData, year, month, day);
-            } else {
-                // 新規レポートを作成
-                return await this.createDailyReport(reportData, year, month, day);
-            }
-        } catch (error) {
-            // レポートが見つからない場合は新規作成
-            return await this.createDailyReport(reportData, year, month, day);
-        }
-    }
-
-    /**
-     * 週次レポートを作成または更新する
-     * @param reportData 週次レポートデータ
-     * @param year 年
-     * @param month 月
-     * @param term ターム（週番号）
-     * @returns 保存されたパス
-     */
-    @ErrorHandler.errorDecorator('ReportUseCase', {
-        defaultMessage: '週次レポートの作成または更新に失敗しました'
-    })
-    async createOrUpdateWeeklyReport(reportData: WeeklyReport, year: string, month: string, term: string): Promise<string> {
-        logger.info(`週次レポート作成または更新: ${year}年${month}月term${term}`, this.serviceContext);
-
-        try {
-            // 既存レポートを取得
-            const existingReport = await this.reportRepository.getWeeklyReportByTerm(year, month, term);
-
-            if (existingReport) {
-                // 既存レポートを更新
-                return await this.updateWeeklyReport(reportData, year, month, term);
-            } else {
-                // 新規レポートを作成
-                return await this.createWeeklyReport(reportData, year, month);
-            }
-        } catch (error) {
-            // レポートが見つからない場合は新規作成
-            return await this.createWeeklyReport(reportData, year, month);
-        }
-    }
-
-    /**
-     * 月次レポートを作成または更新する
-     * @param reportData 月次レポートデータ
-     * @param year 年
-     * @param month 月
-     * @returns 保存されたパス
-     */
-    @ErrorHandler.errorDecorator('ReportUseCase', {
-        defaultMessage: '月次レポートの作成または更新に失敗しました'
-    })
-    async createOrUpdateMonthlyReport(reportData: MonthlyReport, year: string, month: string): Promise<string> {
-        logger.info(`月次レポート作成または更新: ${year}年${month}月`, this.serviceContext);
-
-        try {
-            // 既存レポートを取得
-            const existingReport = await this.reportRepository.getMonthlyReport(year, month);
-
-            if (existingReport) {
-                // 既存レポートを更新
-                return await this.updateMonthlyReport(reportData, year, month);
-            } else {
-                // 新規レポートを作成
-                return await this.createMonthlyReport(reportData, year, month);
-            }
-        } catch (error) {
-            // レポートが見つからない場合は新規作成
-            return await this.createMonthlyReport(reportData, year, month);
-        }
     }
 
     // プライベートメソッド

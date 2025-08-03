@@ -6,7 +6,7 @@
     "build": "tsc && node fix-imports.js",
     "clean:lib": "rm -rf lib",
     "build:watch": "tsc --watch",
-    "serve": "npm run build && firebase emulators:start --only functions",
+    "dev": "npm run build && firebase emulators:start --only functions,firestore",
     "shell": "npm run build && firebase functions:shell",
     "start": "npm run shell",
     "predeploy": "npm run clean:lib && npm run build",

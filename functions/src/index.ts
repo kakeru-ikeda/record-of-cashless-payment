@@ -1,7 +1,7 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { EventHandlerFactory } from './presentation/handlers/EventHandlerFactory';
-// import { createExpressApp } from './presentation/api/ExpressApp';
+import { createExpressApp } from './presentation/api/ExpressApp';
 
 // Cloud Functions環境でのFirebase Admin SDK初期化
 if (!admin.apps.length) {
@@ -49,7 +49,7 @@ export const dailyReportSchedule = functions.scheduler
  * HTTP API Functions
  * 各種処理をHTTP経由で実行するためのエンドポイント
  */
-// export const api = functions.https
-//     .onRequest({
-//         region: 'asia-northeast1',
-//     }, createExpressApp());
+export const api = functions.https
+    .onRequest({
+        region: 'asia-northeast1',
+    }, createExpressApp());

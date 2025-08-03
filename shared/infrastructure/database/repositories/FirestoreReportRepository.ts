@@ -7,7 +7,6 @@ import { FirestorePathUtil } from '@shared/utils/FirestorePathUtil';
 import { DateUtil } from '@shared/utils/DateUtil';
 import { ErrorHandler } from '@shared/infrastructure/errors/ErrorHandler';
 import { logger } from '@shared/infrastructure/logging/Logger';
-import { AppError, ErrorType } from '@shared/errors/AppError';
 
 /**
  * Firestoreを使用したレポート情報リポジトリの実装
@@ -50,12 +49,8 @@ export class FirestoreReportRepository implements IReportCrudRepository {
     async getDailyReport(year: string, month: string, day: string): Promise<DailyReport | null> {
         await this.initialize();
 
-        // 日付のバリデーション
-        const date = this.validateDate(year, month, day);
-
-        // パス情報を取得
-        const pathInfo = FirestorePathUtil.getFirestorePath(date);
-        const dailyReportPath = pathInfo.dailyReportPath;
+        // パス情報を取得（直接string引数を渡す）
+        const dailyReportPath = FirestorePathUtil.getDailyReportPath(year, month, day);
 
         // レポートデータを取得
         const reportData = await this.firestoreService.getDocument<DailyReport>(dailyReportPath);
@@ -77,15 +72,12 @@ export class FirestoreReportRepository implements IReportCrudRepository {
     async getMonthlyDailyReports(year: string, month: string): Promise<DailyReport[]> {
         await this.initialize();
 
-        // 年月のバリデーション
-        const date = this.validateYearMonth(year, month);
         // FirestorePathUtilを使用してベースパスを取得
-        const pathInfo = FirestorePathUtil.getFirestorePath(date);
-        const baseReportPath = pathInfo.dailyReportPath.replace(/\/\d{2}$/, ''); // 月単位のパスに変更
+        const dailyReportBasePath = FirestorePathUtil.getDailyReportPath(year, month, '01').replace(/\/\d{2}$/, ''); // 月単位のパスに変更
 
         // 月内の全ての日次レポートを取得
         const reports = await this.firestoreService.query(
-            baseReportPath,
+            dailyReportBasePath,
             (collection) => collection.orderBy('date', 'asc')
         );
 
@@ -102,12 +94,8 @@ export class FirestoreReportRepository implements IReportCrudRepository {
     async getMonthlyReport(year: string, month: string): Promise<MonthlyReport | null> {
         await this.initialize();
 
-        // 年月のバリデーション
-        const date = this.validateYearMonth(year, month);
-
-        // パス情報を取得
-        const pathInfo = FirestorePathUtil.getFirestorePath(date);
-        const monthlyReportPath = pathInfo.monthlyReportPath;
+        // パス情報を取得（直接string引数を渡す）
+        const monthlyReportPath = FirestorePathUtil.getMonthlyReportPath(year, month);
 
         // レポートデータを取得
         const reportData = await this.firestoreService.getDocument<MonthlyReport>(monthlyReportPath);
@@ -161,16 +149,12 @@ export class FirestoreReportRepository implements IReportCrudRepository {
     async getMonthlyWeeklyReports(year: string, month: string): Promise<WeeklyReport[]> {
         await this.initialize();
 
-        // 年月のバリデーション
-        const date = this.validateYearMonth(year, month);
-
         // FirestorePathUtilを使用してベースパスを取得
-        const pathInfo = FirestorePathUtil.getFirestorePath(date);
-        const baseReportPath = pathInfo.weeklyReportPath.replace(/\/term\d+$/, ''); // 月単位のパスに変更
+        const weeklyReportBasePath = FirestorePathUtil.getWeeklyReportPath(year, month, '01').replace(/\/term\d+$/, ''); // 月単位のパスに変更
 
         // 月内の全ての週次レポートを取得
         const reports = await this.firestoreService.query(
-            baseReportPath,
+            weeklyReportBasePath,
             (collection) => collection.orderBy('termStartDate', 'asc')
         );
 
@@ -187,12 +171,8 @@ export class FirestoreReportRepository implements IReportCrudRepository {
     async saveDailyReport(report: DailyReport, year: string, month: string, day: string): Promise<string> {
         await this.initialize();
 
-        // 日付のバリデーション
-        const date = this.validateDate(year, month, day);
-
-        // パス情報を取得
-        const pathInfo = FirestorePathUtil.getFirestorePath(date);
-        const dailyReportPath = pathInfo.dailyReportPath;
+        // パス情報を取得（直接string引数を渡す）
+        const dailyReportPath = FirestorePathUtil.getDailyReportPath(year, month, day);
 
         await this.firestoreService.saveDocument(dailyReportPath, report);
         logger.info(`日次レポートをFirestoreに保存しました: ${dailyReportPath}`, this.serviceContext);
@@ -205,7 +185,7 @@ export class FirestoreReportRepository implements IReportCrudRepository {
     @ErrorHandler.errorDecorator('FirestoreReportRepository', {
         defaultMessage: '週次レポートの保存に失敗しました'
     })
-    async saveWeeklyReport(report: WeeklyReport, year: string, month: string): Promise<string> {
+    async saveWeeklyReport(report: WeeklyReport, year: string, month: string, day: string): Promise<string> {
         await this.initialize();
 
         // 年月のバリデーション
@@ -241,73 +221,14 @@ export class FirestoreReportRepository implements IReportCrudRepository {
     async saveMonthlyReport(report: MonthlyReport, year: string, month: string): Promise<string> {
         await this.initialize();
 
-        // 年月のバリデーション
-        const date = this.validateYearMonth(year, month);
-
-        // パス情報を取得
-        const pathInfo = FirestorePathUtil.getFirestorePath(date);
-        const monthlyReportPath = pathInfo.monthlyReportPath;
+        // パス情報を取得（直接string引数を渡す）
+        const monthlyReportPath = FirestorePathUtil.getMonthlyReportPath(year, month);
 
         await this.firestoreService.saveDocument(monthlyReportPath, report);
         logger.info(`月次レポートをFirestoreに保存しました: ${monthlyReportPath}`, this.serviceContext);
         return monthlyReportPath;
     }
 
-    // プライベートメソッド
-
-    /**
-     * 日付のバリデーション
-     */
-    private validateDate(year: string, month: string, day: string): Date {
-        const yearNum = parseInt(year, 10);
-        const monthNum = parseInt(month, 10);
-        const dayNum = parseInt(day, 10);
-
-        if (isNaN(yearNum) || isNaN(monthNum) || isNaN(dayNum)) {
-            throw new AppError('年、月、日は数値で指定してください', ErrorType.VALIDATION);
-        }
-
-        if (yearNum < 2000 || yearNum > 2100) {
-            throw new AppError('年は2000年から2100年の間で指定してください', ErrorType.VALIDATION);
-        }
-
-        if (monthNum < 1 || monthNum > 12) {
-            throw new AppError('月は1から12の間で指定してください', ErrorType.VALIDATION);
-        }
-
-        if (dayNum < 1 || dayNum > 31) {
-            throw new AppError('日は1から31の間で指定してください', ErrorType.VALIDATION);
-        }
-
-        const date = new Date(yearNum, monthNum - 1, dayNum);
-        if (date.getFullYear() !== yearNum || date.getMonth() !== monthNum - 1 || date.getDate() !== dayNum) {
-            throw new AppError('無効な日付です', ErrorType.VALIDATION);
-        }
-
-        return date;
-    }
-
-    /**
-     * 年月のバリデーション
-     */
-    private validateYearMonth(year: string, month: string): Date {
-        const yearNum = parseInt(year, 10);
-        const monthNum = parseInt(month, 10);
-
-        if (isNaN(yearNum) || isNaN(monthNum)) {
-            throw new AppError('年、月は数値で指定してください', ErrorType.VALIDATION);
-        }
-
-        if (yearNum < 2000 || yearNum > 2100) {
-            throw new AppError('年は2000年から2100年の間で指定してください', ErrorType.VALIDATION);
-        }
-
-        if (monthNum < 1 || monthNum > 12) {
-            throw new AppError('月は1から12の間で指定してください', ErrorType.VALIDATION);
-        }
-
-        return new Date(yearNum, monthNum - 1, 1);
-    }
 
     // Update Operations
     /**
@@ -319,12 +240,8 @@ export class FirestoreReportRepository implements IReportCrudRepository {
     async updateDailyReport(report: Partial<DailyReport>, year: string, month: string, day: string): Promise<string> {
         await this.initialize();
 
-        // 日付のバリデーション
-        const date = this.validateDate(year, month, day);
-
-        // パス情報を取得
-        const pathInfo = FirestorePathUtil.getFirestorePath(date);
-        const documentPath = pathInfo.dailyReportPath;
+        // パス情報を取得（直接string引数を渡す）
+        const documentPath = FirestorePathUtil.getDailyReportPath(year, month, day);
 
         logger.info(`日次レポート更新: ${documentPath}`, this.serviceContext);
 
@@ -340,7 +257,7 @@ export class FirestoreReportRepository implements IReportCrudRepository {
     @ErrorHandler.errorDecorator('FirestoreReportRepository', {
         defaultMessage: '週次レポートの更新に失敗しました'
     })
-    async updateWeeklyReport(report: Partial<WeeklyReport>, year: string, month: string, term: string): Promise<string> {
+    async updateWeeklyReport(report: Partial<WeeklyReport>, year: string, month: string, day: string): Promise<string> {
         await this.initialize();
 
         // 年月とterm番号のバリデーション
@@ -370,12 +287,8 @@ export class FirestoreReportRepository implements IReportCrudRepository {
     async updateMonthlyReport(report: Partial<MonthlyReport>, year: string, month: string): Promise<string> {
         await this.initialize();
 
-        // 日付のバリデーション
-        const date = this.validateYearMonth(year, month);
-
-        // パス情報を取得
-        const pathInfo = FirestorePathUtil.getFirestorePath(date);
-        const documentPath = pathInfo.monthlyReportPath;
+        // パス情報を取得（直接string引数を渡す）
+        const documentPath = FirestorePathUtil.getMonthlyReportPath(year, month);
 
         logger.info(`月次レポート更新: ${documentPath}`, this.serviceContext);
 
