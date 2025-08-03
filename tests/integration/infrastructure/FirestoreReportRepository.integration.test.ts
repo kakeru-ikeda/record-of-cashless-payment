@@ -50,7 +50,7 @@ describe('FirestoreReportRepository Integration Tests', () => {
 
         it('存在しない週次レポートはnullを返すこと', async () => {
             // When
-            const result = await mockRepository.getWeeklyReportByTerm('2024', '6', '3');
+            const result = await mockRepository.getWeeklyReport('2024', '6', '3');
 
             // Then
             expect(result).toBeNull();
@@ -333,7 +333,7 @@ describe('FirestoreReportRepository Integration Tests', () => {
 
                 // When
                 const savePath = await repository.saveWeeklyReport(testReport, '2024', '6', '1');
-                const savedReport = await repository.getWeeklyReportByTerm('2024', '6', '1');
+                const savedReport = await repository.getWeeklyReport('2024', '6', '1');
 
                 // Then
                 expect(savePath).toMatch(/^reports\/weekly\/2024-06\/term\d+$/);
@@ -374,13 +374,13 @@ describe('FirestoreReportRepository Integration Tests', () => {
                     { hasNotifiedLevel1: true },
                     '2024', '6', termNumber
                 );
-                const level1Updated = await repository.getWeeklyReportByTerm('2024', '6', termNumber);
+                const level1Updated = await repository.getWeeklyReport('2024', '6', termNumber);
 
                 await repository.updateWeeklyReport(
                     { hasNotifiedLevel2: true, hasReportSent: true },
                     '2024', '6', termNumber
                 );
-                const finalUpdated = await repository.getWeeklyReportByTerm('2024', '6', termNumber);
+                const finalUpdated = await repository.getWeeklyReport('2024', '6', termNumber);
 
                 // Then
                 expect(level1Updated!.hasNotifiedLevel1).toBe(true);

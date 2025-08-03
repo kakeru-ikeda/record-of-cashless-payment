@@ -85,7 +85,7 @@ describe('FirestoreReportUseCase', () => {
             getDailyReport: jest.fn(),
             getMonthlyDailyReports: jest.fn(),
             getMonthlyReport: jest.fn(),
-            getWeeklyReportByTerm: jest.fn(),
+            getWeeklyReport: jest.fn(),
             getMonthlyWeeklyReports: jest.fn(),
             saveDailyReport: jest.fn(),
             saveWeeklyReport: jest.fn(),
@@ -160,19 +160,19 @@ describe('FirestoreReportUseCase', () => {
     describe('getWeeklyReport', () => {
         test('正常系: 週次レポートが正常に取得されること', async () => {
             // モックの設定
-            mockReportRepository.getWeeklyReportByTerm.mockResolvedValueOnce(sampleWeeklyReport);
+            mockReportRepository.getWeeklyReport.mockResolvedValueOnce(sampleWeeklyReport);
 
             // 実行
             const result = await reportUseCase.getWeeklyReport('2024', '06', '3');
 
             // 検証
-            expect(mockReportRepository.getWeeklyReportByTerm).toHaveBeenCalledWith('2024', '06', '3');
+            expect(mockReportRepository.getWeeklyReport).toHaveBeenCalledWith('2024', '06', '3');
             expect(result).toEqual(sampleWeeklyReport);
         });
 
         test('異常系: レポートが見つからない場合、AppErrorがスローされること', async () => {
             // モックの設定
-            mockReportRepository.getWeeklyReportByTerm.mockResolvedValueOnce(null);
+            mockReportRepository.getWeeklyReport.mockResolvedValueOnce(null);
 
             // 実行と検証
             await expect(reportUseCase.getWeeklyReport('2024', '06', '3'))

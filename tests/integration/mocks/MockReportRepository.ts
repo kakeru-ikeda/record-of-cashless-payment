@@ -68,7 +68,7 @@ export class MockReportRepository implements IReportCrudRepository {
     /**
      * 週次レポートを取得する
      */
-    async getWeeklyReportByTerm(year: string, month: string, term: string): Promise<WeeklyReport | null> {
+    async getWeeklyReport(year: string, month: string, term: string): Promise<WeeklyReport | null> {
         if (!this.initialized) {
             throw new Error('Repository not initialized');
         }

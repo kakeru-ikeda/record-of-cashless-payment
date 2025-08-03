@@ -113,7 +113,7 @@ export class FirestoreReportRepository implements IReportCrudRepository {
     @ErrorHandler.errorDecorator('FirestoreReportRepository', {
         defaultMessage: '週次レポートの取得に失敗しました'
     })
-    async getWeeklyReportByTerm(year: string, month: string, term: string): Promise<WeeklyReport | null> {
+    async getWeeklyReport(year: string, month: string, term: string): Promise<WeeklyReport | null> {
         await this.initialize();
 
         const weeklyReportPath = `reports/weekly/${year}-${month.padStart(2, '0')}/term${term}`;
@@ -175,11 +175,11 @@ export class FirestoreReportRepository implements IReportCrudRepository {
     @ErrorHandler.errorDecorator('FirestoreReportRepository', {
         defaultMessage: '週次レポートの保存に失敗しました'
     })
-    async saveWeeklyReport(report: WeeklyReport, year: string, month: string, day: string): Promise<string> {
+    async saveWeeklyReport(report: WeeklyReport, year: string, month: string, term: string): Promise<string> {
         await this.initialize();
 
         // パス情報を取得（実際の日付を使用）
-        const weeklyReportPath = FirestorePathUtil.getWeeklyReportPath(year, month, day);
+        const weeklyReportPath = `reports/weekly/${year}-${month.padStart(2, '0')}/term${term}`;
 
         await this.firestoreService.saveDocument(weeklyReportPath, report);
         logger.info(`週次レポートをFirestoreに保存しました: ${weeklyReportPath}`, this.serviceContext);

@@ -42,7 +42,7 @@ export interface IReportCrudRepository {
      * @param term ターム（週番号）
      * @returns 週次レポート情報
      */
-    getWeeklyReportByTerm(year: string, month: string, term: string): Promise<WeeklyReport | null>;
+    getWeeklyReport(year: string, month: string, term: string): Promise<WeeklyReport | null>;
 
     /**
      * 月内の全週次レポートを取得する
@@ -67,10 +67,10 @@ export interface IReportCrudRepository {
      * @param report 週次レポート情報
      * @param year 年
      * @param month 月
-     * @param day 日（週の特定日）
+     * @param term ターム（週番号）
      * @returns 保存されたパス
      */
-    saveWeeklyReport(report: WeeklyReport, year: string, month: string, day: string): Promise<string>;
+    saveWeeklyReport(report: WeeklyReport, year: string, month: string, term: string): Promise<string>;
 
     /**
      * 月次レポートを保存する
