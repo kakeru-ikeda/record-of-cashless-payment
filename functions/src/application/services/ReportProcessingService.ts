@@ -153,7 +153,7 @@ export class ReportProcessingService {
                 [documentFullPath]
             );
 
-            await this.reportUseCase.createWeeklyReport(weeklyReport, year, month, day);
+            await this.reportUseCase.createWeeklyReport(weeklyReport, year, month, term);
             logger.info(`ウィークリーレポート作成完了: ${year}年${month}月第${term}週`, 'Report Processing Service');
 
             // アラート条件チェック

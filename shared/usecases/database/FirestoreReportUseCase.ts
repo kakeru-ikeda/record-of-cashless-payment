@@ -71,7 +71,7 @@ export class FirestoreReportUseCase {
     async getWeeklyReport(year: string, month: string, term: string): Promise<WeeklyReport> {
         logger.info(`週次レポート取得: ${year}年${month}月term${term}`, this.serviceContext);
 
-        const report = await this.reportRepository.getWeeklyReportByTerm(year, month, term);
+        const report = await this.reportRepository.getWeeklyReport(year, month, term);
 
         if (!report) {
             throw new AppError(`${year}年${month}月term${term}の週次レポートが見つかりません`, ErrorType.NOT_FOUND);
@@ -183,10 +183,10 @@ export class FirestoreReportUseCase {
     @ErrorHandler.errorDecorator('ReportUseCase', {
         defaultMessage: '週次レポートの作成に失敗しました'
     })
-    async createWeeklyReport(reportData: WeeklyReport, year: string, month: string, day: string): Promise<string> {
-        logger.info(`週次レポート作成: ${year}年${month}月${day}日`, this.serviceContext);
+    async createWeeklyReport(reportData: WeeklyReport, year: string, month: string, term: string): Promise<string> {
+        logger.info(`週次レポート作成: ${year}年${month}月term${term}`, this.serviceContext);
 
-        const path = await this.reportRepository.saveWeeklyReport(reportData, year, month, day);
+        const path = await this.reportRepository.saveWeeklyReport(reportData, year, month, term);
         logger.info(`週次レポートを作成しました: ${path}`, this.serviceContext);
 
         return path;

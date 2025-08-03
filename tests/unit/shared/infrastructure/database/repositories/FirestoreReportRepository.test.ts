@@ -182,11 +182,11 @@ describe('FirestoreReportRepository', () => {
         });
     });
 
-    describe('getWeeklyReportByTerm', () => {
+    describe('getWeeklyReport', () => {
         test('正常系: 週次レポートが正常に取得されること', async () => {
             mockFirestoreService.getDocument.mockResolvedValueOnce(sampleWeeklyReport);
 
-            const result = await repository.getWeeklyReportByTerm('2024', '06', '3');
+            const result = await repository.getWeeklyReport('2024', '06', '3');
 
             expect(mockFirestoreService.getDocument).toHaveBeenCalledWith('reports/weekly/2024-06/term3');
             expect(result).toEqual(sampleWeeklyReport);
@@ -195,7 +195,7 @@ describe('FirestoreReportRepository', () => {
         test('正常系: レポートが存在しない場合、nullが返されること', async () => {
             mockFirestoreService.getDocument.mockResolvedValueOnce(null);
 
-            const result = await repository.getWeeklyReportByTerm('2024', '06', '3');
+            const result = await repository.getWeeklyReport('2024', '06', '3');
 
             expect(result).toBeNull();
         });
@@ -239,7 +239,7 @@ describe('FirestoreReportRepository', () => {
 
     describe('saveWeeklyReport', () => {
         test('正常系: 週次レポートが正常に保存されること', async () => {
-            const result = await repository.saveWeeklyReport(sampleWeeklyReport, '2024', '06', '15');
+            const result = await repository.saveWeeklyReport(sampleWeeklyReport, '2024', '06', '3');
 
             expect(mockFirestoreService.saveDocument).toHaveBeenCalledWith(
                 testPathInfo.weeklyReportPath,
