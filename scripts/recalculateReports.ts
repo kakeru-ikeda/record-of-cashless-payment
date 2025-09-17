@@ -1,513 +1,191 @@
-/**
- * レポート再集計バッチスクリプト
- * 
- * 日次、週次、月次のレポートデータを再集計するユーティリティスクリプト
- * documentIdListに含まれる実際のドキュメントデータを読み込み、
- * totalAmountとtotalCountを正確に再計算する
- * 
- * 使用方法:
- * $ npx ts-node scripts/recalculateReports.ts
- */
-
-import { Firestore } from 'firebase-admin/firestore';
-import { FirestoreService } from '../shared/firebase/FirestoreService';
-import { Environment } from '../shared/config/Environment';
-import { DailyReport } from '../functions/src/services/reports/DailyReportService';
-import { WeeklyReport } from '../functions/src/services/reports/WeeklyReportService';
-import { MonthlyReport } from '../functions/src/services/reports/MonthlyReportService';
-import { CardUsage } from '../shared/domain/entities/CardUsage';
-import * as readline from 'readline';
-
-interface YearMonthRecord {
-    year: string;
-    month: string;
-}
-
-interface ReportTypeInfo {
-    reportType: 'daily' | 'weekly' | 'monthly';
-    path: string;
-    documentIdList: string[];
-}
-
-interface RecalculationResult {
-    reportPath: string;
-    reportType: 'daily' | 'weekly' | 'monthly';
-    originalAmount: number;
-    recalculatedAmount: number;
-    originalCount: number;
-    recalculatedCount: number;
-    isChanged: boolean;
-    isApplied?: boolean; // 変更が適用されたかどうか
-}
-
-class ReportRecalculator {
-    private firestoreService: FirestoreService;
-    private db: Firestore | null = null;
-
-    constructor() {
-        this.firestoreService = FirestoreService.getInstance();
-    }
-
-    /**
-     * Firestoreへの接続を初期化
-     */
-    async initialize(): Promise<void> {
-        try {
-            // サービスアカウントの秘密鍵のパスを取得
-            const serviceAccountPath = Environment.getFirebaseAdminKeyPath();
-
-            // 初期化
-            this.firestoreService.setCloudFunctions(Environment.isCloudFunctions());
-            this.db = await this.firestoreService.initialize(serviceAccountPath);
-            console.log('✅ Firestoreへの接続が初期化されました');
-        } catch (error) {
-            console.error('❌ Firestoreへの接続初期化中にエラーが発生しました', error);
-            throw error;
-        }
-    }
-
-    /**
-     * レポートコレクションを検索してレポートのパスとタイプを取得する
-     */
-    async findAllReports(): Promise<ReportTypeInfo[]> {
-        const allReports: ReportTypeInfo[] = [];
-
-        try {
-            if (!this.db) throw new Error('Firestoreが初期化されていません');
-
-            console.log('🔍 日次レポートを検索中...');
-            const dailyReports = await this.findDailyReports();
-            allReports.push(...dailyReports);
-            console.log(`📋 ${dailyReports.length}件の日次レポートが見つかりました`);
-
-            console.log('🔍 週次レポートを検索中...');
-            const weeklyReports = await this.findWeeklyReports();
-            allReports.push(...weeklyReports);
-            console.log(`📋 ${weeklyReports.length}件の週次レポートが見つかりました`);
-
-            console.log('🔍 月次レポートを検索中...');
-            const monthlyReports = await this.findMonthlyReports();
-            allReports.push(...monthlyReports);
-            console.log(`📋 ${monthlyReports.length}件の月次レポートが見つかりました`);
-
-            return allReports;
-        } catch (error) {
-            console.error('❌ レポートデータの検索中にエラーが発生しました', error);
-            throw error;
-        }
-    }
-
-    /**
-     * 日次レポートを検索
-     */
-    private async findDailyReports(): Promise<ReportTypeInfo[]> {
-        const dailyReports: ReportTypeInfo[] = [];
-
-        if (!this.db) throw new Error('Firestoreが初期化されていません');
-
-        // 日次レポートのコレクションを取得
-        const reportsRef = this.db.collection('reports');
-        const dailyCollRef = reportsRef.doc('daily');
-        const yearMonthCollections = await dailyCollRef.listCollections();
-
-        for (const yearMonthColl of yearMonthCollections) {
-            const yearMonthId = yearMonthColl.id; // '2025-05'のような形式
-            const dayDocs = await yearMonthColl.listDocuments();
-
-            for (const dayDoc of dayDocs) {
-                const dayId = dayDoc.id; // '01'のような形式
-                const docPath = `reports/daily/${yearMonthId}/${dayId}`;
-
-                const reportData = await this.firestoreService.getDocument<DailyReport>(docPath);
-                if (reportData && reportData.documentIdList && reportData.documentIdList.length > 0) {
-                    dailyReports.push({
-                        reportType: 'daily',
-                        path: docPath,
-                        documentIdList: reportData.documentIdList,
-                    });
-                }
-            }
-        }
-
-        return dailyReports;
-    }
-
-    /**
-     * 週次レポートを検索
-     */
-    private async findWeeklyReports(): Promise<ReportTypeInfo[]> {
-        const weeklyReports: ReportTypeInfo[] = [];
-
-        if (!this.db) throw new Error('Firestoreが初期化されていません');
-
-        // 週次レポートのコレクションを取得
-        const reportsRef = this.db.collection('reports');
-        const weeklyCollRef = reportsRef.doc('weekly');
-        const yearMonthCollections = await weeklyCollRef.listCollections();
-
-        for (const yearMonthColl of yearMonthCollections) {
-            const yearMonthId = yearMonthColl.id; // '2025-05'のような形式
-            const termDocs = await yearMonthColl.listDocuments();
-
-            for (const termDoc of termDocs) {
-                const termId = termDoc.id; // 'term1'のような形式
-                const docPath = `reports/weekly/${yearMonthId}/${termId}`;
-
-                const reportData = await this.firestoreService.getDocument<WeeklyReport>(docPath);
-                if (reportData && reportData.documentIdList && reportData.documentIdList.length > 0) {
-                    weeklyReports.push({
-                        reportType: 'weekly',
-                        path: docPath,
-                        documentIdList: reportData.documentIdList,
-                    });
-                }
-            }
-        }
-
-        return weeklyReports;
-    }
-
-    /**
-     * 月次レポートを検索
-     */
-    private async findMonthlyReports(): Promise<ReportTypeInfo[]> {
-        const monthlyReports: ReportTypeInfo[] = [];
-
-        if (!this.db) throw new Error('Firestoreが初期化されていません');
-
-        // 月次レポートのコレクションを取得
-        const reportsRef = this.db.collection('reports');
-        const monthlyCollRef = reportsRef.doc('monthly');
-        const yearCollections = await monthlyCollRef.listCollections();
-
-        for (const yearColl of yearCollections) {
-            const yearId = yearColl.id; // '2025'のような形式
-            const monthDocs = await yearColl.listDocuments();
-
-            for (const monthDoc of monthDocs) {
-                const monthId = monthDoc.id; // '05'のような形式
-                const docPath = `reports/monthly/${yearId}/${monthId}`;
-
-                const reportData = await this.firestoreService.getDocument<MonthlyReport>(docPath);
-                if (reportData && reportData.documentIdList && reportData.documentIdList.length > 0) {
-                    monthlyReports.push({
-                        reportType: 'monthly',
-                        path: docPath,
-                        documentIdList: reportData.documentIdList,
-                    });
-                }
-            }
-        }
-
-        return monthlyReports;
-    }
-
-    /**
-     * 個別のドキュメントを取得する
-     * @param docPath ドキュメントのパス
-     * @returns カード利用データもしくはnull
-     */
-    private async getCardUsage(docPath: string): Promise<CardUsage | null> {
-        try {
-            const cardUsage = await this.firestoreService.getDocument<CardUsage>(docPath);
-            return cardUsage;
-        } catch (error) {
-            console.error(`❌ ドキュメント取得中にエラー (${docPath})`, error);
-            return null;
-        }
-    }
-
-    /**
-     * レポートを再計算する
-     * @param reports レポートリスト
-     */
-    async recalculateReports(reports: ReportTypeInfo[]): Promise<RecalculationResult[]> {
-        const results: RecalculationResult[] = [];
-
-        for (const report of reports) {
-            try {
-                // レポートデータを取得
-                let reportData: DailyReport | WeeklyReport | MonthlyReport | null = null;
-
-                switch (report.reportType) {
-                    case 'daily':
-                        reportData = await this.firestoreService.getDocument<DailyReport>(report.path);
-                        break;
-                    case 'weekly':
-                        reportData = await this.firestoreService.getDocument<WeeklyReport>(report.path);
-                        break;
-                    case 'monthly':
-                        reportData = await this.firestoreService.getDocument<MonthlyReport>(report.path);
-                        break;
-                }
-
-                if (!reportData) {
-                    console.log(`⚠️ レポートデータが取得できませんでした: ${report.path}`);
-                    continue;
-                }
-
-                // 元の値を保存
-                const originalAmount = reportData.totalAmount;
-                const originalCount = reportData.totalCount;
-
-                // 再計算のための新しい値
-                let newTotalAmount = 0;
-                let newTotalCount = 0;
-
-                // 各ドキュメントを取得して金額を再計算
-                for (const docId of report.documentIdList) {
-                    const cardUsage = await this.getCardUsage(docId);
-
-                    // カード利用データがあり、かつアクティブな場合のみカウント
-                    if (cardUsage && (cardUsage.is_active !== false)) {
-                        newTotalAmount += cardUsage.amount;
-                        newTotalCount++;
-                    }
-                }
-
-                // 違いがあれば更新候補として追加
-                const isChanged =
-                    originalAmount !== newTotalAmount ||
-                    originalCount !== newTotalCount;
-
-                // 結果に追加（この時点では適用していない）
-                results.push({
-                    reportPath: report.path,
-                    reportType: report.reportType,
-                    originalAmount,
-                    recalculatedAmount: newTotalAmount,
-                    originalCount,
-                    recalculatedCount: newTotalCount,
-                    isChanged,
-                    isApplied: false
-                });
-            } catch (error) {
-                console.error(`❌ レポート再計算中にエラーが発生しました: ${report.path}`, error);
-            }
-        }
-
-        return results;
-    }
-
-    /**
-     * ユーザーに再計算の確認を求める
-     * @param count レポートの数
-     */
-    async confirmRecalculation(count: number): Promise<boolean> {
-        if (count === 0) {
-            console.log('❌ 再計算対象のレポートがありません');
-            return false;
-        }
-
-        const rl = readline.createInterface({
-            input: process.stdin,
-            output: process.stdout
-        });
-
-        return new Promise<boolean>((resolve) => {
-            rl.question(`⚠️ 警告: この操作は${count}件のレポートを再計算する可能性があります。\n続行しますか？ (y/n): `, (answer) => {
-                rl.close();
-                resolve(answer.toLowerCase() === 'y');
-            });
-        });
-    }
-
-    /**
-     * 変更適用の確認を求める
-     */
-    private async confirmChanges(count: number): Promise<boolean> {
-        const rl = readline.createInterface({
-            input: process.stdin,
-            output: process.stdout
-        });
-
-        return new Promise<boolean>((resolve) => {
-            rl.question(`\n⚠️ 上記の${count}件のレポートに変更を適用しますか？ (y/n): `, (answer) => {
-                rl.close();
-                resolve(answer.toLowerCase() === 'y');
-            });
-        });
-    }
-
-    /**
-     * 再計算結果を表示し、ユーザーに確認を求める
-     * @param results 再計算結果
-     */
-    async displayAndConfirmChanges(results: RecalculationResult[]): Promise<RecalculationResult[]> {
-        // 変更があるレポートだけをフィルタリング
-        const changedResults = results.filter(r => r.isChanged);
-
-        if (changedResults.length === 0) {
-            console.log('✅ すべてのレポートは正確に計算されていました。更新は必要ありません。');
-            return results;
-        }
-
-        console.log('\n===== 再計算結果 =====');
-        console.log(`${changedResults.length}件のレポートに差異が見つかりました。\n`);
-
-        // レポートタイプごとにグループ化して表示
-        const dailyReports = changedResults.filter(r => r.reportType === 'daily');
-        const weeklyReports = changedResults.filter(r => r.reportType === 'weekly');
-        const monthlyReports = changedResults.filter(r => r.reportType === 'monthly');
-
-        if (dailyReports.length > 0) {
-            console.log(`\n【日次レポート】 (${dailyReports.length}件)`);
-            dailyReports.forEach((report, index) => {
-                console.log(`${index + 1}. ${report.reportPath}`);
-                console.log(`   金額: ${report.originalAmount} → ${report.recalculatedAmount} (差分: ${report.recalculatedAmount - report.originalAmount}円)`);
-                console.log(`   件数: ${report.originalCount} → ${report.recalculatedCount} (差分: ${report.recalculatedCount - report.originalCount}件)`);
-            });
-        }
-
-        if (weeklyReports.length > 0) {
-            console.log(`\n【週次レポート】 (${weeklyReports.length}件)`);
-            weeklyReports.forEach((report, index) => {
-                console.log(`${index + 1}. ${report.reportPath}`);
-                console.log(`   金額: ${report.originalAmount} → ${report.recalculatedAmount} (差分: ${report.recalculatedAmount - report.originalAmount}円)`);
-                console.log(`   件数: ${report.originalCount} → ${report.recalculatedCount} (差分: ${report.recalculatedCount - report.originalCount}件)`);
-            });
-        }
-
-        if (monthlyReports.length > 0) {
-            console.log(`\n【月次レポート】 (${monthlyReports.length}件)`);
-            monthlyReports.forEach((report, index) => {
-                console.log(`${index + 1}. ${report.reportPath}`);
-                console.log(`   金額: ${report.originalAmount} → ${report.recalculatedAmount} (差分: ${report.recalculatedAmount - report.originalAmount}円)`);
-                console.log(`   件数: ${report.originalCount} → ${report.recalculatedCount} (差分: ${report.recalculatedCount - report.originalCount}件)`);
-            });
-        }
-
-        console.log('\n=======================');
-
-        // 合計の差分を表示
-        let totalAmountDiff = 0;
-        let totalCountDiff = 0;
-        changedResults.forEach(result => {
-            totalAmountDiff += (result.recalculatedAmount - result.originalAmount);
-            totalCountDiff += (result.recalculatedCount - result.originalCount);
-        });
-
-        console.log(`\n【合計差分】`);
-        console.log(`総額差分: ${totalAmountDiff}円`);
-        console.log(`総数差分: ${totalCountDiff}件`);
-
-        // ユーザー確認
-        const confirmed = await this.confirmChanges(changedResults.length);
-        if (!confirmed) {
-            console.log('❌ 変更の適用がキャンセルされました');
-            return results;
-        }
-
-        // 各レポートに変更を適用
-        console.log('変更を適用しています...');
-        for (const result of results) {
-            if (result.isChanged) {
-                try {
-                    await this.firestoreService.updateDocument(result.reportPath, {
-                        totalAmount: result.recalculatedAmount,
-                        totalCount: result.recalculatedCount,
-                        lastUpdated: this.firestoreService.getServerTimestamp(),
-                        lastUpdatedBy: 'report-recalculation-script'
-                    });
-
-                    result.isApplied = true;
-                    console.log(`✓ 適用完了: ${result.reportPath}`);
-                } catch (error) {
-                    console.error(`❌ レポート更新中にエラー: ${result.reportPath}`, error);
-                }
-            }
-        }
-
-        return results;
-    }
-
-    /**
-     * 再計算結果のサマリーを表示
-     */
-    displayRecalculationSummary(results: RecalculationResult[]): void {
-        // 変更が適用されたレポートのみ抽出
-        const appliedResults = results.filter(r => r.isChanged && r.isApplied);
-
-        if (appliedResults.length === 0) {
-            console.log('✅ 変更は適用されませんでした。');
-            return;
-        }
-
-        console.log('\n===== 再計算結果サマリー =====');
-        console.log(`合計: ${appliedResults.length}件のレポートが更新されました\n`);
-
-        let dailyReportsCount = 0;
-        let weeklyReportsCount = 0;
-        let monthlyReportsCount = 0;
-        let totalAmountDiff = 0;
-        let totalCountDiff = 0;
-
-        appliedResults.forEach(result => {
-            switch (result.reportType) {
-                case 'daily':
-                    dailyReportsCount++;
-                    break;
-                case 'weekly':
-                    weeklyReportsCount++;
-                    break;
-                case 'monthly':
-                    monthlyReportsCount++;
-                    break;
-            }
-            totalAmountDiff += (result.recalculatedAmount - result.originalAmount);
-            totalCountDiff += (result.recalculatedCount - result.originalCount);
-        });
-
-        console.log(`日次レポート: ${dailyReportsCount}件`);
-        console.log(`週次レポート: ${weeklyReportsCount}件`);
-        console.log(`月次レポート: ${monthlyReportsCount}件`);
-        console.log(`総額差分: ${totalAmountDiff}円`);
-        console.log(`総数差分: ${totalCountDiff}件`);
-        console.log('\n==================================\n');
-    }
-}
+#!/usr/bin/env npx tsx
 
 /**
- * メイン処理
+ * レポート再集計スクリプト v2
+ * 指定された期間のカード利用データからレポートを再生成する
+ * 
+ * 使用例:
+ * npx tsx scripts/recalculateReports.ts 2024-01-01 2024-01-07
+ * npx tsx scripts/recalculateReports.ts 2024-01-01 2024-01-07 --dry-run
+ * npx tsx scripts/recalculateReports.ts 2024-01-01 2024-01-07 --types=daily,weekly
  */
+
+import { initializeApp } from 'firebase-admin/app';
+import { FirestoreDataExplorerService } from '../functions/src/infrastructure/services/FirestoreDataExplorerService';
+import { ReportRecalculationUseCase } from '../functions/src/application/usecases/ReportRecalculationUseCase';
+import { ReportProcessingService } from '../functions/src/application/services/ReportProcessingService';
+import { FirestoreReportUseCase } from '../shared/usecases/database/FirestoreReportUseCase';
+import { FirestoreReportRepository } from '../shared/infrastructure/database/repositories/FirestoreReportRepository';
+import { DiscordNotifier } from '../shared/infrastructure/discord/DiscordNotifier';
+import { Environment } from '../shared/infrastructure/config/Environment';
+import { FirestoreService } from '../shared/infrastructure/database/FirestoreService';
+
+function parseArgs() {
+    const args = process.argv.slice(2);
+
+    if (args.length < 2) {
+        console.error('❌ 使用方法: npx tsx scripts/recalculateReports.ts <開始日> <終了日> [オプション]');
+        console.error('例: npx tsx scripts/recalculateReports.ts 2024-01-01 2024-01-07 --dry-run');
+        process.exit(1);
+    }
+
+    const startDate = args[0];
+    const endDate = args[1];
+
+    const options = {
+        startDate,
+        endDate,
+        dryRun: args.includes('--dry-run'),
+        types: 'daily,weekly,monthly',
+        executor: 'script-execution'
+    };
+
+    // typesオプションの解析
+    const typesArg = args.find(arg => arg.startsWith('--types='));
+    if (typesArg) {
+        options.types = typesArg.split('=')[1];
+    }
+
+    // executorオプションの解析
+    const executorArg = args.find(arg => arg.startsWith('--executor='));
+    if (executorArg) {
+        options.executor = executorArg.split('=')[1];
+    }
+
+    return options;
+}
+
 async function main() {
+    const options = parseArgs();
+
+    // 日付バリデーション
+    const startDate = new Date(options.startDate);
+    const endDate = new Date(options.endDate);
+
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        console.error('❌ 日付の形式が正しくありません。YYYY-MM-DD形式で指定してください。');
+        process.exit(1);
+    }
+
+    if (startDate > endDate) {
+        console.error('❌ 開始日は終了日より前である必要があります。');
+        process.exit(1);
+    }
+
+    // 90日制限チェック
+    const diffDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDays > 90) {
+        console.error('❌ 処理期間は90日以内にしてください。');
+        process.exit(1);
+    }
+
+    // レポートタイプパース
+    const reportTypes = options.types.split(',').map((type: string) => type.trim()) as ('daily' | 'weekly' | 'monthly')[];
+    const validTypes: ('daily' | 'weekly' | 'monthly')[] = ['daily', 'weekly', 'monthly'];
+    const invalidTypes = reportTypes.filter(type => !validTypes.includes(type));
+
+    if (invalidTypes.length > 0) {
+        console.error(`❌ 無効なレポートタイプ: ${invalidTypes.join(', ')}`);
+        console.error(`有効なタイプ: ${validTypes.join(', ')}`);
+        process.exit(1);
+    }
+
+    console.log('🔧 レポート再集計スクリプト v2 開始');
+    console.log(`📅 処理期間: ${options.startDate} - ${options.endDate} (${diffDays + 1}日間)`);
+    console.log(`📊 レポートタイプ: ${reportTypes.join(', ')}`);
+    console.log(`🔍 ドライラン: ${options.dryRun ? 'Yes' : 'No'}`);
+    console.log(`👤 実行者: ${options.executor}`);
+    console.log('');
+
     try {
-        console.log('🚀 レポート再計算バッチを開始します...');
-        const recalculator = new ReportRecalculator();
-        await recalculator.initialize();
-
-        // すべてのレポートを検索
-        const reports = await recalculator.findAllReports();
-        console.log(`📊 合計${reports.length}件のレポートが見つかりました`);
-
-        if (reports.length === 0) {
-            console.log('✅ レポートが見つからなかったため、処理を終了します');
-            process.exit(0);
+        // Firebase Admin SDK初期化
+        if (!initializeApp.length) {
+            initializeApp();
         }
 
-        // ユーザー確認
-        const confirmed = await recalculator.confirmRecalculation(reports.length);
-        if (!confirmed) {
-            console.log('❌ 操作がキャンセルされました');
-            process.exit(0);
+        // Firestoreサービスを初期化（環境変数パスまたはデフォルトパスを使用）
+        const firestoreService = FirestoreService.getInstance();
+        const serviceAccountPath = Environment.getFirebaseAdminKeyPath();
+        await firestoreService.initialize(serviceAccountPath);
+
+        const reportRepository = new FirestoreReportRepository();
+        const reportUseCase = new FirestoreReportUseCase(reportRepository);
+
+        const discordNotifier = new DiscordNotifier({
+            usageWebhookUrl: Environment.getDiscordWebhookUrl(),
+            loggingWebhookUrl: Environment.getDiscordLoggingWebhookUrl(),
+            alertWeeklyWebhookUrl: Environment.getDiscordAlertWeeklyWebhookUrl(),
+            alertMonthlyWebhookUrl: Environment.getDiscordAlertMonthlyWebhookUrl(),
+            reportDailyWebhookUrl: Environment.getDiscordReportDailyWebhookUrl(),
+            reportWeeklyWebhookUrl: Environment.getDiscordReportWeeklyWebhookUrl(),
+            reportMonthlyWebhookUrl: Environment.getDiscordReportMonthlyWebhookUrl(),
+        });
+
+        const reportProcessingService = new ReportProcessingService(discordNotifier, reportUseCase);
+        const dataExplorerService = new FirestoreDataExplorerService(firestoreService);
+        const recalculationUseCase = new ReportRecalculationUseCase(
+            dataExplorerService,
+            reportProcessingService
+        );
+
+        // 再集計実行
+        const request = {
+            startDate,
+            endDate,
+            reportTypes,
+            executedBy: options.executor,
+            dryRun: options.dryRun
+        };
+
+        console.log('⏳ 処理を開始します...');
+        const startTime = Date.now();
+
+        const result = await recalculationUseCase.execute(request);
+
+        const duration = Date.now() - startTime;
+
+        console.log('');
+        console.log('✅ 処理が完了しました');
+        console.log(`⏱️  処理時間: ${duration}ms`);
+        console.log(`📈 結果: ${result.success ? '成功' : '失敗'}`);
+        console.log(`💬 メッセージ: ${result.message}`);
+
+        if (result.data) {
+            const data = result.data;
+            console.log('');
+            console.log('📊 処理結果詳細:');
+            console.log(`  💳 処理されたカード利用データ: ${data.totalCardUsageProcessed}件`);
+
+            if (data.reportsCreated) {
+                console.log(`  📅 作成されたレポート:`);
+                console.log(`    Daily: ${data.reportsCreated.daily}`);
+                console.log(`    Weekly: ${data.reportsCreated.weekly}`);
+                console.log(`    Monthly: ${data.reportsCreated.monthly}`);
+            }
+
+            if (data.errors && data.errors.length > 0) {
+                console.log(`  ❌ エラー: ${data.errors.length}件`);
+                data.errors.slice(0, 5).forEach((error: any, index: number) => {
+                    console.log(`    ${index + 1}. ${error.documentPath}: ${error.message}`);
+                });
+                if (data.errors.length > 5) {
+                    console.log(`    ... 他 ${data.errors.length - 5}件`);
+                }
+            }
         }
 
-        // 再計算実行
-        const results = await recalculator.recalculateReports(reports);
+        process.exit(result.success ? 0 : 1);
 
-        // 変更の表示と確認
-        const updatedResults = await recalculator.displayAndConfirmChanges(results);
-
-        // 結果サマリー表示
-        recalculator.displayRecalculationSummary(updatedResults);
-
-        console.log('✨ レポートの再計算が完了しました');
-        process.exit(0);
     } catch (error) {
-        console.error('❌ バッチ処理中にエラーが発生しました', error);
+        console.error('❌ 予期しないエラーが発生しました:', error);
         process.exit(1);
     }
 }
 
 // スクリプト実行
-main();
+if (require.main === module) {
+    main().catch((error) => {
+        console.error('❌ スクリプト実行エラー:', error);
+        process.exit(1);
+    });
+}

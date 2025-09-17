@@ -46,6 +46,27 @@ export const dailyReportSchedule = functions.scheduler
     });
 
 /**
+ * 毎日日本時間深夜3時に実行される関数
+ * レポートデータの再集計を行い、データの整合性を保つ
+ */
+export const reportRecalculationSchedule = functions.scheduler
+    .onSchedule({
+        schedule: '0 3 * * *',
+        timeZone: 'Asia/Tokyo',
+        region: 'asia-northeast1',
+    }, async (context) => {
+        // イベントハンドラーファクトリーから適切なハンドラーを取得
+        const factory = EventHandlerFactory.getInstance();
+        const handler = factory.createReportRecalculationScheduleHandler();
+
+        // ハンドラーでイベントを処理
+        await handler.handle(context);
+
+        // Firebase Functions のスケジューラーは戻り値を期待しないため、明示的にvoidを返す
+        return;
+    });
+
+/**
  * HTTP API Functions
  * 各種処理をHTTP経由で実行するためのエンドポイント
  */
