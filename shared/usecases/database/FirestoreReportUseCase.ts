@@ -243,10 +243,10 @@ export class FirestoreReportUseCase {
     @ErrorHandler.errorDecorator('ReportUseCase', {
         defaultMessage: '週次レポートの更新に失敗しました'
     })
-    async updateWeeklyReport(reportData: Partial<WeeklyReport>, year: string, month: string, day: string): Promise<string> {
-        logger.info(`週次レポート更新: ${year}年${month}月${day}日`, this.serviceContext);
+    async updateWeeklyReport(reportData: Partial<WeeklyReport>, year: string, month: string, term: string): Promise<string> {
+        logger.info(`週次レポート更新: ${year}年${month}月 第${term}週`, this.serviceContext);
 
-        const path = await this.reportRepository.updateWeeklyReport(reportData, year, month, day);
+        const path = await this.reportRepository.updateWeeklyReport(reportData, year, month, term);
         logger.info(`週次レポートを更新しました: ${path}`, this.serviceContext);
 
         return path;

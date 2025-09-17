@@ -279,7 +279,7 @@ describe('FirestoreReportRepository', () => {
         test('正常系: 週次レポートが正常に更新されること', async () => {
             const partialReport = { hasNotifiedLevel1: true };
 
-            const result = await repository.updateWeeklyReport(partialReport, '2024', '06', '15');
+            const result = await repository.updateWeeklyReport(partialReport, '2024', '06', '3');
 
             expect(mockFirestoreService.updateDocument).toHaveBeenCalledWith(
                 testPathInfo.weeklyReportPath,

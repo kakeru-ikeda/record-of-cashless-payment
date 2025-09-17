@@ -231,17 +231,18 @@ export class FirestoreReportRepository implements IReportCrudRepository {
     @ErrorHandler.errorDecorator('FirestoreReportRepository', {
         defaultMessage: '週次レポートの更新に失敗しました'
     })
-    async updateWeeklyReport(report: Partial<WeeklyReport>, year: string, month: string, day: string): Promise<string> {
+    async updateWeeklyReport(report: Partial<WeeklyReport>, year: string, month: string, term: string): Promise<string> {
         await this.initialize();
 
-        const documentPath = FirestorePathUtil.getWeeklyReportPath(year, month, day);
+        // パス情報を取得（実際の日付を使用）
+        const weeklyReportPath = `reports/weekly/${year}-${month.padStart(2, '0')}/term${term}`;
 
-        logger.info(`週次レポート更新: ${documentPath}`, this.serviceContext);
+        logger.info(`週次レポート更新: ${weeklyReportPath}`, this.serviceContext);
 
-        await this.firestoreService.updateDocument(documentPath, report);
+        await this.firestoreService.updateDocument(weeklyReportPath, report);
 
-        logger.info(`週次レポートを更新しました: ${documentPath}`, this.serviceContext);
-        return documentPath;
+        logger.info(`週次レポートを更新しました: ${weeklyReportPath}`, this.serviceContext);
+        return weeklyReportPath;
     }
 
     /**
