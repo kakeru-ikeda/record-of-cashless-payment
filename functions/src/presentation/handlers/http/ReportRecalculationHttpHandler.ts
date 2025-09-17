@@ -26,13 +26,13 @@ export class ReportRecalculationHttpHandler extends BaseHttpHandler {
             endDate,
             reportTypes = ['daily', 'weekly', 'monthly'],
             executedBy = 'http-api',
-            dryRun = false
+            dryRun = false,
         } = req.body;
 
         // バリデーション
         if (!startDate || !endDate) {
             const errorResponse = ResponseHelper.validationError('開始日と終了日が必要です', {
-                error: 'startDate and endDate are required'
+                error: 'startDate and endDate are required',
             });
             res.status(errorResponse.status).json(errorResponse);
             return;
@@ -44,7 +44,7 @@ export class ReportRecalculationHttpHandler extends BaseHttpHandler {
         try {
             parsedStartDate = new Date(startDate);
             parsedEndDate = new Date(endDate);
-            
+
             if (isNaN(parsedStartDate.getTime()) || isNaN(parsedEndDate.getTime())) {
                 throw new Error('無効な日付形式');
             }
@@ -61,7 +61,7 @@ export class ReportRecalculationHttpHandler extends BaseHttpHandler {
         } catch (error) {
             const errorResponse = ResponseHelper.validationError('日付の形式が正しくありません', {
                 error: error instanceof Error ? error.message : String(error),
-                example: '2025-01-01'
+                example: '2025-01-01',
             });
             res.status(errorResponse.status).json(errorResponse);
             return;
@@ -73,7 +73,7 @@ export class ReportRecalculationHttpHandler extends BaseHttpHandler {
         if (invalidTypes.length > 0) {
             const errorResponse = ResponseHelper.validationError('無効なレポートタイプが含まれています', {
                 invalidTypes,
-                validTypes: validReportTypes
+                validTypes: validReportTypes,
             });
             res.status(errorResponse.status).json(errorResponse);
             return;
@@ -84,7 +84,7 @@ export class ReportRecalculationHttpHandler extends BaseHttpHandler {
             endDate: parsedEndDate,
             reportTypes,
             executedBy,
-            dryRun
+            dryRun,
         };
 
         logger.info(`HTTP経由でレポート再集計を実行: ${startDate} - ${endDate}`, this.handlerName);

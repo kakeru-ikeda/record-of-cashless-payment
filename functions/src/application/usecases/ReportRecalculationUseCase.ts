@@ -1,10 +1,10 @@
 import { FirestoreDataExplorerService } from '../../infrastructure/services/FirestoreDataExplorerService';
 import { ReportProcessingService } from '../services/ReportProcessingService';
-import { 
-    ReportRecalculationRequest, 
-    ReportRecalculationResult, 
+import {
+    ReportRecalculationRequest,
+    ReportRecalculationResult,
     ReportRecalculationError,
-    CardUsageDocument 
+    CardUsageDocument,
 } from '../../domain/entities/ReportRecalculation';
 import { logger } from '../../../../shared/infrastructure/logging/Logger';
 import { AppError, ErrorType } from '../../../../shared/errors/AppError';
@@ -38,10 +38,11 @@ export class ReportRecalculationUseCase {
             errors: [],
             success: false,
             executedBy: request.executedBy,
-            dryRun: request.dryRun || false
+            dryRun: request.dryRun || false,
         };
 
         try {
+            /* eslint-disable-next-line */
             logger.info(`レポート再集計開始: ${request.startDate.toISOString()} - ${request.endDate.toISOString()}`, this.serviceContext);
             logger.info(`対象レポートタイプ: ${request.reportTypes.join(', ')}`, this.serviceContext);
             logger.info(`ドライラン: ${result.dryRun}`, this.serviceContext);
@@ -59,7 +60,7 @@ export class ReportRecalculationUseCase {
                 logger.warn('処理対象のカード利用データが見つかりませんでした', this.serviceContext);
                 result.endTime = new Date();
                 result.success = true;
-                
+
                 return ResponseHelper.success('処理対象のデータが見つかりませんでした', result);
             }
 
@@ -74,7 +75,8 @@ export class ReportRecalculationUseCase {
 
             for (let i = 0; i < cardUsageDocuments.length; i += batchSize) {
                 const batch = cardUsageDocuments.slice(i, i + batchSize);
-                
+
+                /* eslint-disable-next-line */
                 logger.info(`バッチ処理 ${Math.floor(i / batchSize) + 1}/${Math.ceil(cardUsageDocuments.length / batchSize)}: ${batch.length}件`, this.serviceContext);
 
                 for (const cardUsage of batch) {
@@ -85,7 +87,7 @@ export class ReportRecalculationUseCase {
                         const errorInfo: ReportRecalculationError = {
                             documentPath: cardUsage.path,
                             message: error instanceof Error ? error.message : String(error),
-                            details: error instanceof AppError ? error.details : undefined
+                            details: error instanceof AppError ? error.details : undefined,
                         };
                         result.errors.push(errorInfo);
                         logger.error(error as Error, this.serviceContext);
@@ -94,17 +96,19 @@ export class ReportRecalculationUseCase {
 
                 // バッチ間での短い待機
                 if (i + batchSize < cardUsageDocuments.length) {
-                    await new Promise(resolve => setTimeout(resolve, 100));
+                    await new Promise((resolve) => setTimeout(resolve, 100));
                 }
             }
 
             result.endTime = new Date();
-            result.success = result.errors.length === 0 || result.errors.length < cardUsageDocuments.length * 0.1; // 10%未満のエラー率なら成功
+            result.success = result.errors.length === 0 || result.errors.length < cardUsageDocuments.length * 0.1;
 
             const duration = result.endTime.getTime() - result.startTime.getTime();
             logger.info(`レポート再集計完了: ${duration}ms`, this.serviceContext);
             logger.info(`処理済み: ${processedCount}件, エラー: ${result.errors.length}件`, this.serviceContext);
+            /* eslint-disable-next-line */
             logger.info(`作成レポート - Daily: ${result.reportsCreated.daily}, Weekly: ${result.reportsCreated.weekly}, Monthly: ${result.reportsCreated.monthly}`, this.serviceContext);
+            /* eslint-disable-next-line */
             logger.info(`更新レポート - Daily: ${result.reportsUpdated.daily}, Weekly: ${result.reportsUpdated.weekly}, Monthly: ${result.reportsUpdated.monthly}`, this.serviceContext);
 
             if (result.success) {
@@ -112,18 +116,17 @@ export class ReportRecalculationUseCase {
             } else {
                 return ResponseHelper.createResponse(500, false, 'レポート再集計中に多数のエラーが発生しました', result);
             }
-
         } catch (error) {
             result.endTime = new Date();
             result.success = false;
-            
+
             const appError = new AppError(
                 'レポート再集計中に予期しないエラーが発生しました',
                 ErrorType.GENERAL,
                 request,
                 error instanceof Error ? error : undefined
             );
-            
+
             logger.error(appError, this.serviceContext);
             return ResponseHelper.createResponse(500, false, appError.message, result);
         }
@@ -133,16 +136,16 @@ export class ReportRecalculationUseCase {
      * ドライラン処理
      */
     private async handleDryRun(
-        cardUsageDocuments: CardUsageDocument[], 
-        request: ReportRecalculationRequest, 
+        cardUsageDocuments: CardUsageDocument[],
+        request: ReportRecalculationRequest,
         result: ReportRecalculationResult
     ): Promise<Response> {
         logger.info('=== ドライラン結果 ===', this.serviceContext);
-        
+
         // 日付別の統計
         const dateStats = new Map<string, { count: number; totalAmount: number }>();
-        
-        cardUsageDocuments.forEach(doc => {
+
+        cardUsageDocuments.forEach((doc) => {
             const dateKey = `${doc.params.year}-${doc.params.month}-${doc.params.day}`;
             const existing = dateStats.get(dateKey) || { count: 0, totalAmount: 0 };
             existing.count++;
@@ -154,12 +157,12 @@ export class ReportRecalculationUseCase {
         const expectedProcessing = {
             daily: request.reportTypes.includes('daily') ? dateStats.size : 0,
             weekly: 0,
-            monthly: 0
+            monthly: 0,
         };
 
         if (request.reportTypes.includes('weekly')) {
             const weekStats = new Set<string>();
-            cardUsageDocuments.forEach(doc => {
+            cardUsageDocuments.forEach((doc) => {
                 weekStats.add(`${doc.params.year}-${doc.params.month}-${doc.params.term}`);
             });
             expectedProcessing.weekly = weekStats.size;
@@ -167,19 +170,20 @@ export class ReportRecalculationUseCase {
 
         if (request.reportTypes.includes('monthly')) {
             const monthStats = new Set<string>();
-            cardUsageDocuments.forEach(doc => {
+            cardUsageDocuments.forEach((doc) => {
                 monthStats.add(`${doc.params.year}-${doc.params.month}`);
             });
             expectedProcessing.monthly = monthStats.size;
         }
 
+        /* eslint-disable-next-line */
         logger.info(`処理予定 - Daily: ${expectedProcessing.daily}, Weekly: ${expectedProcessing.weekly}, Monthly: ${expectedProcessing.monthly}`, this.serviceContext);
-        
+
         // 日付別詳細（上位10件）
         const sortedDates = Array.from(dateStats.entries())
             .sort(([a], [b]) => a.localeCompare(b))
             .slice(0, 10);
-            
+
         sortedDates.forEach(([date, stats]) => {
             logger.info(`${date}: ${stats.count}件, 合計金額: ${stats.totalAmount}円`, this.serviceContext);
         });
@@ -194,7 +198,7 @@ export class ReportRecalculationUseCase {
         return ResponseHelper.success('ドライラン完了', {
             ...result,
             expectedProcessing,
-            dateStats: Object.fromEntries(Array.from(dateStats.entries()))
+            dateStats: Object.fromEntries(Array.from(dateStats.entries())),
         });
     }
 
@@ -202,14 +206,14 @@ export class ReportRecalculationUseCase {
      * 単一のカード利用ドキュメントを処理
      */
     private async processCardUsageDocument(
-        cardUsage: CardUsageDocument, 
-        request: ReportRecalculationRequest, 
+        cardUsage: CardUsageDocument,
+        request: ReportRecalculationRequest,
         result: ReportRecalculationResult
     ): Promise<void> {
         // Firestoreドキュメントスナップショットを模擬
         const mockDocument = {
             ref: { path: cardUsage.path },
-            data: () => cardUsage.data
+            data: () => cardUsage.data,
         } as any;
 
         const data = { amount: cardUsage.data.amount };
@@ -223,12 +227,12 @@ export class ReportRecalculationUseCase {
                         await this.reportProcessingService.processDailyReport(mockDocument, data, params);
                         result.reportsCreated.daily++; // 実際は作成/更新を区別する必要があるが、簡略化
                         break;
-                    
+
                     case 'weekly':
                         await this.reportProcessingService.processWeeklyReport(mockDocument, data, params);
                         result.reportsCreated.weekly++;
                         break;
-                    
+
                     case 'monthly':
                         await this.reportProcessingService.processMonthlyReport(mockDocument, data, params);
                         result.reportsCreated.monthly++;

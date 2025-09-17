@@ -38,7 +38,7 @@ export class ReportRecalculationScheduleHandler extends BaseEventHandler<Schedul
             endDate,
             reportTypes: ['daily', 'weekly', 'monthly'],
             executedBy: 'scheduled-task',
-            dryRun: false
+            dryRun: false,
         };
 
         logger.info(`定期再集計実行: ${startDate.toISOString()} - ${endDate.toISOString()}`, this.handlerName);
