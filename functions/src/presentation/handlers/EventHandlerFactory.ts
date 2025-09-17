@@ -1,11 +1,15 @@
 import { DependencyContainer } from '../../infrastructure/config/DependencyContainer';
 import { ProcessFirestoreDocumentUseCase } from '../../application/usecases/ProcessFirestoreDocumentUseCase';
 import { ScheduleReportDeliveryUseCase } from '../../application/usecases/ScheduleReportDeliveryUseCase';
+import { ReportRecalculationUseCase } from '../../application/usecases/ReportRecalculationUseCase';
 import { ReportSchedulingService } from '../../application/services/ReportSchedulingService';
+import { FirestoreDataExplorerService } from '../../infrastructure/services/FirestoreDataExplorerService';
 import { FirestoreDocumentCreatedHandler } from './FirestoreDocumentCreatedHandler';
 import { DailyReportScheduleHandler } from './DailyReportScheduleHandler';
+import { ReportRecalculationScheduleHandler } from './ReportRecalculationScheduleHandler';
 import { ProcessFirestoreDocumentHttpHandler } from './http/ProcessFirestoreDocumentHttpHandler';
 import { DailyReportScheduleHttpHandler } from './http/DailyReportScheduleHttpHandler';
+import { ReportRecalculationHttpHandler } from './http/ReportRecalculationHttpHandler';
 import { SendWeeklyReportHttpHandler } from './http/SendWeeklyReportHttpHandler';
 
 /**
@@ -83,5 +87,33 @@ export class EventHandlerFactory {
             this.container.notifyReportUseCase
         );
         return new SendWeeklyReportHttpHandler(reportSchedulingService);
+    }
+
+    /**
+     * レポート再集計HTTPハンドラーを作成
+     */
+    createReportRecalculationHttpHandler(): ReportRecalculationHttpHandler {
+        const dataExplorerService = new FirestoreDataExplorerService(
+            this.container.firestoreService
+        );
+        const recalculationUseCase = new ReportRecalculationUseCase(
+            dataExplorerService,
+            this.container.reportProcessingService
+        );
+        return new ReportRecalculationHttpHandler(recalculationUseCase);
+    }
+
+    /**
+     * レポート再集計スケジュールハンドラーを作成
+     */
+    createReportRecalculationScheduleHandler(): ReportRecalculationScheduleHandler {
+        const dataExplorerService = new FirestoreDataExplorerService(
+            this.container.firestoreService
+        );
+        const recalculationUseCase = new ReportRecalculationUseCase(
+            dataExplorerService,
+            this.container.reportProcessingService
+        );
+        return new ReportRecalculationScheduleHandler(recalculationUseCase);
     }
 }

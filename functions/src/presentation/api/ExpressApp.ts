@@ -44,6 +44,22 @@ export function createExpressApp(): express.Express {
     });
 
     /**
+     * POST /recalculate-reports
+     * レポート再集計処理をHTTP経由で実行
+     * リクエストボディ: {
+     *   startDate: string,
+     *   endDate: string,
+     *   reportTypes?: ['daily', 'weekly', 'monthly'],
+     *   executedBy?: string,
+     *   dryRun?: boolean
+     * }
+     */
+    app.post('/recalculate-reports', async (req: Request, res: Response) => {
+        const handler = factory.createReportRecalculationHttpHandler();
+        await handler.handle({ req, res });
+    });
+
+    /**
      * GET /health
      * ヘルスチェック用エンドポイント
      */

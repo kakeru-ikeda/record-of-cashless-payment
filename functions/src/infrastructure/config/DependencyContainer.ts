@@ -6,6 +6,7 @@ import { FirestoreReportUseCase } from '../../../../shared/usecases/database/Fir
 import { NotifyReportUseCase } from '../../../../shared/usecases/notification/NotifyReportUseCase';
 import { Environment } from '../../../../shared/infrastructure/config/Environment';
 import { ReportProcessingService } from '../../application/services/ReportProcessingService';
+import { FirestoreService } from '../../../../shared/infrastructure/database/FirestoreService';
 
 /**
  * 依存関係コンテナ
@@ -18,6 +19,7 @@ export class DependencyContainer {
     private _discordNotifier?: IDiscordNotifier;
     private _reportUseCase?: FirestoreReportUseCase;
     private _notifyReportUseCase?: NotifyReportUseCase;
+    private _firestoreService?: FirestoreService;
 
     /**
      * プライベートコンストラクタ（シングルトンパターンのため）
@@ -98,5 +100,16 @@ export class DependencyContainer {
             this.discordNotifier,
             this.reportUseCase
         );
+    }
+
+    /**
+     * Firestoreサービスを取得
+     * @returns FirestoreService
+     */
+    public get firestoreService(): FirestoreService {
+        if (!this._firestoreService) {
+            this._firestoreService = FirestoreService.getInstance();
+        }
+        return this._firestoreService;
     }
 }
