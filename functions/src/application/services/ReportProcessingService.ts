@@ -138,7 +138,7 @@ export class ReportProcessingService {
                 'WEEKLY',
                 updatedReport,
                 '', // パスは不要（UseCaseで管理）
-                { weekNumber: pathInfo.weekNumber, year, month }
+                { weekNumber: pathInfo.weekNumber, year, month, currentAmount: data.amount }
             );
 
             return updatedReport;
@@ -161,7 +161,7 @@ export class ReportProcessingService {
                 'WEEKLY',
                 weeklyReport,
                 '',
-                { weekNumber: pathInfo.weekNumber, year, month }
+                { weekNumber: pathInfo.weekNumber, year, month, currentAmount: data.amount }
             );
 
             return weeklyReport;
@@ -248,7 +248,7 @@ export class ReportProcessingService {
         reportType: ReportType,
         report: T,
         reportPath: string, // 現在は使用しない（UseCaseで管理）
-        context: { year: string; month: string; weekNumber?: number }
+        context: { year: string; month: string; weekNumber?: number; currentAmount?: number }
     ): Promise<void> {
         let updated = false;
         let alertLevel: ThresholdLevel | null = null;
@@ -284,7 +284,7 @@ export class ReportProcessingService {
 
             if (alertLevel !== null) {
                 // アラート通知を送信
-                await this.sendAlert(reportType, report, alertLevel, context, thresholds);
+                await this.sendAlert(reportType, report, alertLevel, context, thresholds, context.currentAmount);
             }
 
             // 通知フラグ更新
@@ -323,19 +323,44 @@ export class ReportProcessingService {
         report: T,
         alertLevel: ThresholdLevel,
         context: { year: string; month: string; weekNumber?: number },
-        thresholds: ThresholdLevels
+        thresholds: ThresholdLevels,
+        currentAmount?: number
     ): Promise<void> {
         const thresholdValue = alertLevel === 1 ? thresholds.level1 :
             alertLevel === 2 ? thresholds.level2 : thresholds.level3;
 
         if (reportType === 'WEEKLY' && 'termStartDate' in report && context.weekNumber) {
+            // 当月累計を取得（今回の利用額を含む最新の金額）
+            let monthToDateAmount: number | undefined;
+            try {
+                const monthlyReport = await this.reportUseCase.getMonthlyReport(
+                    context.year,
+                    context.month.padStart(2, '0')
+                );
+
+                // マンスリーレポートは、ウィークリーアラート発火時点ではまだ今回の利用額が反映されていない
+                // そのため、現在のマンスリー累計に今回の利用額を加算して、正確な当月累計を計算
+                if (currentAmount !== undefined) {
+                    monthToDateAmount = monthlyReport.totalAmount + currentAmount;
+                } else {
+                    // currentAmountが渡されない場合（後方互換性のため）
+                    monthToDateAmount = monthlyReport.totalAmount;
+                }
+            } catch (error) {
+                logger.warn(
+                    '当月累計の取得に失敗しました。累計情報なしでアラートを送信します',
+                    'Report Processing Service'
+                );
+            }
+
             const alertNotification = ReportNotificationMapper.toWeeklyAlertNotification(
                 report,
                 alertLevel,
                 context.year,
                 context.month,
                 context.weekNumber,
-                thresholdValue
+                thresholdValue,
+                monthToDateAmount
             );
 
             await this.discordNotifier.notifyWeeklyReport(alertNotification);

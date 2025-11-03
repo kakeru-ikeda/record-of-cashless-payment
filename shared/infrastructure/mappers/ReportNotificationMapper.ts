@@ -21,18 +21,21 @@ export class ReportNotificationMapper {
      * @param entity ドメインエンティティ
      * @param title 通知タイトル
      * @param additionalInfo 追加情報（任意）
+     * @param monthToDateAmount 当月累計金額（任意）
      * @returns 通知用DTO
      */
     static toDailyNotification(
         entity: DailyReport,
         title: string,
-        additionalInfo?: string
+        additionalInfo?: string,
+        monthToDateAmount?: number
     ): DailyReportNotificationDTO {
         return {
             title,
             date: DateUtil.formatDate(entity.date.toDate(), 'yyyy/MM/dd'),
             totalAmount: entity.totalAmount,
             totalCount: entity.totalCount,
+            monthToDateAmount,
             additionalInfo
         };
     }
@@ -43,13 +46,15 @@ export class ReportNotificationMapper {
      * @param title 通知タイトル
      * @param alertLevel アラートレベル
      * @param additionalInfo 追加情報（任意）
+     * @param monthToDateAmount 当月累計金額（任意）
      * @returns 通知用DTO
      */
     static toWeeklyNotification(
         entity: WeeklyReport,
         title: string,
         alertLevel: NotificationAlertLevel = 0,
-        additionalInfo?: string
+        additionalInfo?: string,
+        monthToDateAmount?: number
     ): WeeklyReportNotificationDTO {
         const period = DateUtil.formatDateRange(
             entity.termStartDate.toDate(),
@@ -63,6 +68,7 @@ export class ReportNotificationMapper {
             totalAmount: entity.totalAmount,
             totalCount: entity.totalCount,
             alertLevel,
+            monthToDateAmount,
             additionalInfo
         };
     }
@@ -105,6 +111,7 @@ export class ReportNotificationMapper {
      * @param month 月
      * @param weekNumber 週番号
      * @param thresholdValue しきい値
+     * @param monthToDateAmount 当月累計金額（オプショナル）
      * @returns 通知用DTO
      */
     static toWeeklyAlertNotification(
@@ -113,12 +120,17 @@ export class ReportNotificationMapper {
         year: string,
         month: string,
         weekNumber: number,
-        thresholdValue: number
+        thresholdValue: number,
+        monthToDateAmount?: number
     ): WeeklyReportNotificationDTO {
         const title = `週次支出アラート (レベル${alertLevel}) - ${year}年${month}月 第${weekNumber}週`;
-        const additionalInfo = `しきい値 ${thresholdValue.toLocaleString()}円 を超過しました`;
+        let additionalInfo = `しきい値 ${thresholdValue.toLocaleString()}円 を超過しました`;
+        
+        if (monthToDateAmount !== undefined) {
+            additionalInfo += `\n当月累計: ${monthToDateAmount.toLocaleString()}円`;
+        }
 
-        return this.toWeeklyNotification(entity, title, alertLevel, additionalInfo);
+        return this.toWeeklyNotification(entity, title, alertLevel, additionalInfo, monthToDateAmount);
     }
 
     /**
@@ -129,6 +141,7 @@ export class ReportNotificationMapper {
      * @param month 月
      * @param thresholdValue しきい値
      * @returns 通知用DTO
+     * @note マンスリーレポート自体が月の累計なので、monthToDateAmountは不要
      */
     static toMonthlyAlertNotification(
         entity: MonthlyReport,
@@ -149,17 +162,22 @@ export class ReportNotificationMapper {
      * @param year 年
      * @param month 月
      * @param day 日
+     * @param monthToDateAmount 当月累計金額（オプショナル）
      * @returns 通知用DTO
      */
     static toDailyScheduledNotification(
         entity: DailyReport,
         year: string,
         month: string,
-        day: string
+        day: string,
+        monthToDateAmount?: number
     ): DailyReportNotificationDTO {
         const title = `${year}年${month}月${day}日 デイリーレポート`;
+        const additionalInfo = monthToDateAmount !== undefined
+            ? `当月累計: ${monthToDateAmount.toLocaleString()}円`
+            : undefined;
 
-        return this.toDailyNotification(entity, title);
+        return this.toDailyNotification(entity, title, additionalInfo, monthToDateAmount);
     }
 
     /**
@@ -168,17 +186,22 @@ export class ReportNotificationMapper {
      * @param year 年
      * @param month 月
      * @param weekNumber 週番号
+     * @param monthToDateAmount 当月累計金額（オプショナル）
      * @returns 通知用DTO
      */
     static toWeeklyScheduledNotification(
         entity: WeeklyReport,
         year: string,
         month: string,
-        weekNumber: number
+        weekNumber: number,
+        monthToDateAmount?: number
     ): WeeklyReportNotificationDTO {
         const title = `${year}年${month}月 第${weekNumber}週 ウィークリーレポート`;
+        const additionalInfo = monthToDateAmount !== undefined
+            ? `当月累計: ${monthToDateAmount.toLocaleString()}円`
+            : undefined;
 
-        return this.toWeeklyNotification(entity, title);
+        return this.toWeeklyNotification(entity, title, 0, additionalInfo, monthToDateAmount);
     }
 
     /**

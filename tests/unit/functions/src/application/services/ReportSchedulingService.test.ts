@@ -101,7 +101,12 @@ describe('ReportSchedulingService', () => {
                 totalCount: 3,
                 hasNotified: false,
             } as DailyReport;
+            const monthlyReport = {
+                totalAmount: 45000,
+                totalCount: 30,
+            } as MonthlyReport;
             mockReportUseCase.getDailyReport.mockResolvedValue(dailyReport);
+            mockReportUseCase.getMonthlyReport.mockResolvedValue(monthlyReport);
             mockReportUseCase.updateDailyReport.mockResolvedValue('path/to/report');
             mockNotifyReportUseCase.notifyDailyReport.mockResolvedValue(undefined);
 
@@ -110,6 +115,7 @@ describe('ReportSchedulingService', () => {
 
             // Then
             expect(mockReportUseCase.getDailyReport).toHaveBeenCalledWith('2024', '01', '15');
+            expect(mockReportUseCase.getMonthlyReport).toHaveBeenCalledWith('2024', '01');
             expect(mockNotifyReportUseCase.notifyDailyReport).toHaveBeenCalled();
             expect(mockReportUseCase.updateDailyReport).toHaveBeenCalled();
         });
@@ -154,7 +160,12 @@ describe('ReportSchedulingService', () => {
                 totalCount: 10,
                 hasReportSent: false,
             } as WeeklyReport;
+            const monthlyReport = {
+                totalAmount: 45000,
+                totalCount: 30,
+            } as MonthlyReport;
             mockReportUseCase.getWeeklyReport.mockResolvedValue(weeklyReport);
+            mockReportUseCase.getMonthlyReport.mockResolvedValue(monthlyReport);
             mockReportUseCase.updateWeeklyReport.mockResolvedValue('path/to/weekly');
             mockNotifyReportUseCase.notifyWeeklyReport.mockResolvedValue(undefined);
 
@@ -163,6 +174,7 @@ describe('ReportSchedulingService', () => {
 
             // Then
             expect(mockReportUseCase.getWeeklyReport).toHaveBeenCalledWith('2024', '01', '3');
+            expect(mockReportUseCase.getMonthlyReport).toHaveBeenCalledWith('2024', '01');
             expect(mockNotifyReportUseCase.notifyWeeklyReport).toHaveBeenCalled();
             expect(mockReportUseCase.updateWeeklyReport).toHaveBeenCalled();
         });
