@@ -109,7 +109,24 @@ export class DependencyContainer {
     public get firestoreService(): FirestoreService {
         if (!this._firestoreService) {
             this._firestoreService = FirestoreService.getInstance();
+            // Cloud Functions環境での初期化を確実に行う
+            if (Environment.isCloudFunctions()) {
+                this._firestoreService.setCloudFunctions(true);
+            }
         }
         return this._firestoreService;
+    }
+
+    /**
+     * 初期化メソッド
+     * Cloud Functions起動時にFirestoreサービスを初期化
+     */
+    public async initialize(): Promise<void> {
+        try {
+            await this.firestoreService.initialize();
+        } catch (error) {
+            console.error('DependencyContainer初期化エラー:', error);
+            throw error;
+        }
     }
 }

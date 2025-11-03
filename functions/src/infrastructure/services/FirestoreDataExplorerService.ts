@@ -27,8 +27,14 @@ export class FirestoreDataExplorerService {
         const errors: string[] = [];
 
         try {
-            // まず、detailsコレクションの構造を確認
-            await this.debugFirestoreStructure();
+            // Cloud Functions環境では、デバッグ調査をスキップ（ログが冗長になるため）
+            const isCloudFunctions = process.env.FUNCTIONS_EMULATOR === 'true' ||
+                process.env.FUNCTION_TARGET != null ||
+                process.env.K_SERVICE != null;
+            if (!isCloudFunctions) {
+                // まず、detailsコレクションの構造を確認
+                await this.debugFirestoreStructure();
+            }
 
             // 年月のリストを生成
             const yearMonthPairs = this.generateYearMonthPairs(startDate, endDate);

@@ -55,7 +55,7 @@ export function createExpressApp(): express.Express {
      * }
      */
     app.post('/recalculate-reports', async (req: Request, res: Response) => {
-        const handler = factory.createReportRecalculationHttpHandler();
+        const handler = await factory.createReportRecalculationHttpHandler();
         await handler.handle({ req, res });
     });
 
