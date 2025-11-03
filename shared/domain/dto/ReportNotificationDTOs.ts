@@ -18,6 +18,9 @@ export interface WeeklyReportNotificationDTO {
     // アラートレベル（0: 通常、1: 1000円超過、2: 5000円超過、3: 10000円超過）
     alertLevel: number;
 
+    // 当月累計金額（オプショナル）
+    monthToDateAmount?: number;
+
     // 追加情報（任意）
     additionalInfo?: string;
 }
@@ -37,6 +40,9 @@ export interface DailyReportNotificationDTO {
 
     // 利用件数
     totalCount: number;
+
+    // 当月累計金額（オプショナル）
+    monthToDateAmount?: number;
 
     // 追加情報（任意）
     additionalInfo?: string;

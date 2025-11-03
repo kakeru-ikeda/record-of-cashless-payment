@@ -39,18 +39,29 @@ export class ReportSchedulingService {
 
             // レポートが既に送信済みでない場合のみ送信
             if (!dailyReport.hasNotified) {
+                // 当月累計を取得
+                let monthToDateAmount: number | undefined;
+                try {
+                    const monthlyReport = await this.reportUseCase.getMonthlyReport(
+                        yesterdayInfo.year.toString(),
+                        yesterdayInfo.month.toString().padStart(2, '0')
+                    );
+                    monthToDateAmount = monthlyReport.totalAmount;
+                } catch (error) {
+                    logger.warn(
+                        '当月累計の取得に失敗しました。累計情報なしで通知します',
+                        'Report Scheduling Service'
+                    );
+                }
+
                 const dailyNotificationDTO = ReportNotificationMapper
                     .toDailyScheduledNotification(
                         dailyReport,
                         yesterdayInfo.year.toString(),
                         yesterdayInfo.month.toString(),
-                        yesterdayInfo.day.toString()
+                        yesterdayInfo.day.toString(),
+                        monthToDateAmount
                     );
-
-                // 追加情報を設定
-                dailyNotificationDTO.additionalInfo = dailyReport.totalCount > 0
-                    ? `平均支出: ${Math.round(dailyReport.totalAmount / dailyReport.totalCount).toLocaleString()}円/件`
-                    : '利用なし';
 
                 await this.notifyReportUseCase.notifyDailyReport(dailyNotificationDTO);
 
@@ -92,18 +103,29 @@ export class ReportSchedulingService {
 
             // レポートが既に送信済みでない場合のみ送信
             if (!weeklyReport.hasReportSent) {
+                // 当月累計を取得
+                let monthToDateAmount: number | undefined;
+                try {
+                    const monthlyReport = await this.reportUseCase.getMonthlyReport(
+                        yesterdayInfo.year.toString(),
+                        yesterdayInfo.month.toString().padStart(2, '0')
+                    );
+                    monthToDateAmount = monthlyReport.totalAmount;
+                } catch (error) {
+                    logger.warn(
+                        '当月累計の取得に失敗しました。累計情報なしで通知します',
+                        'Report Scheduling Service'
+                    );
+                }
+
                 const weeklyNotificationDTO = ReportNotificationMapper
                     .toWeeklyScheduledNotification(
                         weeklyReport,
                         yesterdayInfo.year.toString(),
                         yesterdayInfo.month.toString(),
-                        yesterdayInfo.term
+                        yesterdayInfo.term,
+                        monthToDateAmount
                     );
-
-                // 追加情報を設定
-                weeklyNotificationDTO.additionalInfo = weeklyReport.totalCount > 0
-                    ? `平均支出: ${Math.round(weeklyReport.totalAmount / weeklyReport.totalCount).toLocaleString()}円/件`
-                    : '利用なし';
 
                 await this.notifyReportUseCase.notifyWeeklyReport(weeklyNotificationDTO);
 
@@ -151,10 +173,7 @@ export class ReportSchedulingService {
                         yesterdayInfo.month.toString()
                     );
 
-                // 追加情報を設定
-                monthlyNotificationDTO.additionalInfo = monthlyReport.totalCount > 0
-                    ? `平均支出: ${Math.round(monthlyReport.totalAmount / monthlyReport.totalCount).toLocaleString()}円/件`
-                    : '利用なし';
+                // マンスリーレポートには累計情報は不要（マンスリー自体が月の累計）
 
                 await this.notifyReportUseCase.notifyMonthlyReport(monthlyNotificationDTO);
 

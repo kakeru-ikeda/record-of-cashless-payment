@@ -73,6 +73,7 @@ describe('ReportNotificationMapper', () => {
                 date: '2025/05/30',
                 totalAmount: 5000,
                 totalCount: 3,
+                monthToDateAmount: undefined,
                 additionalInfo: '追加情報',
             });
 
@@ -109,6 +110,7 @@ describe('ReportNotificationMapper', () => {
                 date: '2025/05/29',
                 totalAmount: 2500,
                 totalCount: 1,
+                monthToDateAmount: undefined,
                 additionalInfo: undefined,
             });
         });
@@ -165,6 +167,7 @@ describe('ReportNotificationMapper', () => {
                 totalAmount: 25000,
                 totalCount: 15,
                 alertLevel: 2,
+                monthToDateAmount: undefined,
                 additionalInfo: 'アラート情報',
             });
 
@@ -212,6 +215,7 @@ describe('ReportNotificationMapper', () => {
                 totalAmount: 12000,
                 totalCount: 8,
                 alertLevel: 0,
+                monthToDateAmount: undefined,
                 additionalInfo: undefined,
             });
         });
@@ -314,7 +318,58 @@ describe('ReportNotificationMapper', () => {
                 totalAmount: 35000,
                 totalCount: 20,
                 alertLevel: 2,
+                monthToDateAmount: undefined,
                 additionalInfo: 'しきい値 30,000円 を超過しました',
+            });
+        });
+
+        it('当月累計が指定された場合、補足情報にしきい値と当月累計の両方が含まれること', () => {
+            // Arrange
+            const startDate = new Date('2025-05-26T00:00:00Z');
+            const endDate = new Date('2025-06-01T23:59:59Z');
+            const mockStartTimestamp = {
+                toDate: () => startDate,
+            } as Timestamp;
+
+            const mockEndTimestamp = {
+                toDate: () => endDate,
+            } as Timestamp;
+
+            const weeklyReport: WeeklyReport = {
+                termStartDate: mockStartTimestamp,
+                termEndDate: mockEndTimestamp,
+                totalAmount: 35000,
+                totalCount: 20,
+                documentIdList: ['daily1', 'daily2'],
+                lastUpdated: mockFieldValue,
+                lastUpdatedBy: 'system',
+                hasNotifiedLevel1: false,
+                hasNotifiedLevel2: false,
+                hasNotifiedLevel3: false,
+            };
+
+            mockDateUtil.formatDateRange.mockReturnValue('2025/05/26 - 2025/06/01');
+
+            // Act
+            const result = ReportNotificationMapper.toWeeklyAlertNotification(
+                weeklyReport,
+                2,
+                '2025',
+                '6',
+                1,
+                30000,
+                75000
+            );
+
+            // Assert
+            expect(result).toEqual({
+                title: '週次支出アラート (レベル2) - 2025年6月 第1週',
+                period: '2025/05/26 - 2025/06/01',
+                totalAmount: 35000,
+                totalCount: 20,
+                alertLevel: 2,
+                monthToDateAmount: 75000,
+                additionalInfo: 'しきい値 30,000円 を超過しました\n当月累計: 75,000円',
             });
         });
     });
@@ -402,7 +457,47 @@ describe('ReportNotificationMapper', () => {
                 date: '2025/05/30',
                 totalAmount: 4500,
                 totalCount: 2,
+                monthToDateAmount: undefined,
                 additionalInfo: undefined,
+            });
+        });
+
+        it('当月累計が指定された場合、補足情報に当月累計が含まれること', () => {
+            // Arrange
+            const testDate = new Date('2025-05-30T00:00:00Z');
+            const mockTimestamp = {
+                toDate: () => testDate,
+            } as Timestamp;
+
+            const dailyReport: DailyReport = {
+                date: mockTimestamp,
+                totalAmount: 4500,
+                totalCount: 2,
+                documentIdList: ['id1', 'id2'],
+                lastUpdated: mockFieldValue,
+                lastUpdatedBy: 'system',
+                hasNotified: false,
+            };
+
+            mockDateUtil.formatDate.mockReturnValue('2025/05/30');
+
+            // Act
+            const result = ReportNotificationMapper.toDailyScheduledNotification(
+                dailyReport,
+                '2025',
+                '5',
+                '30',
+                45000
+            );
+
+            // Assert
+            expect(result).toEqual({
+                title: '2025年5月30日 デイリーレポート',
+                date: '2025/05/30',
+                totalAmount: 4500,
+                totalCount: 2,
+                monthToDateAmount: 45000,
+                additionalInfo: '当月累計: 45,000円',
             });
         });
     });
@@ -450,7 +545,56 @@ describe('ReportNotificationMapper', () => {
                 totalAmount: 18000,
                 totalCount: 12,
                 alertLevel: 0,
+                monthToDateAmount: undefined,
                 additionalInfo: undefined,
+            });
+        });
+
+        it('当月累計が指定された場合、補足情報に当月累計が含まれること', () => {
+            // Arrange
+            const startDate = new Date('2025-05-26T00:00:00Z');
+            const endDate = new Date('2025-06-01T23:59:59Z');
+            const mockStartTimestamp = {
+                toDate: () => startDate,
+            } as Timestamp;
+
+            const mockEndTimestamp = {
+                toDate: () => endDate,
+            } as Timestamp;
+
+            const weeklyReport: WeeklyReport = {
+                termStartDate: mockStartTimestamp,
+                termEndDate: mockEndTimestamp,
+                totalAmount: 18000,
+                totalCount: 12,
+                documentIdList: ['daily1', 'daily2'],
+                lastUpdated: mockFieldValue,
+                lastUpdatedBy: 'system',
+                hasNotifiedLevel1: false,
+                hasNotifiedLevel2: false,
+                hasNotifiedLevel3: false,
+            };
+
+            mockDateUtil.formatDateRange.mockReturnValue('2025/05/26 - 2025/06/01');
+
+            // Act
+            const result = ReportNotificationMapper.toWeeklyScheduledNotification(
+                weeklyReport,
+                '2025',
+                '6',
+                1,
+                65000
+            );
+
+            // Assert
+            expect(result).toEqual({
+                title: '2025年6月 第1週 ウィークリーレポート',
+                period: '2025/05/26 - 2025/06/01',
+                totalAmount: 18000,
+                totalCount: 12,
+                alertLevel: 0,
+                monthToDateAmount: 65000,
+                additionalInfo: '当月累計: 65,000円',
             });
         });
     });
