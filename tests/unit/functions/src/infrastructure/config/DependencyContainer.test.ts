@@ -1,6 +1,7 @@
 import { DependencyContainer } from '../../../../../../functions/src/infrastructure/config/DependencyContainer';
 import { FirestoreService } from '../../../../../../shared/infrastructure/database/FirestoreService';
 import { FirestoreReportRepository } from '../../../../../../shared/infrastructure/database/repositories/FirestoreReportRepository';
+import { FirestoreConfigRepository } from '../../../../../../shared/infrastructure/database/repositories/FirestoreConfigRepository';
 import { DiscordNotifier } from '../../../../../../shared/infrastructure/discord/DiscordNotifier';
 import { FirestoreReportUseCase } from '../../../../../../shared/usecases/database/FirestoreReportUseCase';
 import { NotifyReportUseCase } from '../../../../../../shared/usecases/notification/NotifyReportUseCase';
@@ -10,6 +11,7 @@ import { Environment } from '../../../../../../shared/infrastructure/config/Envi
 // モックの作成
 jest.mock('../../../../../../shared/infrastructure/database/FirestoreService');
 jest.mock('../../../../../../shared/infrastructure/database/repositories/FirestoreReportRepository');
+jest.mock('../../../../../../shared/infrastructure/database/repositories/FirestoreConfigRepository');
 jest.mock('../../../../../../shared/infrastructure/discord/DiscordNotifier');
 jest.mock('../../../../../../shared/usecases/database/FirestoreReportUseCase');
 jest.mock('../../../../../../shared/usecases/notification/NotifyReportUseCase');
@@ -20,6 +22,7 @@ describe('DependencyContainer', () => {
     let container: DependencyContainer;
     let mockFirestoreService: jest.Mocked<FirestoreService>;
     let mockReportRepository: jest.Mocked<FirestoreReportRepository>;
+    let mockConfigRepository: jest.Mocked<FirestoreConfigRepository>;
     let mockDiscordNotifier: jest.Mocked<DiscordNotifier>;
     let mockReportUseCase: jest.Mocked<FirestoreReportUseCase>;
     let mockNotifyReportUseCase: jest.Mocked<NotifyReportUseCase>;
@@ -33,6 +36,7 @@ describe('DependencyContainer', () => {
         } as any;
 
         mockReportRepository = {} as jest.Mocked<FirestoreReportRepository>;
+        mockConfigRepository = {} as jest.Mocked<FirestoreConfigRepository>;
         mockDiscordNotifier = {} as jest.Mocked<DiscordNotifier>;
         mockReportUseCase = {} as jest.Mocked<FirestoreReportUseCase>;
         mockNotifyReportUseCase = {} as jest.Mocked<NotifyReportUseCase>;
@@ -51,6 +55,7 @@ describe('DependencyContainer', () => {
 
         // コンストラクタのモック
         (FirestoreReportRepository as jest.Mock).mockImplementation(() => mockReportRepository);
+        (FirestoreConfigRepository as jest.Mock).mockImplementation(() => mockConfigRepository);
         (DiscordNotifier as jest.Mock).mockImplementation(() => mockDiscordNotifier);
         (FirestoreReportUseCase as jest.Mock).mockImplementation(() => mockReportUseCase);
         (NotifyReportUseCase as jest.Mock).mockImplementation(() => mockNotifyReportUseCase);
@@ -143,7 +148,8 @@ describe('DependencyContainer', () => {
 
             expect(ReportProcessingService).toHaveBeenCalledWith(
                 mockDiscordNotifier,
-                mockReportUseCase
+                mockReportUseCase,
+                mockConfigRepository
             );
             expect(result).toBeInstanceOf(ReportProcessingService);
         });

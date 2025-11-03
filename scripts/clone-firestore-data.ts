@@ -68,7 +68,9 @@ export class FirestoreCloneService {
         }
 
         for (const collectionPath of collections) {
-            if (collectionPath === 'details') {
+            if (collectionPath === 'config') {
+                await this.cloneConfigCollection();
+            } else if (collectionPath === 'details') {
                 await this.cloneDetailsHierarchy();
             } else if (collectionPath === 'reports') {
                 await this.cloneReportsHierarchy();
@@ -78,6 +80,53 @@ export class FirestoreCloneService {
         }
 
         console.log('✅ 全てのコレクションのクローンが完了しました');
+    }
+
+    /**
+     * configコレクションをクローン
+     */
+    private async cloneConfigCollection(): Promise<void> {
+        console.log('⚙️  configコレクションをクローン中...');
+        
+        const configCollectionPath = 'config';
+        const configCollectionRef = this.sourceDb.collection(configCollectionPath);
+        
+        try {
+            const snapshot = await configCollectionRef.get();
+            
+            if (!snapshot.empty) {
+                console.log(`📋 ${configCollectionPath}: ${snapshot.size} 設定ドキュメント発見`);
+                
+                if (!this.options.dryRun) {
+                    const targetCollectionRef = this.targetDb.collection(configCollectionPath);
+                    const batch = this.targetDb.batch();
+                    
+                    for (const doc of snapshot.docs) {
+                        const targetDocRef = targetCollectionRef.doc(doc.id);
+                        const data = doc.data();
+                        batch.set(targetDocRef, data);
+                        console.log(`📄 ${doc.id}: ${Object.keys(data).length} フィールド`);
+                    }
+                    
+                    await batch.commit();
+                    console.log(`💾 ${configCollectionPath} の ${snapshot.size} ドキュメントを書き込みました`);
+                } else {
+                    for (const doc of snapshot.docs) {
+                        const data = doc.data();
+                        console.log(`🔍 [ドライラン] ${configCollectionPath}/${doc.id} (${Object.keys(data).length} フィールド)`);
+                        // 詳細を表示
+                        console.log(`  データプレビュー:`, JSON.stringify(data, null, 2));
+                    }
+                }
+            } else {
+                console.log(`📄 ${configCollectionPath}: 空`);
+            }
+        } catch (error) {
+            console.log(`❌ ${configCollectionPath} 処理でエラー: ${error instanceof Error ? error.message : error}`);
+            throw error;
+        }
+        
+        console.log('✅ configコレクションのクローンが完了しました');
     }
 
     /**
@@ -208,6 +257,7 @@ export class FirestoreCloneService {
         // よく使用されるコレクションパスを返す
         // 実際の環境では、listCollections() を使用することも可能
         return [
+            'config',
             'details',
             'reports'
         ];
@@ -232,6 +282,16 @@ export class FirestoreCloneService {
     private async exploreKnownPaths(): Promise<void> {
         console.log('📋 既知のパス構造を確認中...');
         
+        // config 階層の確認
+        const configPaths = [
+            'config',
+            'config/report_thresholds'
+        ];
+
+        for (const path of configPaths) {
+            await this.checkPath(path);
+        }
+
         // details 階層の確認
         const detailsPaths = [
             'details',
@@ -434,7 +494,7 @@ export class FirestoreCloneService {
     async clearEmulatorData(): Promise<void> {
         console.log('🧹 エミュレーターのデータをクリア中...');
 
-        const collections = ['details', 'reports'];
+        const collections = ['config', 'details', 'reports'];
         
         for (const collectionName of collections) {
             await this.clearCollection(collectionName);
