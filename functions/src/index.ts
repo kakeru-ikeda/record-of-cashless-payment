@@ -57,7 +57,7 @@ export const reportRecalculationSchedule = functions.scheduler
     }, async (context) => {
         // イベントハンドラーファクトリーから適切なハンドラーを取得
         const factory = EventHandlerFactory.getInstance();
-        const handler = factory.createReportRecalculationScheduleHandler();
+        const handler = await factory.createReportRecalculationScheduleHandler();
 
         // ハンドラーでイベントを処理
         await handler.handle(context);

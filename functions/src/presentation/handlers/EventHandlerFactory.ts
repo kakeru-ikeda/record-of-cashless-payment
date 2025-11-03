@@ -19,6 +19,7 @@ import { SendWeeklyReportHttpHandler } from './http/SendWeeklyReportHttpHandler'
 export class EventHandlerFactory {
     private static instance: EventHandlerFactory;
     private container: DependencyContainer;
+    private initialized = false;
 
     private constructor() {
         this.container = DependencyContainer.getInstance();
@@ -32,6 +33,16 @@ export class EventHandlerFactory {
             EventHandlerFactory.instance = new EventHandlerFactory();
         }
         return EventHandlerFactory.instance;
+    }
+
+    /**
+     * 初期化を確実に行う
+     */
+    private async ensureInitialized(): Promise<void> {
+        if (!this.initialized) {
+            await this.container.initialize();
+            this.initialized = true;
+        }
     }
 
     /**
@@ -92,7 +103,9 @@ export class EventHandlerFactory {
     /**
      * レポート再集計HTTPハンドラーを作成
      */
-    createReportRecalculationHttpHandler(): ReportRecalculationHttpHandler {
+    async createReportRecalculationHttpHandler(): Promise<ReportRecalculationHttpHandler> {
+        await this.ensureInitialized();
+
         const dataExplorerService = new FirestoreDataExplorerService(
             this.container.firestoreService
         );
@@ -106,7 +119,9 @@ export class EventHandlerFactory {
     /**
      * レポート再集計スケジュールハンドラーを作成
      */
-    createReportRecalculationScheduleHandler(): ReportRecalculationScheduleHandler {
+    async createReportRecalculationScheduleHandler(): Promise<ReportRecalculationScheduleHandler> {
+        await this.ensureInitialized();
+
         const dataExplorerService = new FirestoreDataExplorerService(
             this.container.firestoreService
         );
