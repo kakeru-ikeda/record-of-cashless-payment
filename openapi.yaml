@@ -1,0 +1,1341 @@
+openapi: 3.0.3
+info:
+  title: Record of Cashless Payment (RoCP) API
+  description: |
+    キャッシュレス決済の利用履歴を管理するためのAPI。
+    クリーンアーキテクチャに基づいた設計で、Firebase AuthenticationとCloud Firestoreを使用。
+    
+    **認証**: Firebase Authentication経由のBearerトークンが必要（一部のエンドポイントを除く）
+    
+    **開発・テスト環境**: 
+    - 環境変数 `API_TEST_MODE=true` の場合、`Authorization: Bearer test-token` で認証をバイパス可能
+    - テスト用トークンは環境変数 `API_TEST_TOKEN` で設定可能（デフォルト: "test-token"）
+  version: "1.0.0"
+  contact:
+    name: RoCP Development Team
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:3030
+    description: ローカル開発環境
+  - url: https://welcome-to-sukisuki-club.duckdns.org/rocp/
+    description: 本番環境
+
+security:
+  - BearerAuth: []
+  - TestAuth: []
+
+paths:
+  # ヘルスチェック・モニタリング API
+  /health:
+    get:
+      summary: 基本ヘルスチェック
+      description: サーバーの基本的な稼働状況を確認します。認証は不要です。
+      tags:
+        - Health Check
+      security: []
+      responses:
+        '200':
+          description: サーバーが正常に稼働中
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              examples:
+                success:
+                  value:
+                    status: 200
+                    success: true
+                    message: "サーバーは正常に動作しています"
+                    data:
+                      status: "OK"
+                      timestamp: "2025-07-19T13:12:02.000Z"
+
+  /monitoring/health:
+    get:
+      summary: 詳細ヘルスチェック
+      description: 詳細なサービスヘルスチェック。認証は不要です。
+      tags:
+        - Monitoring
+      security: []
+      responses:
+        '200':
+          description: サーバーが正常に稼働中
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MonitoringHealthResponse'
+
+  /monitoring/status:
+    get:
+      summary: サービスステータス取得
+      description: 各サービスの詳細ステータス情報を取得します。認証は不要です。
+      tags:
+        - Monitoring
+      security: []
+      responses:
+        '200':
+          description: サービスステータス取得成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceStatusResponse'
+
+  /monitoring/errors:
+    get:
+      summary: エラーログ取得
+      description: 最近のエラーログを取得します。認証は不要です。
+      tags:
+        - Monitoring
+      security: []
+      responses:
+        '200':
+          description: エラーログ取得成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorLogsResponse'
+
+  /monitoring/dashboard:
+    get:
+      summary: HTMLダッシュボード
+      description: ブラウザでアクセス可能なモニタリング画面を表示します。認証は不要です。
+      tags:
+        - Monitoring
+      security: []
+      responses:
+        '200':
+          description: HTMLダッシュボード
+          content:
+            text/html:
+              schema:
+                type: string
+
+  /api/services:
+    get:
+      summary: サービス一覧取得
+      description: |
+        利用可能なサービス一覧を取得します。
+        
+        **認証**: Firebase Authentication または テスト用トークンが必要
+      tags:
+        - Service Management
+      security:
+        - BearerAuth: []
+        - TestAuth: []
+      responses:
+        '200':
+          description: サービス一覧取得成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServicesResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/services/{id}:
+    post:
+      summary: サービス制御
+      description: |
+        指定されたサービスを制御します（開始・停止・再起動）。
+        
+        **認証**: Firebase Authentication または テスト用トークンが必要
+      tags:
+        - Service Management
+      security:
+        - BearerAuth: []
+        - TestAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: サービスID
+          schema:
+            type: string
+            example: "email-monitoring"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceControlRequest'
+      responses:
+        '200':
+          description: サービス制御成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceControlResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # カード利用情報 API
+  /api/card-usages:
+    get:
+      summary: カード利用情報一覧取得
+      description: |
+        年月を指定してすべてのカード利用データを取得します。
+        
+        **認証**: Firebase Authentication または テスト用トークンが必要
+      tags:
+        - Card Usage
+      security:
+        - BearerAuth: []
+        - TestAuth: []
+      parameters:
+        - name: year
+          in: query
+          required: true
+          description: 年
+          schema:
+            type: integer
+            example: 2025
+        - name: month
+          in: query
+          required: true
+          description: 月
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+            example: 7
+      responses:
+        '200':
+          description: カード利用情報取得成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardUsageListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    post:
+      summary: カード利用情報作成
+      description: |
+        新しいカード利用データを作成します。作成時にDiscord通知が自動で送信されます。
+        
+        **認証**: Firebase Authentication または テスト用トークンが必要
+      tags:
+        - Card Usage
+      security:
+        - BearerAuth: []
+        - TestAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CardUsageCreateRequest'
+      responses:
+        '201':
+          description: カード利用情報作成成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardUsageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/card-usages/{id}:
+    get:
+      summary: カード利用情報取得
+      description: |
+        IDでカード利用データを取得します。
+        
+        **認証**: Firebase Authentication または テスト用トークンが必要
+      tags:
+        - Card Usage
+      security:
+        - BearerAuth: []
+        - TestAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: カード利用データのID（タイムスタンプ）
+          schema:
+            type: string
+            example: "1719838800000"
+      responses:
+        '200':
+          description: カード利用情報取得成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardUsageResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      summary: カード利用情報更新
+      description: |
+        IDでカード利用データを更新します。部分更新が可能です。
+        
+        **認証**: Firebase Authentication または テスト用トークンが必要
+      tags:
+        - Card Usage
+      security:
+        - BearerAuth: []
+        - TestAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: カード利用データのID
+          schema:
+            type: string
+            example: "1719838800000"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CardUsageUpdateRequest'
+      responses:
+        '200':
+          description: カード利用情報更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardUsageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      summary: カード利用情報削除
+      description: |
+        IDでカード利用データを論理削除します（is_activeをfalseに設定）。
+        
+        **認証**: Firebase Authentication または テスト用トークンが必要
+      tags:
+        - Card Usage
+      security:
+        - BearerAuth: []
+        - TestAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: カード利用データのID
+          schema:
+            type: string
+            example: "1719838800000"
+      responses:
+        '200':
+          description: カード利用情報削除成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardUsageDeleteResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  # レポート API
+  /api/reports/daily/{year}/{month}/{day}:
+    get:
+      summary: 日次レポート取得（特定の日）
+      description: |
+        特定の日の日次レポートを取得します。
+        
+        **認証**: Firebase Authentication または テスト用トークンが必要
+      tags:
+        - Reports
+      security:
+        - BearerAuth: []
+        - TestAuth: []
+      parameters:
+        - name: year
+          in: path
+          required: true
+          description: 年
+          schema:
+            type: integer
+            example: 2025
+        - name: month
+          in: path
+          required: true
+          description: 月
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+            example: 7
+        - name: day
+          in: path
+          required: true
+          description: 日
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 31
+            example: 19
+      responses:
+        '200':
+          description: 日次レポート取得成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DailyReportResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/reports/daily/{year}/{month}:
+    get:
+      summary: 月内日次レポート一覧取得
+      description: |
+        月内の全日次レポートを取得します。
+        
+        **認証**: Firebase Authentication または テスト用トークンが必要
+      tags:
+        - Reports
+      security:
+        - BearerAuth: []
+        - TestAuth: []
+      parameters:
+        - name: year
+          in: path
+          required: true
+          description: 年
+          schema:
+            type: integer
+            example: 2025
+        - name: month
+          in: path
+          required: true
+          description: 月
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+            example: 7
+      responses:
+        '200':
+          description: 月内日次レポート一覧取得成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DailyReportListResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/reports/weekly/{year}/{month}/{term}:
+    get:
+      summary: 週次レポート取得（特定の週）
+      description: |
+        特定の週次レポートを取得します。
+        
+        **認証**: Firebase Authentication または テスト用トークンが必要
+      tags:
+        - Reports
+      security:
+        - BearerAuth: []
+        - TestAuth: []
+      parameters:
+        - name: year
+          in: path
+          required: true
+          description: 年
+          schema:
+            type: integer
+            example: 2025
+        - name: month
+          in: path
+          required: true
+          description: 月
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+            example: 7
+        - name: term
+          in: path
+          required: true
+          description: 週番号
+          schema:
+            type: string
+            enum: [term1, term2, term3, term4]
+            example: "term2"
+      responses:
+        '200':
+          description: 週次レポート取得成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeeklyReportResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/reports/weekly/{year}/{month}:
+    get:
+      summary: 月内週次レポート一覧取得
+      description: |
+        月内の全週次レポートを取得します。
+        
+        **認証**: Firebase Authentication または テスト用トークンが必要
+      tags:
+        - Reports
+      security:
+        - BearerAuth: []
+        - TestAuth: []
+      parameters:
+        - name: year
+          in: path
+          required: true
+          description: 年
+          schema:
+            type: integer
+            example: 2025
+        - name: month
+          in: path
+          required: true
+          description: 月
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+            example: 7
+      responses:
+        '200':
+          description: 月内週次レポート一覧取得成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeeklyReportListResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/reports/monthly/{year}/{month}:
+    get:
+      summary: 月次レポート取得
+      description: |
+        月次レポートを取得します。
+        
+        **認証**: Firebase Authentication または テスト用トークンが必要
+      tags:
+        - Reports
+      security:
+        - BearerAuth: []
+        - TestAuth: []
+      parameters:
+        - name: year
+          in: path
+          required: true
+          description: 年
+          schema:
+            type: integer
+            example: 2025
+        - name: month
+          in: path
+          required: true
+          description: 月
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 12
+            example: 7
+      responses:
+        '200':
+          description: 月次レポート取得成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MonthlyReportResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Firebase Authentication JWT token
+    TestAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Token
+      description: |
+        開発・テスト環境用の認証バイパス機能
+        
+        **使用条件**: 
+        - 環境変数 `API_TEST_MODE=true` が設定されている場合のみ有効
+        - デフォルトトークン: "test-token"
+        - 環境変数 `API_TEST_TOKEN` でカスタムトークンを設定可能
+        
+        **使用例**: 
+        ```
+        Authorization: Bearer test-token
+        ```
+        
+        **注意**: 本番環境では無効化されます
+
+  schemas:
+    # 基本レスポンススキーマ
+    BaseResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          description: HTTPステータスコード
+        success:
+          type: boolean
+          description: 処理成功フラグ
+        message:
+          type: string
+          description: メッセージ
+      required:
+        - status
+        - success
+        - message
+
+    # Firebase Timestamp
+    FirestoreTimestamp:
+      type: object
+      properties:
+        _seconds:
+          type: integer
+          description: 秒（Unix timestamp）
+        _nanoseconds:
+          type: integer
+          description: ナノ秒
+      required:
+        - _seconds
+        - _nanoseconds
+
+    # カード利用情報エンティティ
+    CardUsage:
+      type: object
+      properties:
+        id:
+          type: string
+          description: ドキュメントID（タイムスタンプ）
+          example: "1719838800000"
+        path:
+          type: string
+          description: Firestoreパス
+          example: "details/2025/07/term3/19/1719838800000"
+        card_name:
+          type: string
+          description: カード名
+          example: "楽天カード"
+        datetime_of_use:
+          $ref: '#/components/schemas/FirestoreTimestamp'
+        amount:
+          type: number
+          description: 金額
+          example: 5000
+        where_to_use:
+          type: string
+          description: 利用場所
+          example: "セブンイレブン 新宿店"
+        memo:
+          type: string
+          description: メモ
+          example: "昼食代"
+        is_active:
+          type: boolean
+          description: アクティブ状態（falseで論理削除）
+          example: true
+        created_at:
+          $ref: '#/components/schemas/FirestoreTimestamp'
+      required:
+        - card_name
+        - datetime_of_use
+        - amount
+        - where_to_use
+        - is_active
+        - created_at
+
+    # カード利用情報作成リクエスト
+    CardUsageCreateRequest:
+      type: object
+      properties:
+        card_name:
+          type: string
+          description: カード名
+          example: "楽天カード"
+        datetime_of_use:
+          oneOf:
+            - type: string
+              format: date-time
+              description: ISO8601形式の日時
+            - $ref: '#/components/schemas/FirestoreTimestamp'
+          example: "2025-07-19T10:00:00.000Z"
+        amount:
+          type: number
+          description: 金額
+          example: 5000
+        where_to_use:
+          type: string
+          description: 利用場所
+          example: "セブンイレブン 新宿店"
+        memo:
+          type: string
+          description: メモ
+          example: "昼食代"
+      required:
+        - card_name
+        - datetime_of_use
+        - amount
+        - where_to_use
+
+    # カード利用情報更新リクエスト
+    CardUsageUpdateRequest:
+      type: object
+      properties:
+        card_name:
+          type: string
+          description: カード名
+          example: "楽天カード"
+        datetime_of_use:
+          oneOf:
+            - type: string
+              format: date-time
+              description: ISO8601形式の日時
+            - $ref: '#/components/schemas/FirestoreTimestamp'
+        amount:
+          type: number
+          description: 金額
+          example: 6000
+        where_to_use:
+          type: string
+          description: 利用場所
+          example: "セブンイレブン 新宿店"
+        memo:
+          type: string
+          description: メモ
+          example: "修正：夕食代"
+        is_active:
+          type: boolean
+          description: アクティブ状態
+
+    # レポート共通項目
+    BaseReport:
+      type: object
+      properties:
+        total_amount:
+          type: number
+          description: 合計金額
+          example: 15000
+        card_counts:
+          type: object
+          additionalProperties:
+            type: integer
+          description: カード別利用回数
+          example:
+            "楽天カード": 2
+            "イオンカード": 1
+        card_amounts:
+          type: object
+          additionalProperties:
+            type: number
+          description: カード別利用金額
+          example:
+            "楽天カード": 10000
+            "イオンカード": 5000
+      required:
+        - total_amount
+        - card_counts
+        - card_amounts
+
+    # 日次レポート
+    DailyReport:
+      allOf:
+        - $ref: '#/components/schemas/BaseReport'
+
+    # 週次レポート
+    WeeklyReport:
+      allOf:
+        - $ref: '#/components/schemas/BaseReport'
+        - type: object
+          properties:
+            daily_amounts:
+              type: object
+              additionalProperties:
+                type: number
+              description: 日別金額
+              example:
+                "17": 12000
+                "18": 8000
+                "19": 15000
+          required:
+            - daily_amounts
+
+    # 月次レポート
+    MonthlyReport:
+      allOf:
+        - $ref: '#/components/schemas/BaseReport'
+        - type: object
+          properties:
+            weekly_amounts:
+              type: object
+              additionalProperties:
+                type: number
+              description: 週別金額
+              example:
+                "term1": 35000
+                "term2": 42000
+                "term3": 25000
+                "term4": 18000
+            daily_amounts:
+              type: object
+              additionalProperties:
+                type: number
+              description: 日別金額
+              example:
+                "01": 12000
+                "02": 8000
+                "19": 15000
+                "31": 5000
+          required:
+            - weekly_amounts
+            - daily_amounts
+
+    # 複数レポート用アイテム
+    DailyReportItem:
+      allOf:
+        - $ref: '#/components/schemas/BaseReport'
+        - type: object
+          properties:
+            date:
+              type: string
+              description: 日付（01, 02, ...）
+              example: "19"
+          required:
+            - date
+
+    WeeklyReportItem:
+      allOf:
+        - $ref: '#/components/schemas/BaseReport'
+        - type: object
+          properties:
+            term:
+              type: string
+              description: 週番号
+              enum: [term1, term2, term3, term4]
+              example: "term3"
+            daily_amounts:
+              type: object
+              additionalProperties:
+                type: number
+              description: 日別金額
+              example:
+                "17": 10000
+                "18": 12000
+                "19": 20000
+          required:
+            - term
+            - daily_amounts
+
+    # サービス情報
+    ServiceInfo:
+      type: object
+      properties:
+        id:
+          type: string
+          description: サービスID
+          example: "email-monitoring"
+        name:
+          type: string
+          description: サービス名
+          example: "メール監視サービス"
+        description:
+          type: string
+          description: 説明
+          example: "カード利用通知メールの監視サービス"
+        status:
+          type: string
+          enum: [active, inactive]
+          description: ステータス
+          example: "active"
+        actions:
+          type: array
+          items:
+            type: string
+          description: 利用可能なアクション
+          example: ["start", "stop", "restart"]
+      required:
+        - id
+        - name
+        - description
+        - status
+        - actions
+
+    # サービス制御リクエスト
+    ServiceControlRequest:
+      type: object
+      properties:
+        action:
+          type: string
+          enum: [start, stop, restart]
+          description: 実行するアクション
+          example: "start"
+      required:
+        - action
+
+    # サービスステータス
+    ServiceStatus:
+      type: object
+      properties:
+        name:
+          type: string
+          description: サービス名
+          example: "FirestoreService"
+        status:
+          type: string
+          description: ステータス
+          example: "online"
+        message:
+          type: string
+          description: メッセージ
+          example: "正常稼働中"
+        lastUpdated:
+          type: string
+          format: date-time
+          description: 最終更新日時
+          example: "2025-07-19T13:12:02.000Z"
+        errorCount:
+          type: integer
+          description: エラー回数
+          example: 0
+        lastErrorTime:
+          type: string
+          format: date-time
+          description: 最終エラー日時
+          nullable: true
+      required:
+        - name
+        - status
+        - message
+        - lastUpdated
+        - errorCount
+
+    # エラーログ
+    ErrorLog:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: エラー発生日時
+          example: "2025-07-19T13:10:00.000Z"
+        service:
+          type: string
+          description: エラーが発生したサービス
+          example: "API"
+        message:
+          type: string
+          description: エラーメッセージ
+          example: "エラーメッセージ"
+        details:
+          type: object
+          description: エラー詳細情報
+      required:
+        - timestamp
+        - service
+        - message
+        - details
+
+    # レスポンススキーマ
+    HealthResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                status:
+                  type: string
+                  example: "OK"
+                timestamp:
+                  type: string
+                  format: date-time
+                  example: "2025-07-19T13:12:02.000Z"
+              required:
+                - status
+                - timestamp
+          required:
+            - data
+
+    MonitoringHealthResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                timestamp:
+                  type: string
+                  format: date-time
+                  example: "2025-07-19T13:12:02.000Z"
+              required:
+                - timestamp
+          required:
+            - data
+
+    ServiceStatusResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                timestamp:
+                  type: string
+                  format: date-time
+                  example: "2025-07-19T13:12:02.000Z"
+                services:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/ServiceStatus'
+              required:
+                - timestamp
+                - services
+          required:
+            - data
+
+    ErrorLogsResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                timestamp:
+                  type: string
+                  format: date-time
+                  example: "2025-07-19T13:12:02.000Z"
+                errors:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/ErrorLog'
+              required:
+                - timestamp
+                - errors
+          required:
+            - data
+
+    ServicesResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/ServiceInfo'
+          required:
+            - data
+
+    ServiceControlResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                id:
+                  type: string
+                  example: "email-monitoring"
+                status:
+                  type: string
+                  example: "active"
+              required:
+                - id
+                - status
+          required:
+            - data
+
+    CardUsageResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/CardUsage'
+          required:
+            - data
+
+    CardUsageListResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/CardUsage'
+          required:
+            - data
+
+    CardUsageDeleteResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                id:
+                  type: string
+                  example: "1719838800000"
+                path:
+                  type: string
+                  example: "details/2025/07/term3/19/1719838800000"
+              required:
+                - id
+                - path
+          required:
+            - data
+
+    DailyReportResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/DailyReport'
+          required:
+            - data
+
+    DailyReportListResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/DailyReportItem'
+          required:
+            - data
+
+    WeeklyReportResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/WeeklyReport'
+          required:
+            - data
+
+    WeeklyReportListResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/WeeklyReportItem'
+          required:
+            - data
+
+    MonthlyReportResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/MonthlyReport'
+          required:
+            - data
+
+    # エラーレスポンス
+    ErrorResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            success:
+              type: boolean
+              enum: [false]
+            error:
+              type: object
+              description: エラー詳細情報
+          required:
+            - error
+
+  responses:
+    BadRequestError:
+      description: バリデーションエラー
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 400
+            success: false
+            message: "リクエストパラメータが不正です"
+            error:
+              details: "年月の指定が必要です"
+
+    UnauthorizedError:
+      description: 認証エラー
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 401
+            success: false
+            message: "認証が必要です"
+            error:
+              details: "有効なFirebase認証トークンを提供してください"
+
+    ForbiddenError:
+      description: アクセス権限エラー
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 403
+            success: false
+            message: "アクセス権限がありません"
+            error:
+              details: "このリソースにアクセスする権限がありません"
+
+    NotFoundError:
+      description: リソースが見つからない
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 404
+            success: false
+            message: "リソースが見つかりません"
+            error:
+              details: "指定されたIDのデータは存在しません"
+
+    InternalServerError:
+      description: サーバーエラー
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 500
+            success: false
+            message: "内部サーバーエラーが発生しました"
+            error:
+              details: "システム内部でエラーが発生しました"
+
+tags:
+  - name: Health Check
+    description: 基本的なヘルスチェック
+  - name: Monitoring
+    description: システムモニタリング
+  - name: Service Management
+    description: サービス管理（開始・停止・再起動）
+  - name: Card Usage
+    description: カード利用情報の管理
+  - name: Reports
+    description: 各種レポートの取得
+
+# 開発・テスト環境での使用例
+externalDocs:
+  description: |
+    ## 開発・テスト環境での認証バイパス
+
+    開発およびテスト環境では、Firebase Authenticationの代わりにテスト用トークンを使用してAPIにアクセスできます。
+
+    ### 設定方法
+
+    1. **環境変数の設定**:
+       ```bash
+       export API_TEST_MODE=true
+       export API_TEST_TOKEN=test-token  # 省略可能（デフォルト: "test-token"）
+       ```
+
+    2. **APIリクエスト例**:
+       ```bash
+       # カード利用情報の取得（テスト用トークンを使用）
+       curl -X GET "http://localhost:3030/api/card-usages?year=2025&month=7" \
+            -H "Authorization: Bearer test-token" \
+            -H "Content-Type: application/json"
+
+       # カード利用情報の作成（テスト用トークンを使用）
+       curl -X POST "http://localhost:3030/api/card-usages" \
+            -H "Authorization: Bearer test-token" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "card_name": "楽天カード",
+              "datetime_of_use": "2025-07-19T10:00:00.000Z",
+              "amount": 5000,
+              "where_to_use": "セブンイレブン 新宿店",
+              "memo": "昼食代"
+            }'
+       ```
+
+    ### 注意事項
+
+    - **本番環境では無効**: `API_TEST_MODE=true` は開発・テスト環境でのみ使用してください
+    - **セキュリティ**: テスト用トークンは簡単に推測できるため、本番環境では絶対に使用しないでください
+    - **ログ出力**: テスト用認証が使用されると、コンソールに「🧪 テスト環境のため認証をバイパスします」と表示されます
+
+    ### テスト用ユーザー情報
+
+    テスト用トークンが使用された場合、以下のユーザー情報が設定されます：
+    - UID: `test-user`
+    - Email: `test@example.com`
+    - Name: `Test User`
+  url: https://github.com/kakeru-ikeda/record-of-cashless-payment
