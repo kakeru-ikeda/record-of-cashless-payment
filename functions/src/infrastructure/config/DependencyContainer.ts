@@ -1,7 +1,10 @@
 import { IDiscordNotifier } from '../../../../shared/domain/interfaces/discord/IDiscordNotifier';
+import { IConfigRepository } from '../../../../shared/domain/interfaces/database/repositories/IConfigRepository';
 import { DiscordNotifier } from '../../../../shared/infrastructure/discord/DiscordNotifier';
 import { FirestoreReportRepository } from
     '../../../../shared/infrastructure/database/repositories/FirestoreReportRepository';
+import { FirestoreConfigRepository } from
+    '../../../../shared/infrastructure/database/repositories/FirestoreConfigRepository';
 import { FirestoreReportUseCase } from '../../../../shared/usecases/database/FirestoreReportUseCase';
 import { NotifyReportUseCase } from '../../../../shared/usecases/notification/NotifyReportUseCase';
 import { Environment } from '../../../../shared/infrastructure/config/Environment';
@@ -16,6 +19,7 @@ export class DependencyContainer {
     private static instance: DependencyContainer;
 
     private _reportRepository?: FirestoreReportRepository;
+    private _configRepository?: IConfigRepository;
     private _discordNotifier?: IDiscordNotifier;
     private _reportUseCase?: FirestoreReportUseCase;
     private _notifyReportUseCase?: NotifyReportUseCase;
@@ -92,13 +96,25 @@ export class DependencyContainer {
     }
 
     /**
+     * 設定リポジトリを取得
+     * @returns IConfigRepository
+     */
+    public get configRepository(): IConfigRepository {
+        if (!this._configRepository) {
+            this._configRepository = new FirestoreConfigRepository();
+        }
+        return this._configRepository;
+    }
+
+    /**
      * レポート処理サービスを取得
      * @returns ReportProcessingService
      */
     public get reportProcessingService(): ReportProcessingService {
         return new ReportProcessingService(
             this.discordNotifier,
-            this.reportUseCase
+            this.reportUseCase,
+            this.configRepository
         );
     }
 

@@ -1,19 +1,8 @@
 /**
  * レポートのしきい値定数
- * アラート機能で使用される金額のしきい値を定義
+ * @deprecated Firestoreの config/report_thresholds から取得するようになりました
+ * このファイルは型定義のみを残しており、実際の値はFirestoreから取得されます
  */
-export const REPORT_THRESHOLDS = {
-    WEEKLY: {
-        LEVEL1: 1000,
-        LEVEL2: 5000,
-        LEVEL3: 10000,
-    },
-    MONTHLY: {
-        LEVEL1: 4000,
-        LEVEL2: 20000,
-        LEVEL3: 40000,
-    },
-} as const;
 
 /**
  * しきい値レベルの型定義

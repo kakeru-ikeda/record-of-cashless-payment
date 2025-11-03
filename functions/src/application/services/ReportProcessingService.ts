@@ -1,6 +1,7 @@
 import * as functions from 'firebase-functions';
 import { IDiscordNotifier } from '../../../../shared/domain/interfaces/discord/IDiscordNotifier';
 import { FirestoreReportUseCase } from '../../../../shared/usecases/database/FirestoreReportUseCase';
+import { IConfigRepository } from '../../../../shared/domain/interfaces/database/repositories/IConfigRepository';
 import { logger } from '../../../../shared/infrastructure/logging/Logger';
 import { FirestorePathUtil } from '../../../../shared/utils/FirestorePathUtil';
 import {
@@ -10,11 +11,8 @@ import {
 } from '../../../../shared/domain/factories/ReportsFactory';
 import { DailyReport, WeeklyReport, MonthlyReport } from '../../../../shared/domain/entities/Reports';
 import { ReportNotificationMapper } from '../../../../shared/infrastructure/mappers/ReportNotificationMapper';
-import {
-    REPORT_THRESHOLDS,
-    ThresholdLevel,
-    ReportType,
-} from '../../domain/constants/ReportThresholds';
+import { ThresholdLevel, ReportType } from '../../domain/constants/ReportThresholds';
+import { ThresholdLevels } from '../../../../shared/domain/entities/ReportThresholds';
 
 /**
  * レポート処理サービス
@@ -25,10 +23,12 @@ export class ReportProcessingService {
      * コンストラクタ
      * @param discordNotifier Discord通知サービス
      * @param reportUseCase レポートユースケース
+     * @param configRepository 設定情報リポジトリ
      */
     constructor(
         private readonly discordNotifier: IDiscordNotifier,
-        private readonly reportUseCase: FirestoreReportUseCase
+        private readonly reportUseCase: FirestoreReportUseCase,
+        private readonly configRepository: IConfigRepository
     ) { }
 
     /**
@@ -253,19 +253,22 @@ export class ReportProcessingService {
         let updated = false;
         let alertLevel: ThresholdLevel | null = null;
         const updatedReport = { ...report };
-        const thresholds = REPORT_THRESHOLDS[reportType];
 
         try {
+            // Firestoreからしきい値を取得
+            const thresholdsConfig = await this.configRepository.getReportThresholds();
+            const thresholds = reportType === 'WEEKLY' ? thresholdsConfig.weekly : thresholdsConfig.monthly;
+
             // しきい値チェック
-            if (report.totalAmount >= thresholds.LEVEL3 && !report.hasNotifiedLevel3) {
+            if (report.totalAmount >= thresholds.level3 && !report.hasNotifiedLevel3) {
                 alertLevel = 3;
                 updatedReport.hasNotifiedLevel3 = true;
                 updated = true;
-            } else if (report.totalAmount >= thresholds.LEVEL2 && !report.hasNotifiedLevel2) {
+            } else if (report.totalAmount >= thresholds.level2 && !report.hasNotifiedLevel2) {
                 alertLevel = 2;
                 updatedReport.hasNotifiedLevel2 = true;
                 updated = true;
-            } else if (report.totalAmount >= thresholds.LEVEL1 && !report.hasNotifiedLevel1) {
+            } else if (report.totalAmount >= thresholds.level1 && !report.hasNotifiedLevel1) {
                 alertLevel = 1;
                 updatedReport.hasNotifiedLevel1 = true;
                 updated = true;
@@ -273,7 +276,7 @@ export class ReportProcessingService {
 
             if (alertLevel !== null) {
                 // アラート通知を送信
-                await this.sendAlert(reportType, report, alertLevel, context);
+                await this.sendAlert(reportType, report, alertLevel, context, thresholds);
             }
 
             // 通知フラグ更新
@@ -311,10 +314,11 @@ export class ReportProcessingService {
         reportType: ReportType,
         report: T,
         alertLevel: ThresholdLevel,
-        context: { year: string; month: string; weekNumber?: number }
+        context: { year: string; month: string; weekNumber?: number },
+        thresholds: ThresholdLevels
     ): Promise<void> {
-        const thresholds = REPORT_THRESHOLDS[reportType];
-        const thresholdValue = Object.values(thresholds)[alertLevel - 1];
+        const thresholdValue = alertLevel === 1 ? thresholds.level1 :
+            alertLevel === 2 ? thresholds.level2 : thresholds.level3;
 
         if (reportType === 'WEEKLY' && 'termStartDate' in report && context.weekNumber) {
             const alertNotification = ReportNotificationMapper.toWeeklyAlertNotification(
