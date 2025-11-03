@@ -259,14 +259,22 @@ export class ReportProcessingService {
             const thresholdsConfig = await this.configRepository.getReportThresholds();
             const thresholds = reportType === 'WEEKLY' ? thresholdsConfig.weekly : thresholdsConfig.monthly;
 
-            // しきい値チェック
+            // 既存のフラグを保持
+            updatedReport.hasNotifiedLevel1 = report.hasNotifiedLevel1;
+            updatedReport.hasNotifiedLevel2 = report.hasNotifiedLevel2;
+            updatedReport.hasNotifiedLevel3 = report.hasNotifiedLevel3;
+
+            // しきい値チェック（最も高いレベルから確認）
             if (report.totalAmount >= thresholds.level3 && !report.hasNotifiedLevel3) {
                 alertLevel = 3;
                 updatedReport.hasNotifiedLevel3 = true;
+                updatedReport.hasNotifiedLevel2 = true;
+                updatedReport.hasNotifiedLevel1 = true;
                 updated = true;
             } else if (report.totalAmount >= thresholds.level2 && !report.hasNotifiedLevel2) {
                 alertLevel = 2;
                 updatedReport.hasNotifiedLevel2 = true;
+                updatedReport.hasNotifiedLevel1 = true;
                 updated = true;
             } else if (report.totalAmount >= thresholds.level1 && !report.hasNotifiedLevel1) {
                 alertLevel = 1;
