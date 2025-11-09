@@ -20,7 +20,7 @@ export class ProcessCardCompanyEmailUseCase implements IProcessCardCompanyEmailU
    * メールからカード会社を判定し、カード利用情報を処理する
    */
   @ErrorHandler.errorDecorator('ProcessCardCompanyEmailUseCase', {
-    defaultMessage: 'カード利用情報の処理中にエラーが発生しました'
+    defaultMessage: 'カード利用情報の処理中にエラーが発生しました',
   })
   async execute(email: ParsedEmail): Promise<{
     cardCompany: CardCompany | null;
@@ -46,7 +46,7 @@ export class ProcessCardCompanyEmailUseCase implements IProcessCardCompanyEmailU
 
     return {
       cardCompany: detectedCardCompany,
-      usageResult: result
+      usageResult: result,
     };
   }
 
@@ -77,6 +77,7 @@ export class ProcessCardCompanyEmailUseCase implements IProcessCardCompanyEmailU
    * 三井住友カードのメールかどうかを判定
    */
   private isSmbcEmail(email: ParsedEmail): boolean {
+// eslint-disable-next-line max-len
     const fromCheck = email.from.includes('vpass.ne.jp') || email.from.includes('smbc-card.com') || email.from.includes('smbc.co.jp');
     const subjectCheck = email.subject.includes('三井住友') || email.subject.includes('利用');
     const bodyCheck = email.body.includes('三井住友') || email.body.includes('SMBC') || email.body.includes('クレジット');

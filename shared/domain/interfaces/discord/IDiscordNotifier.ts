@@ -1,6 +1,7 @@
-import { CardUsageNotificationDTO } from "@shared/domain/dto/CardUsageNotificationDTO";
-import { DailyReportNotificationDTO, MonthlyReportNotificationDTO, WeeklyReportNotificationDTO } from "@shared/domain/dto/ReportNotificationDTOs";
-import { AppError } from "@shared/errors/AppError";
+import { CardUsageNotificationDTO } from '@shared/domain/dto/CardUsageNotificationDTO';
+// eslint-disable-next-line max-len
+import { DailyReportNotificationDTO, MonthlyReportNotificationDTO, WeeklyReportNotificationDTO } from '@shared/domain/dto/ReportNotificationDTOs';
+import { AppError } from '@shared/errors/AppError';
 
 /**
  * Discordの通知インターフェース

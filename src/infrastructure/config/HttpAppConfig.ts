@@ -58,7 +58,7 @@ export class HttpAppConfig implements IHttpAppConfig {
     this.app.get('/health', (req, res) => {
       const response = ResponseHelper.success('サーバーは正常に動作しています', {
         status: 'OK',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
       res.status(response.status).json(response);
     });
@@ -130,6 +130,7 @@ export class HttpAppConfig implements IHttpAppConfig {
       logger.error(error, 'API');
 
       const statusCode = (error as any).statusCode || 500;
+// eslint-disable-next-line max-len
       const response = ResponseHelper.error(statusCode, 'Internal Server Error', error.message || 'An unexpected error occurred');
       res.status(response.status).json(response);
     });

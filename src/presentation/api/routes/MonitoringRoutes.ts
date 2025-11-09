@@ -9,6 +9,7 @@ export class MonitoringRoutes {
   private monitoringController: MonitoringController;
 
   constructor() {
+    // eslint-disable-next-line new-cap
     this.router = Router();
     this.monitoringController = new MonitoringController();
     this.initializeRoutes();

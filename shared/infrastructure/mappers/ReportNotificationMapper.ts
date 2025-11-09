@@ -2,7 +2,7 @@ import { DailyReport, WeeklyReport, MonthlyReport } from '@shared/domain/entitie
 import {
     DailyReportNotificationDTO,
     WeeklyReportNotificationDTO,
-    MonthlyReportNotificationDTO
+    MonthlyReportNotificationDTO,
 } from '@shared/domain/dto/ReportNotificationDTOs';
 import { DateUtil } from '@shared/utils/DateUtil';
 
@@ -36,7 +36,7 @@ export class ReportNotificationMapper {
             totalAmount: entity.totalAmount,
             totalCount: entity.totalCount,
             monthToDateAmount,
-            additionalInfo
+            additionalInfo,
         };
     }
 
@@ -69,7 +69,7 @@ export class ReportNotificationMapper {
             totalCount: entity.totalCount,
             alertLevel,
             monthToDateAmount,
-            additionalInfo
+            additionalInfo,
         };
     }
 
@@ -99,7 +99,7 @@ export class ReportNotificationMapper {
             totalAmount: entity.totalAmount,
             totalCount: entity.totalCount,
             alertLevel,
-            additionalInfo
+            additionalInfo,
         };
     }
 
@@ -125,7 +125,7 @@ export class ReportNotificationMapper {
     ): WeeklyReportNotificationDTO {
         const title = `週次支出アラート (レベル${alertLevel}) - ${year}年${month}月 第${weekNumber}週`;
         let additionalInfo = `しきい値 ${thresholdValue.toLocaleString()}円 を超過しました`;
-        
+
         if (monthToDateAmount !== undefined) {
             additionalInfo += `\n当月累計: ${monthToDateAmount.toLocaleString()}円`;
         }

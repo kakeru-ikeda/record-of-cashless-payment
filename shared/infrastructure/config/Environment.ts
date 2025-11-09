@@ -61,7 +61,7 @@ export class Environment {
      */
     static validate(): boolean {
         const requiredVars = ['IMAP_SERVER', 'IMAP_USER', 'IMAP_PASSWORD'];
-        const missingVars = requiredVars.filter(varName => !process.env[varName]);
+        const missingVars = requiredVars.filter((varName) => !process.env[varName]);
 
         if (missingVars.length > 0) {
             logger.warn('必須環境変数が設定されていません: ' + missingVars.join(', '), CONTEXT);

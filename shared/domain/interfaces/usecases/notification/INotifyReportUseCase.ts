@@ -1,3 +1,4 @@
+// eslint-disable-next-line max-len
 import { DailyReportNotificationDTO, WeeklyReportNotificationDTO, MonthlyReportNotificationDTO } from '@shared/domain/dto/ReportNotificationDTOs';
 
 /**

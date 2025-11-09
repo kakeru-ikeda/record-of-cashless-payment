@@ -4,6 +4,7 @@ import { Environment } from '../../../../shared/infrastructure/config/Environmen
 import { logger } from '../../../../shared/infrastructure/logging/Logger';
 import { AppError, ErrorType } from '@shared/errors/AppError';
 import { ErrorHandler } from '../../../../shared/infrastructure/errors/ErrorHandler';
+// eslint-disable-next-line max-len
 import { IProcessCardCompanyEmailUseCase } from '../../../domain/interfaces/usecases/email/IProcessCardCompanyEmailUseCase';
 import { INotifyCardUsageUseCase } from '../../../domain/interfaces/usecases/notification/INotifyCardUsageUseCase';
 import { CardCompany } from '@domain/enums/CardCompany';
@@ -15,14 +16,14 @@ export class EmailController {
   // メールボックス設定
   private readonly mailboxes = {
     [CardCompany.MUFG]: '三菱東京UFJ銀行',
-    [CardCompany.SMBC]: '三井住友カード'
+    [CardCompany.SMBC]: '三井住友カード',
   };
 
   // メールサービスのインスタンス
   private emailServices: Record<string, ImapEmailService> = {};
   private readonly serviceContext = 'EmailController';
   // 監視状態を管理するフラグ
-  private isMonitoringActive: boolean = false;
+  private isMonitoringActive = false;
 
   /**
    * コンストラクタ
@@ -45,7 +46,7 @@ export class EmailController {
    * すべてのメールボックスの監視を開始
    */
   @ErrorHandler.errorDecorator('EmailController', {
-    defaultMessage: 'メールボックス監視の開始に失敗しました'
+    defaultMessage: 'メールボックス監視の開始に失敗しました',
   })
   async startAllMonitoring(): Promise<void> {
     logger.info('全メールボックスの監視を開始します...', this.serviceContext);
@@ -69,7 +70,7 @@ export class EmailController {
         // 個別のメールボックスのエラーは全体の処理を止めない
         await ErrorHandler.handle(error, this.serviceContext, {
           defaultMessage: `${cardCompany}のメールボックス監視の開始に失敗しました`,
-          additionalInfo: { cardCompany, mailboxName }
+          additionalInfo: { cardCompany, mailboxName },
         });
       }
     }
@@ -94,7 +95,7 @@ export class EmailController {
    * 特定のメールボックスの監視を開始
    */
   @ErrorHandler.errorDecorator('EmailController', {
-    defaultMessage: 'メールボックスへの接続に失敗しました'
+    defaultMessage: 'メールボックスへの接続に失敗しました',
   })
   private async startMonitoringForMailbox(
     mailboxName: string,
@@ -141,7 +142,7 @@ export class EmailController {
    * メール監視を停止
    */
   @ErrorHandler.errorDecorator('EmailController', {
-    defaultMessage: 'メールボックス監視の停止に失敗しました'
+    defaultMessage: 'メールボックス監視の停止に失敗しました',
   })
   async stopMonitoring(): Promise<void> {
     logger.info('すべてのメールボックスの監視を停止します', this.serviceContext);
@@ -156,7 +157,7 @@ export class EmailController {
         const appError = await ErrorHandler.handle(error, context, {
           defaultMessage: `${key}のメール監視停止中にエラーが発生しました`,
           additionalInfo: { serviceKey: key },
-          suppressNotification: true
+          suppressNotification: true,
         });
 
         logger.error(appError, context, {

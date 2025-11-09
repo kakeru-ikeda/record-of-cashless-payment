@@ -1,4 +1,5 @@
 import { INotifyReportUseCase } from '@shared/domain/interfaces/usecases/notification/INotifyReportUseCase';
+// eslint-disable-next-line max-len
 import { DailyReportNotificationDTO, WeeklyReportNotificationDTO, MonthlyReportNotificationDTO } from '@shared/domain/dto/ReportNotificationDTOs';
 import { logger } from '@shared/infrastructure/logging/Logger';
 import { ErrorHandler } from '@shared/infrastructure/errors/ErrorHandler';
@@ -19,7 +20,7 @@ export class NotifyReportUseCase implements INotifyReportUseCase {
      */
     @ErrorHandler.errorDecorator('NotifyReportUseCase', {
         defaultMessage: 'デイリーレポートのDiscord通知送信に失敗しました',
-        suppressNotification: true // 通知エラーの通知は不要
+        suppressNotification: true, // 通知エラーの通知は不要
     })
     async notifyDailyReport(report: DailyReportNotificationDTO): Promise<void> {
         await this.discordNotifier.notifyDailyReport(report);
@@ -31,7 +32,7 @@ export class NotifyReportUseCase implements INotifyReportUseCase {
      */
     @ErrorHandler.errorDecorator('NotifyReportUseCase', {
         defaultMessage: 'ウィークリーレポートのDiscord通知送信に失敗しました',
-        suppressNotification: true // 通知エラーの通知は不要
+        suppressNotification: true, // 通知エラーの通知は不要
     })
     async notifyWeeklyReport(report: WeeklyReportNotificationDTO): Promise<void> {
         await this.discordNotifier.notifyWeeklyReport(report);
@@ -43,7 +44,7 @@ export class NotifyReportUseCase implements INotifyReportUseCase {
      */
     @ErrorHandler.errorDecorator('NotifyReportUseCase', {
         defaultMessage: 'マンスリーレポートのDiscord通知送信に失敗しました',
-        suppressNotification: true // 通知エラーの通知は不要
+        suppressNotification: true, // 通知エラーの通知は不要
     })
     async notifyMonthlyReport(report: MonthlyReportNotificationDTO): Promise<void> {
         await this.discordNotifier.notifyMonthlyReport(report);

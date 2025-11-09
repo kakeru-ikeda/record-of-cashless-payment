@@ -5,8 +5,8 @@ import { LoggerConfig } from '@shared/infrastructure/logging/Logger';
  * ログ通知オプションのインターフェース
  */
 export interface LogNotifyOptions {
-  notify?: boolean;       // Discord通知を行うかどうか
-  title?: string;         // 通知のタイトル
+  notify?: boolean; // Discord通知を行うかどうか
+  title?: string; // 通知のタイトル
   suppressConsole?: boolean; // コンソール出力を抑制するかどうか
 }
 

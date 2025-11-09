@@ -14,7 +14,7 @@ export class FirestoreConfigRepository implements IConfigRepository {
     private firestoreService: FirestoreService;
     private readonly serviceContext = 'FirestoreConfigRepository';
     private thresholdsCache: ReportThresholds | null = null;
-    private cacheTimestamp: number = 0;
+    private cacheTimestamp = 0;
     private readonly CACHE_TTL = 5 * 60 * 1000; // 5分間キャッシュ
 
     constructor() {
@@ -25,7 +25,7 @@ export class FirestoreConfigRepository implements IConfigRepository {
      * Firestoreへの接続を初期化する
      */
     @ErrorHandler.errorDecorator('FirestoreConfigRepository', {
-        defaultMessage: 'Firestoreの初期化に失敗しました'
+        defaultMessage: 'Firestoreの初期化に失敗しました',
     })
     async initialize(): Promise<Firestore> {
         // Cloud Functions環境の判定
@@ -47,7 +47,7 @@ export class FirestoreConfigRepository implements IConfigRepository {
      * キャッシュが有効な場合はキャッシュから返す
      */
     @ErrorHandler.errorDecorator('FirestoreConfigRepository', {
-        defaultMessage: 'レポートしきい値の取得に失敗しました'
+        defaultMessage: 'レポートしきい値の取得に失敗しました',
     })
     async getReportThresholds(): Promise<ReportThresholds> {
         // キャッシュが有効な場合は返す

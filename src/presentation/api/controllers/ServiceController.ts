@@ -31,8 +31,8 @@ export class ServiceController {
                     name: 'メール監視サービス',
                     description: 'カード利用通知メールの監視サービス',
                     status: this.emailController?.isMonitoring() ? 'active' : 'inactive',
-                    actions: ['start', 'stop', 'restart']
-                }
+                    actions: ['start', 'stop', 'restart'],
+                },
             ];
 
             const response = ResponseHelper.success('サービス一覧を取得しました', services);
@@ -90,7 +90,7 @@ export class ServiceController {
 
                     case 'restart':
                         await this.emailController.stopMonitoring();
-                        await new Promise(resolve => setTimeout(resolve, 1000)); // 1秒待機
+                        await new Promise((resolve) => setTimeout(resolve, 1000)); // 1秒待機
                         await this.emailController.startAllMonitoring();
                         logger.info('メール監視サービスを再起動しました', 'ServiceController');
                         break;
@@ -99,7 +99,7 @@ export class ServiceController {
                 const message = `メール監視サービスを${action === 'start' ? '開始' : action === 'stop' ? '停止' : '再起動'}しました`;
                 const data = {
                     id: 'email-monitoring',
-                    status: this.emailController.isMonitoring() ? 'active' : 'inactive'
+                    status: this.emailController.isMonitoring() ? 'active' : 'inactive',
                 };
 
                 const response = ResponseHelper.success(message, data);
@@ -115,7 +115,7 @@ export class ServiceController {
                     ErrorType.GENERAL,
                     {
                         serviceId: req.params.id,
-                        action: req.body.action
+                        action: req.body.action,
                     },
                     error instanceof Error ? error : undefined
                 );

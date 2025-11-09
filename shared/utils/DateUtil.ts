@@ -138,7 +138,7 @@ export class DateUtil {
         return {
             ...baseInfo,
             isLastDayOfTerm: this.isLastDayOfTerm(date),
-            isLastDayOfMonth: this.isLastDayOfMonth(date)
+            isLastDayOfMonth: this.isLastDayOfMonth(date),
         };
     }
 
@@ -160,7 +160,7 @@ export class DateUtil {
      * @param locale ロケール（省略時は'ja-JP'）
      * @returns フォーマットされた日付文字列
      */
-    static formatDate(date: Date, format?: string, locale: string = 'ja-JP'): string {
+    static formatDate(date: Date, format?: string, locale = 'ja-JP'): string {
         if (!format) {
             // フォーマット指定がない場合はISO形式（日本時間）で返す
             return date.toISOString().replace('T', ' ').substring(0, 19);
@@ -248,7 +248,7 @@ export class DateUtil {
      * @param format 日付フォーマット（省略時は 'yyyy/MM/dd'）
      * @returns フォーマットされた期間文字列
      */
-    static formatDateRange(startDate: Date, endDate: Date, format: string = 'yyyy/MM/dd'): string {
+    static formatDateRange(startDate: Date, endDate: Date, format = 'yyyy/MM/dd'): string {
         const formattedStart = this.formatDate(startDate, format);
         const formattedEnd = this.formatDate(endDate, format);
         return `${formattedStart} 〜 ${formattedEnd}`;

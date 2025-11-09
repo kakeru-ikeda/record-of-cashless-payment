@@ -16,13 +16,18 @@ export class CardUsageFactory {
      * @returns 新しいCardUsageエンティティ
      */
     static create(
+        // eslint-disable-next-line camelcase
         card_name: string,
+        // eslint-disable-next-line camelcase
         datetime_of_use: string,
         amount: number,
+        // eslint-disable-next-line camelcase
         where_to_use: string,
         memo?: string,
-        is_active: boolean = true
+        // eslint-disable-next-line camelcase
+        is_active = true,
     ): CardUsage {
+        /* eslint-disable camelcase */
         return {
             card_name,
             datetime_of_use: Timestamp.fromDate(new Date(datetime_of_use)),
@@ -30,8 +35,9 @@ export class CardUsageFactory {
             where_to_use,
             memo,
             is_active,
-            created_at: Timestamp.fromDate(new Date())
+            created_at: Timestamp.fromDate(new Date()),
         };
+        /* eslint-enable camelcase */
     }
 
     /**
@@ -39,12 +45,17 @@ export class CardUsageFactory {
      * (データベースから取得した値などを元にエンティティを作成する場合に使用)
      */
     static reconstruct(data: Partial<CardUsage> & {
+        // eslint-disable-next-line camelcase
         card_name: string,
+        // eslint-disable-next-line camelcase
         datetime_of_use: Timestamp,
         amount: number,
+        // eslint-disable-next-line camelcase
         where_to_use: string,
-        created_at: Timestamp
+        // eslint-disable-next-line camelcase
+        created_at: Timestamp,
     }): CardUsage {
+        /* eslint-disable camelcase */
         return {
             card_name: data.card_name,
             datetime_of_use: data.datetime_of_use,
@@ -52,7 +63,8 @@ export class CardUsageFactory {
             where_to_use: data.where_to_use,
             memo: data.memo,
             is_active: data.is_active ?? true,
-            created_at: data.created_at
+            created_at: data.created_at,
         };
+        /* eslint-enable camelcase */
     }
 }

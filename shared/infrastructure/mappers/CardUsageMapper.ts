@@ -12,11 +12,13 @@ export class CardUsageMapper {
    * @returns 通知用DTO
    */
   static toNotification(entity: CardUsage): CardUsageNotificationDTO {
+    /* eslint-disable camelcase */
     const { datetime_of_use, created_at, ...rest } = entity;
     return {
       ...rest,
-      datetime_of_use: datetime_of_use.toDate().toISOString()
+      datetime_of_use: datetime_of_use.toDate().toISOString(),
     };
+    /* eslint-enable camelcase */
   }
 
   /**
@@ -25,10 +27,12 @@ export class CardUsageMapper {
    * @returns ドメインエンティティ
    */
   static fromNotification(dto: CardUsageNotificationDTO): CardUsage {
+    /* eslint-disable camelcase */
     return {
       ...dto,
       datetime_of_use: Timestamp.fromDate(new Date(dto.datetime_of_use)),
-      created_at: Timestamp.now()
+      created_at: Timestamp.now(),
     };
+    /* eslint-enable camelcase */
   }
 }

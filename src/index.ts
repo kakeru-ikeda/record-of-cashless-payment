@@ -25,7 +25,7 @@ async function bootstrap() {
             throw new AppError(
                 '環境変数の設定に問題があります。必要な環境変数がすべて設定されていることを確認してください。',
                 ErrorType.ENVIRONMENT,
-            )
+            );
         }
 
         // アプリケーションのインスタンスを作成
@@ -63,14 +63,14 @@ function initializeLogger(): void {
                     Environment.LOG_LEVEL === 'NONE' ? LogLevel.NONE : LogLevel.INFO,
         suppressPolling: Environment.SUPPRESS_POLLING_LOGS,
         compactMode: Environment.COMPACT_LOGS,
-        statusRefreshInterval: Environment.STATUS_REFRESH_INTERVAL
+        statusRefreshInterval: Environment.STATUS_REFRESH_INTERVAL,
     });
 }
 
 // アプリケーションの起動
 bootstrap()
     .then(() => logger.info('アプリケーションが正常に起動しました', 'App'))
-    .catch(error => {
+    .catch((error) => {
         logger.error(error, 'App');
         process.exit(1);
     });

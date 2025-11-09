@@ -1,4 +1,4 @@
-import { Timestamp } from "firebase-admin/firestore";
+import { Timestamp } from 'firebase-admin/firestore';
 
 /**
  * カード利用情報を表すエンティティ

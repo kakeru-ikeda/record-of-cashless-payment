@@ -16,7 +16,7 @@ export class NotifyCardUsageUseCase implements INotifyCardUsageUseCase {
    */
   @ErrorHandler.errorDecorator('NotifyCardUsageUseCase', {
     defaultMessage: 'Discord通知の送信に失敗しました',
-    suppressNotification: true // 通知エラーの通知は不要
+    suppressNotification: true, // 通知エラーの通知は不要
   })
   async notifyUsage(usage: CardUsageNotificationDTO): Promise<void> {
     await this.discordNotifier.notifyCardUsage(usage);

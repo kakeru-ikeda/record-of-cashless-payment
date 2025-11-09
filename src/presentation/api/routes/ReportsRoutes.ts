@@ -11,6 +11,7 @@ export class ReportsRoutes {
     private reportController: ReportController;
 
     constructor(reportController: ReportController) {
+        // eslint-disable-next-line new-cap
         this.router = Router();
         this.reportController = reportController;
         this.initializeRoutes();

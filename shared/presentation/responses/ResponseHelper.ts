@@ -1,6 +1,6 @@
-import { AppError } from "@shared/errors/AppError";
-import { ErrorConfig } from "@shared/infrastructure/config/ErrorConfig";
-import { ErrorTypeMapper } from "@shared/infrastructure/mappers/ErrorTypeMapper";
+import { AppError } from '@shared/errors/AppError';
+import { ErrorConfig } from '@shared/infrastructure/config/ErrorConfig';
+import { ErrorTypeMapper } from '@shared/infrastructure/mappers/ErrorTypeMapper';
 
 /**
  * API/Functions用の標準レスポンスインターフェイス
@@ -46,7 +46,7 @@ export class ResponseHelper {
      * @param data エラー詳細データ（オプション）
      * @returns エラーレスポンスオブジェクト
      */
-    static error(status: number = 500, message: string, data?: any): Response {
+    static error(status = 500, message: string, data?: any): Response {
         return this.createResponse(status, false, message, data);
     }
 
@@ -67,7 +67,7 @@ export class ResponseHelper {
      * @param message エラーメッセージ（デフォルト: 'リソースが見つかりません'）
      * @returns 404エラーレスポンスオブジェクト
      */
-    static notFound(message: string = 'リソースが見つかりません'): Response {
+    static notFound(message = 'リソースが見つかりません'): Response {
         return this.error(404, message);
     }
 
@@ -77,7 +77,7 @@ export class ResponseHelper {
      * @param errors バリデーションエラーの詳細
      * @returns 400エラーレスポンスオブジェクト
      */
-    static validationError(message: string = '入力データが不正です', errors?: any): Response {
+    static validationError(message = '入力データが不正です', errors?: any): Response {
         return this.error(400, message, errors);
     }
 
@@ -87,7 +87,7 @@ export class ResponseHelper {
      * @param data エラー詳細データ（オプション）
      * @returns 401エラーレスポンスオブジェクト
      */
-    static unauthorized(message: string = '認証が必要です', data?: any): Response {
+    static unauthorized(message = '認証が必要です', data?: any): Response {
         return this.error(401, message, data);
     }
 
@@ -97,7 +97,7 @@ export class ResponseHelper {
      * @param data エラー詳細データ（オプション）
      * @returns 401エラーレスポンスオブジェクト
      */
-    static invalidToken(message: string = '認証トークンが無効または期限切れです', data?: any): Response {
+    static invalidToken(message = '認証トークンが無効または期限切れです', data?: any): Response {
         return this.error(401, message, data);
     }
 
@@ -107,7 +107,7 @@ export class ResponseHelper {
      * @param data エラー詳細データ（オプション）
      * @returns 403エラーレスポンスオブジェクト
      */
-    static forbidden(message: string = 'この操作を実行する権限がありません', data?: any): Response {
+    static forbidden(message = 'この操作を実行する権限がありません', data?: any): Response {
         return this.error(403, message, data);
     }
 }

@@ -120,7 +120,7 @@ declare global {
         uid: string;
         email: string;
         name: string;
-        roles?: string[];  // ユーザーロールの配列
+        roles?: string[]; // ユーザーロールの配列
       };
     }
   }
