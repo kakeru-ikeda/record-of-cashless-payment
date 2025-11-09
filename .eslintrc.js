@@ -17,16 +17,6 @@ module.exports = {
     project: ['tsconfig.json'],
     sourceType: 'module',
   },
-  ignorePatterns: [
-    'dist/**/*', // Ignore built files.
-    'node_modules/**/*', // Ignore node_modules.
-    'functions/**/*', // Ignore functions directory (has its own ESLint config).
-    'coverage/**/*', // Ignore coverage files.
-    'scripts/**/*', // Ignore scripts directory.
-    '*.config.js', // Ignore config files.
-    '.eslintrc.js', // Ignore this ESLint config file.
-    'tsconfig-paths-bootstrap.js', // Ignore bootstrap script.
-  ],
   plugins: [
     '@typescript-eslint',
     'import',
