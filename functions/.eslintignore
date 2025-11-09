@@ -1,0 +1,11 @@
+# Build output
+lib/
+
+# Generated files
+generated/
+
+# Scripts
+fix-imports.js
+
+# Coverage
+coverage/

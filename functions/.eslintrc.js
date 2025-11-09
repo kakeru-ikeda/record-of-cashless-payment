@@ -17,12 +17,6 @@ module.exports = {
     project: ['tsconfig.json', 'tsconfig.dev.json'],
     sourceType: 'module',
   },
-  ignorePatterns: [
-    '/lib/**/*', // Ignore built files.
-    '/generated/**/*', // Ignore generated files.
-    '/fix-imports.js', // Ignore the fix-imports script.
-    '/coverage/**/*', // Ignore coverage files.
-  ],
   plugins: [
     '@typescript-eslint',
     'import',
