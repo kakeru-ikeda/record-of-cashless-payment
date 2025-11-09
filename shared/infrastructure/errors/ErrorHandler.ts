@@ -115,6 +115,7 @@ export class ErrorHandler {
      * @param error 元のエラー
      * @returns AppErrorインスタンス
      */
+    // eslint-disable-next-line max-len
     static convertToAppError(error: any, customMessage?: string, additionalDetails?: Record<string, unknown>): AppError {
         // すでにAppErrorインスタンスならそのまま返す
         if (error instanceof AppError) {
