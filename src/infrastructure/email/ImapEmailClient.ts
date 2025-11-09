@@ -77,7 +77,7 @@ export class ImapEmailClient extends EventEmitter implements IEmailClient {
         const appError = new AppError(
           'IMAPクライアントでエラーが発生しました',
           ErrorType.EMAIL,
-          { code: err.code, message: err.message },
+          { code: (err as any).code, message: err.message },
           err
         );
 
@@ -197,8 +197,14 @@ export class ImapEmailClient extends EventEmitter implements IEmailClient {
     try {
       // 未読メールを検索 (UNSEEN検索フラグを使用)
       const messages = await this.client.search({ seen: false });
+      
+      // messagesがfalseまたはnullの場合（検索結果がない場合）は空配列を返す
+      if (!messages || !Array.isArray(messages)) {
+        logger.info(`未読メール検索結果: 0 件`, context);
+        return [];
+      }
+      
       logger.info(`未読メール検索結果: ${messages.length} 件`, context);
-
       return messages.map(seq => seq.toString());
     } catch (error) {
       const appError = new AppError(
