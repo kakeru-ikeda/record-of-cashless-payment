@@ -1,0 +1,21 @@
+# Build output
+dist/
+node_modules/
+coverage/
+
+# Functions directory (has its own ESLint config)
+functions/
+
+# Scripts directory
+scripts/
+
+# Test files (not in main tsconfig.json)
+tests/
+
+# Type definitions
+types/
+
+# Config files
+*.config.js
+.eslintrc.js
+tsconfig-paths-bootstrap.js
