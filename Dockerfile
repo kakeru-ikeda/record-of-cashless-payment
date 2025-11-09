@@ -1,5 +1,5 @@
 # Test stage
-FROM node:18 AS test
+FROM node:22 AS test
 WORKDIR /usr/src/app
 ENV TZ=Asia/Tokyo
 COPY package*.json ./
@@ -8,7 +8,7 @@ COPY . .
 RUN npm run test:main
 
 # ベースイメージとして公式のNode.jsイメージを使用
-FROM node:18 AS build
+FROM node:22 AS build
 WORKDIR /usr/src/app
 
 # 環境変数を設定
