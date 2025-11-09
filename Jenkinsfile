@@ -18,37 +18,7 @@ pipeline {
         timeout(time: 30, unit: 'MINUTES')
     }
     
-    stages {   
-        stage('Docker Diagnostic') {
-            steps {
-                script {
-                    echo "Docker環境を診断中..."
-                    try {
-                        sh '''
-                            echo "=== Docker コマンドの確認 ==="
-                            which docker || echo "dockerコマンドが見つかりません"
-                            
-                            echo "=== Docker バージョン ==="
-                            docker --version || echo "dockerコマンドが実行できません"
-                            
-                            echo "=== Docker デーモン接続確認 ==="
-                            docker ps || echo "Dockerデーモンに接続できません"
-                            
-                            echo "=== /var/run/docker.sock の確認 ==="
-                            ls -la /var/run/docker.sock || echo "docker.sockが見つかりません"
-                            
-                            echo "=== 現在のユーザー ==="
-                            whoami
-                            id
-                        '''
-                    } catch (Exception e) {
-                        echo "Docker診断中にエラーが発生: ${e.getMessage()}"
-                        error("Dockerが利用できません。パイプラインを停止します。")
-                    }
-                }
-            }
-        }
-
+    stages {
         stage('Notification') {
             steps {
                 echo 'パイプラインの実行を開始しました'
