@@ -1,6 +1,9 @@
 pipeline {
     agent {
-        label 'built-in'
+        docker {
+            image 'docker:latest'
+            args '-v /var/run/docker.sock:/var/run/docker.sock --user root'
+        }
     }
     
     environment {
