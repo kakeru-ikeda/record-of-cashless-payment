@@ -2,7 +2,7 @@
 FROM node:22 AS test
 WORKDIR /usr/src/app
 ENV TZ=Asia/Tokyo
-COPY package*.json ./
+COPY package*.json package-lock.json ./
 RUN npm ci
 COPY . .
 RUN npm run test:main
@@ -21,8 +21,8 @@ ENV SUPPRESS_POLLING_LOGS=true
 ENV STATUS_REFRESH_INTERVAL=30000
 
 # パッケージ定義ファイルをコピーして、依存関係をインストール
-COPY package*.json ./
-RUN npm ci --only=production=false
+COPY package*.json package-lock.json ./
+RUN npm ci
 
 # ソースコードをコピー
 COPY . .
