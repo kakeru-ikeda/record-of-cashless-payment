@@ -77,8 +77,9 @@ export class ProcessCardCompanyEmailUseCase implements IProcessCardCompanyEmailU
    * 三井住友カードのメールかどうかを判定
    */
   private isSmbcEmail(email: ParsedEmail): boolean {
-// eslint-disable-next-line max-len
-    const fromCheck = email.from.includes('vpass.ne.jp') || email.from.includes('smbc-card.com') || email.from.includes('smbc.co.jp');
+    const fromCheck = email.from.includes('vpass.ne.jp') ||
+      email.from.includes('smbc-card.com') ||
+      email.from.includes('smbc.co.jp');
     const subjectCheck = email.subject.includes('三井住友') || email.subject.includes('利用');
     const bodyCheck = email.body.includes('三井住友') || email.body.includes('SMBC') || email.body.includes('クレジット');
 

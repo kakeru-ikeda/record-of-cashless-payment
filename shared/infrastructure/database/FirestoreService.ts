@@ -104,8 +104,13 @@ export class FirestoreService {
 
         try {
             // 環境変数の状態をログ出力（デバッグ用）
-// eslint-disable-next-line max-len
-            logger.info(`Firebase初期化: Cloud Functions判定=${this.isCloudFunctions()}, FUNCTION_TARGET=${process.env.FUNCTION_TARGET}, FIREBASE_CONFIG=${process.env.FIREBASE_CONFIG ? '設定済み' : '未設定'}, GOOGLE_CLOUD_PROJECT=${process.env.GOOGLE_CLOUD_PROJECT}`, this.serviceContext);
+            logger.info(
+                `Firebase初期化: Cloud Functions判定=${this.isCloudFunctions()}, ` +
+                `FUNCTION_TARGET=${process.env.FUNCTION_TARGET}, ` +
+                `FIREBASE_CONFIG=${process.env.FIREBASE_CONFIG ? '設定済み' : '未設定'}, ` +
+                `GOOGLE_CLOUD_PROJECT=${process.env.GOOGLE_CLOUD_PROJECT}`,
+                this.serviceContext,
+            );
 
             if (this.isCloudFunctions()) {
                 // Cloud Functions環境では、Firebase Admin SDKが自動初期化されているかチェック

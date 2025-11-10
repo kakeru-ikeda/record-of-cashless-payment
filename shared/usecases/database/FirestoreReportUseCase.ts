@@ -223,8 +223,12 @@ export class FirestoreReportUseCase {
     @ErrorHandler.errorDecorator('ReportUseCase', {
         defaultMessage: '日次レポートの更新に失敗しました',
     })
-// eslint-disable-next-line max-len
-    async updateDailyReport(reportData: Partial<DailyReport>, year: string, month: string, day: string): Promise<string> {
+    async updateDailyReport(
+        reportData: Partial<DailyReport>,
+        year: string,
+        month: string,
+        day: string,
+    ): Promise<string> {
         logger.info(`日次レポート更新: ${year}年${month}月${day}日`, this.serviceContext);
 
         const path = await this.reportRepository.updateDailyReport(reportData, year, month, day);
@@ -244,8 +248,12 @@ export class FirestoreReportUseCase {
     @ErrorHandler.errorDecorator('ReportUseCase', {
         defaultMessage: '週次レポートの更新に失敗しました',
     })
-// eslint-disable-next-line max-len
-    async updateWeeklyReport(reportData: Partial<WeeklyReport>, year: string, month: string, term: string): Promise<string> {
+    async updateWeeklyReport(
+        reportData: Partial<WeeklyReport>,
+        year: string,
+        month: string,
+        term: string,
+    ): Promise<string> {
         logger.info(`週次レポート更新: ${year}年${month}月 第${term}週`, this.serviceContext);
 
         const path = await this.reportRepository.updateWeeklyReport(reportData, year, month, term);

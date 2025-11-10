@@ -4,8 +4,9 @@ import { Environment } from '../../../../shared/infrastructure/config/Environmen
 import { logger } from '../../../../shared/infrastructure/logging/Logger';
 import { AppError, ErrorType } from '@shared/errors/AppError';
 import { ErrorHandler } from '../../../../shared/infrastructure/errors/ErrorHandler';
-// eslint-disable-next-line max-len
-import { IProcessCardCompanyEmailUseCase } from '../../../domain/interfaces/usecases/email/IProcessCardCompanyEmailUseCase';
+import {
+  IProcessCardCompanyEmailUseCase,
+} from '../../../domain/interfaces/usecases/email/IProcessCardCompanyEmailUseCase';
 import { INotifyCardUsageUseCase } from '../../../domain/interfaces/usecases/notification/INotifyCardUsageUseCase';
 import { CardCompany } from '@domain/enums/CardCompany';
 

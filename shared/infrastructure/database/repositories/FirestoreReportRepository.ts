@@ -72,8 +72,8 @@ export class FirestoreReportRepository implements IReportCrudRepository {
         await this.initialize();
 
         // FirestorePathUtilを使用してベースパスを取得
-// eslint-disable-next-line max-len
-        const dailyReportBasePath = FirestorePathUtil.getDailyReportPath(year, month, '01').replace(/\/\d{2}$/, ''); // 月単位のパスに変更
+        const dailyReportBasePath = FirestorePathUtil.getDailyReportPath(year, month, '01')
+            .replace(/\/\d{2}$/, ''); // 月単位のパスに変更
 
         // 月内の全ての日次レポートを取得
         const reports = await this.firestoreService.query(
@@ -141,8 +141,8 @@ export class FirestoreReportRepository implements IReportCrudRepository {
         await this.initialize();
 
         // FirestorePathUtilを使用してベースパスを取得
-// eslint-disable-next-line max-len
-        const weeklyReportBasePath = FirestorePathUtil.getWeeklyReportPath(year, month, '01').replace(/\/term\d+$/, ''); // 月単位のパスに変更
+        const weeklyReportBasePath = FirestorePathUtil.getWeeklyReportPath(year, month, '01')
+            .replace(/\/term\d+$/, ''); // 月単位のパスに変更
 
         // 月内の全ての週次レポートを取得
         const reports = await this.firestoreService.query(
@@ -233,8 +233,12 @@ export class FirestoreReportRepository implements IReportCrudRepository {
     @ErrorHandler.errorDecorator('FirestoreReportRepository', {
         defaultMessage: '週次レポートの更新に失敗しました',
     })
-// eslint-disable-next-line max-len
-    async updateWeeklyReport(report: Partial<WeeklyReport>, year: string, month: string, term: string): Promise<string> {
+    async updateWeeklyReport(
+        report: Partial<WeeklyReport>,
+        year: string,
+        month: string,
+        term: string,
+    ): Promise<string> {
         await this.initialize();
 
         // パス情報を取得（実際の日付を使用）

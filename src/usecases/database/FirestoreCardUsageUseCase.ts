@@ -1,6 +1,7 @@
 import { CardUsage } from '@shared/domain/entities/CardUsage';
-// eslint-disable-next-line max-len
-import { ICardUsageCrudRepository } from '@domain/interfaces/infrastructure/database/repositories/ICardUsageCrudRepository';
+import {
+  ICardUsageCrudRepository,
+} from '@domain/interfaces/infrastructure/database/repositories/ICardUsageCrudRepository';
 import { AppError, ErrorType } from '@shared/errors/AppError';
 import { Timestamp } from 'firebase-admin/firestore';
 import { DiscordNotifier } from '@shared/infrastructure/discord/DiscordNotifier';
@@ -74,8 +75,8 @@ export class FirestoreCardUsageUseCase {
                     cardUsageData.datetime_of_use.seconds !== undefined)) {
                 // Timestampオブジェクト形式の場合、millisecondsに変換してからTimestamp.fromMillis()を使用
                 const seconds = cardUsageData.datetime_of_use._seconds || cardUsageData.datetime_of_use.seconds;
-// eslint-disable-next-line max-len
-                const nanoseconds = cardUsageData.datetime_of_use._nanoseconds || cardUsageData.datetime_of_use.nanoseconds || 0;
+                const nanoseconds = cardUsageData.datetime_of_use._nanoseconds ||
+                  cardUsageData.datetime_of_use.nanoseconds || 0;
                 const milliseconds = seconds * 1000 + Math.floor(nanoseconds / 1000000);
                 datetime_of_use = Timestamp.fromMillis(milliseconds);
             } else {

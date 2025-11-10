@@ -212,8 +212,9 @@ export class DiscordNotifier implements IDiscordNotifier {
     async notifyWeeklyReport(data: WeeklyReportNotificationDTO): Promise<boolean> {
         try {
             // アラートレベルが0より大きいならアラート通知、それ以外は定期レポート
-// eslint-disable-next-line max-len
-            const notificationType = data.alertLevel > 0 ? NotificationType.ALERT_WEEKLY : NotificationType.REPORT_WEEKLY;
+            const notificationType = data.alertLevel > 0 ?
+                NotificationType.ALERT_WEEKLY :
+                NotificationType.REPORT_WEEKLY;
             const webhookUrl = this.getWebhookUrl(notificationType);
 
             const formattedAmount = data.totalAmount.toLocaleString() + '円';
@@ -347,8 +348,9 @@ export class DiscordNotifier implements IDiscordNotifier {
     async notifyMonthlyReport(data: MonthlyReportNotificationDTO): Promise<boolean> {
         try {
             // アラートレベルが0より大きいならアラート通知、それ以外は定期レポート
-// eslint-disable-next-line max-len
-            const notificationType = data.alertLevel > 0 ? NotificationType.ALERT_MONTHLY : NotificationType.REPORT_MONTHLY;
+            const notificationType = data.alertLevel > 0 ?
+                NotificationType.ALERT_MONTHLY :
+                NotificationType.REPORT_MONTHLY;
             const webhookUrl = this.getWebhookUrl(notificationType);
 
             const formattedAmount = data.totalAmount.toLocaleString() + '円';

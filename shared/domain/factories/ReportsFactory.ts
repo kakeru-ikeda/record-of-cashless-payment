@@ -105,8 +105,9 @@ export class WeeklyReportFactory {
             lastUpdated: FieldValue.serverTimestamp(),
             lastUpdatedBy,
             documentIdList,
-// eslint-disable-next-line max-len
-            termStartDate: termStartDate instanceof Timestamp ? termStartDate : Timestamp.fromDate(new Date(termStartDate)),
+            termStartDate: termStartDate instanceof Timestamp ?
+                termStartDate :
+                Timestamp.fromDate(new Date(termStartDate)),
             termEndDate: termEndDate instanceof Timestamp ? termEndDate : Timestamp.fromDate(new Date(termEndDate)),
             hasNotifiedLevel1,
             hasNotifiedLevel2,
@@ -209,8 +210,9 @@ export class MonthlyReportFactory {
             lastUpdated: FieldValue.serverTimestamp(),
             lastUpdatedBy,
             documentIdList,
-// eslint-disable-next-line max-len
-            monthStartDate: monthStartDate instanceof Timestamp ? monthStartDate : Timestamp.fromDate(new Date(monthStartDate)),
+            monthStartDate: monthStartDate instanceof Timestamp ?
+                monthStartDate :
+                Timestamp.fromDate(new Date(monthStartDate)),
             monthEndDate: monthEndDate instanceof Timestamp ? monthEndDate : Timestamp.fromDate(new Date(monthEndDate)),
             hasNotifiedLevel1,
             hasNotifiedLevel2,

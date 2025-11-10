@@ -1,7 +1,8 @@
 import { Firestore } from 'firebase-admin/firestore';
 import { CardUsage } from '@shared/domain/entities/CardUsage';
-// eslint-disable-next-line max-len
-import { ICardUsageCrudRepository } from '@domain/interfaces/infrastructure/database/repositories/ICardUsageCrudRepository';
+import {
+  ICardUsageCrudRepository,
+} from '@domain/interfaces/infrastructure/database/repositories/ICardUsageCrudRepository';
 import { Environment } from '@shared/infrastructure/config/Environment';
 import { FirestoreService } from '@shared/infrastructure/database/FirestoreService';
 import { FirestorePathUtil } from '@shared/utils/FirestorePathUtil';

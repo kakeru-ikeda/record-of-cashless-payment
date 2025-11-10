@@ -1,6 +1,7 @@
 import { CardUsageNotificationDTO } from '@shared/domain/dto/CardUsageNotificationDTO';
-// eslint-disable-next-line max-len
-import { ICardUsageCrudRepository } from '@domain/interfaces/infrastructure/database/repositories/ICardUsageCrudRepository';
+import {
+  ICardUsageCrudRepository,
+} from '@domain/interfaces/infrastructure/database/repositories/ICardUsageCrudRepository';
 import { IProcessEmailUseCase } from '@domain/interfaces/usecases/email/IProcessEmailUseCase';
 import { ImapEmailService } from '@infrastructure/email/ImapEmailService';
 import { logger } from '@shared/infrastructure/logging/Logger';
@@ -35,8 +36,10 @@ export class ProcessEmailUseCase implements IProcessEmailUseCase {
   @ErrorHandler.errorDecorator('ProcessEmailUseCase', {
     defaultMessage: 'メール処理中にエラーが発生しました',
   })
-// eslint-disable-next-line max-len
-  async execute(emailBody: string, cardCompany: CardCompany = CardCompany.MUFG): Promise<{ usage: CardUsageNotificationDTO, savedPath: string }> {
+  async execute(
+    emailBody: string,
+    cardCompany: CardCompany = CardCompany.MUFG,
+  ): Promise<{ usage: CardUsageNotificationDTO, savedPath: string }> {
     logger.info(`${cardCompany}のメール本文の解析を開始します...`, this.serviceContext);
 
     // メール本文からカード利用情報を抽出

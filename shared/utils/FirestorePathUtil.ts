@@ -25,8 +25,11 @@ export class FirestorePathUtil {
    * @returns 週次レポートパス
    */
   static getWeeklyReportPath(year: string, month: string, day: string): string;
-// eslint-disable-next-line max-len
-  static getWeeklyReportPath(dateOrYear: Date | number | string, month?: number | string, day?: number | string): string {
+  static getWeeklyReportPath(
+    dateOrYear: Date | number | string,
+    month?: number | string,
+    day?: number | string,
+  ): string {
     let dateInfo: DateInfo;
     if (dateOrYear instanceof Date) {
       dateInfo = DateUtil.getDateInfo(dateOrYear);
@@ -61,8 +64,11 @@ export class FirestorePathUtil {
    * @returns 日次レポートパス
    */
   static getDailyReportPath(year: string, month: string, day: string): string;
-// eslint-disable-next-line max-len
-  static getDailyReportPath(dateOrYear: Date | number | string, month?: number | string, day?: number | string): string {
+  static getDailyReportPath(
+    dateOrYear: Date | number | string,
+    month?: number | string,
+    day?: number | string,
+  ): string {
     let dateInfo: DateInfo;
     if (dateOrYear instanceof Date) {
       dateInfo = DateUtil.getDateInfo(dateOrYear);
@@ -130,8 +136,11 @@ export class FirestorePathUtil {
    * @returns カード利用詳細データパス
    */
   static getCardUsageDetailsPath(year: string, month: string, day: string): string;
-// eslint-disable-next-line max-len
-  static getCardUsageDetailsPath(dateOrYear: Date | number | string, month?: number | string, day?: number | string): string {
+  static getCardUsageDetailsPath(
+    dateOrYear: Date | number | string,
+    month?: number | string,
+    day?: number | string,
+  ): string {
     let dateInfo: DateInfo;
     if (dateOrYear instanceof Date) {
       dateInfo = DateUtil.getDateInfo(dateOrYear);

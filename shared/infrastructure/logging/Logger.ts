@@ -417,8 +417,12 @@ export class Logger implements ILogger {
   /**
    * 重複ログの抑制処理
    */
-// eslint-disable-next-line max-len
-  private handleSuppression(key: string, message: string, context?: string, level: 'debug' | 'info' | 'warn' | 'error' = 'info'): void {
+  private handleSuppression(
+    key: string,
+    message: string,
+    context?: string,
+    level: 'debug' | 'info' | 'warn' | 'error' = 'info',
+  ): void {
     const now = Date.now();
     const record = this.suppressedMessages.get(key);
 

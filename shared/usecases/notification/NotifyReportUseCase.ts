@@ -1,6 +1,9 @@
 import { INotifyReportUseCase } from '@shared/domain/interfaces/usecases/notification/INotifyReportUseCase';
-// eslint-disable-next-line max-len
-import { DailyReportNotificationDTO, WeeklyReportNotificationDTO, MonthlyReportNotificationDTO } from '@shared/domain/dto/ReportNotificationDTOs';
+import {
+  DailyReportNotificationDTO,
+  WeeklyReportNotificationDTO,
+  MonthlyReportNotificationDTO,
+} from '@shared/domain/dto/ReportNotificationDTOs';
 import { logger } from '@shared/infrastructure/logging/Logger';
 import { ErrorHandler } from '@shared/infrastructure/errors/ErrorHandler';
 import { IDiscordNotifier } from '@shared/domain/interfaces/discord/IDiscordNotifier';
