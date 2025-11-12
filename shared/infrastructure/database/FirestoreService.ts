@@ -1,5 +1,5 @@
 import * as admin from 'firebase-admin';
-import { Firestore, DocumentData } from 'firebase-admin/firestore';
+import { Firestore } from 'firebase-admin/firestore';
 import * as fs from 'fs';
 import { AppError, ErrorType } from '@shared/errors/AppError';
 import { logger } from '@shared/infrastructure/logging/Logger';
@@ -185,7 +185,7 @@ export class FirestoreService {
      * @param path ドキュメントパス
      * @param data 保存するデータ
      */
-    public async saveDocument(path: string, data: DocumentData): Promise<void> {
+    public async saveDocument(path: string, data: any): Promise<void> {
         try {
             const db = await this.getDb();
             await db.doc(path).set(data);
@@ -207,7 +207,7 @@ export class FirestoreService {
      * @param path ドキュメントパス
      * @param data 更新するデータ
      */
-    public async updateDocument(path: string, data: DocumentData): Promise<void> {
+    public async updateDocument(path: string, data: any): Promise<void> {
         try {
             const db = await this.getDb();
             await db.doc(path).update(data);

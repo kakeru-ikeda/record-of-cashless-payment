@@ -31,10 +31,6 @@ module.exports = {
     'operator-linebreak': 'off',
     '@typescript-eslint/no-namespace': 'off',
     'require-jsdoc': 'off',
-    '@typescript-eslint/no-unused-vars': ['warn', { 
-      'argsIgnorePattern': '^_',
-      'varsIgnorePattern': '^_'
-    }],
   },
   overrides: [
     {

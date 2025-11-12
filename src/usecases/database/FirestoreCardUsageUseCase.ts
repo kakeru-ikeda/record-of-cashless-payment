@@ -8,30 +8,6 @@ import { DiscordNotifier } from '@shared/infrastructure/discord/DiscordNotifier'
 import { CardUsageMapper } from '@shared/infrastructure/mappers/CardUsageMapper';
 
 /**
- * カード利用情報作成用のDTO
- */
-interface CreateCardUsageDTO {
-  card_name: string;
-  datetime_of_use: string | Timestamp;
-  amount: number;
-  where_to_use: string;
-  memo?: string;
-  is_active?: boolean;
-}
-
-/**
- * カード利用情報更新用のDTO
- */
-interface UpdateCardUsageDTO {
-  card_name?: string;
-  datetime_of_use?: string | Timestamp;
-  amount?: number;
-  where_to_use?: string;
-  memo?: string;
-  is_active?: boolean;
-}
-
-/**
  * Firestoreを使用したカード利用情報のユースケース
  * カード利用情報の取得、作成、更新、削除を行う
  */
@@ -78,7 +54,7 @@ export class FirestoreCardUsageUseCase {
      * @param cardUsageData カード利用情報
      * @returns 作成されたカード利用情報
      */
-    async createCardUsage(cardUsageData: CreateCardUsageDTO): Promise<CardUsage & { id: string, path: string }> {
+    async createCardUsage(cardUsageData: any): Promise<CardUsage & { id: string, path: string }> {
         // バリデーション
         if (!cardUsageData || !cardUsageData.datetime_of_use || !cardUsageData.amount || !cardUsageData.card_name) {
             throw new AppError('必須フィールドが不足しています', ErrorType.VALIDATION);
@@ -94,16 +70,13 @@ export class FirestoreCardUsageUseCase {
                     throw new Error('Invalid date string');
                 }
                 datetime_of_use = Timestamp.fromDate(dateObj);
-            } else if (cardUsageData.datetime_of_use instanceof Timestamp) {
-                // Already a Timestamp object
-                datetime_of_use = cardUsageData.datetime_of_use;
             } else if (cardUsageData.datetime_of_use &&
-                typeof cardUsageData.datetime_of_use === 'object' &&
-                'seconds' in cardUsageData.datetime_of_use) {
-                // Timestamp-like object, convert to Timestamp
-                type TimestampLike = {seconds: number; nanoseconds?: number};
-                const seconds = (cardUsageData.datetime_of_use as TimestampLike).seconds;
-                const nanoseconds = (cardUsageData.datetime_of_use as TimestampLike).nanoseconds || 0;
+                (cardUsageData.datetime_of_use._seconds !== undefined ||
+                    cardUsageData.datetime_of_use.seconds !== undefined)) {
+                // Timestampオブジェクト形式の場合、millisecondsに変換してからTimestamp.fromMillis()を使用
+                const seconds = cardUsageData.datetime_of_use._seconds || cardUsageData.datetime_of_use.seconds;
+                const nanoseconds = cardUsageData.datetime_of_use._nanoseconds ||
+                  cardUsageData.datetime_of_use.nanoseconds || 0;
                 const milliseconds = seconds * 1000 + Math.floor(nanoseconds / 1000000);
                 datetime_of_use = Timestamp.fromMillis(milliseconds);
             } else {
@@ -153,10 +126,7 @@ export class FirestoreCardUsageUseCase {
      * @param updateData 更新データ
      * @returns 更新されたカード利用情報
      */
-    async updateCardUsage(
-        id: string,
-        updateData: UpdateCardUsageDTO
-    ): Promise<CardUsage & { id: string, path: string }> {
+    async updateCardUsage(id: string, updateData: any): Promise<CardUsage & { id: string, path: string }> {
         if (!id) {
             throw new AppError('IDが必要です', ErrorType.VALIDATION);
         }

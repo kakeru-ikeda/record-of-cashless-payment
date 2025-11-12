@@ -34,12 +34,9 @@ export class FirestorePathUtil {
     if (dateOrYear instanceof Date) {
       dateInfo = DateUtil.getDateInfo(dateOrYear);
     } else {
-      if (month === undefined || day === undefined) {
-        throw new Error('month and day are required when dateOrYear is not a Date');
-      }
       const yearNum = typeof dateOrYear === 'string' ? parseInt(dateOrYear, 10) : dateOrYear;
-      const monthNum = typeof month === 'string' ? parseInt(month, 10) : month;
-      const dayNum = typeof day === 'string' ? parseInt(day, 10) : day;
+      const monthNum = typeof month === 'string' ? parseInt(month, 10) : month!;
+      const dayNum = typeof day === 'string' ? parseInt(day, 10) : day!;
       dateInfo = DateUtil.getDateInfo(new Date(yearNum, monthNum - 1, dayNum));
     }
     const monthFormatted = dateInfo.month.toString().padStart(2, '0');
@@ -76,12 +73,9 @@ export class FirestorePathUtil {
     if (dateOrYear instanceof Date) {
       dateInfo = DateUtil.getDateInfo(dateOrYear);
     } else {
-      if (month === undefined || day === undefined) {
-        throw new Error('month and day are required when dateOrYear is not a Date');
-      }
       const yearNum = typeof dateOrYear === 'string' ? parseInt(dateOrYear, 10) : dateOrYear;
-      const monthNum = typeof month === 'string' ? parseInt(month, 10) : month;
-      const dayNum = typeof day === 'string' ? parseInt(day, 10) : day;
+      const monthNum = typeof month === 'string' ? parseInt(month, 10) : month!;
+      const dayNum = typeof day === 'string' ? parseInt(day, 10) : day!;
       dateInfo = DateUtil.getDateInfo(new Date(yearNum, monthNum - 1, dayNum));
     }
     const monthFormatted = dateInfo.month.toString().padStart(2, '0');
@@ -113,11 +107,8 @@ export class FirestorePathUtil {
     if (dateOrYear instanceof Date) {
       dateInfo = DateUtil.getDateInfo(dateOrYear);
     } else {
-      if (month === undefined) {
-        throw new Error('month is required when dateOrYear is not a Date');
-      }
       const yearNum = typeof dateOrYear === 'string' ? parseInt(dateOrYear, 10) : dateOrYear;
-      const monthNum = typeof month === 'string' ? parseInt(month, 10) : month;
+      const monthNum = typeof month === 'string' ? parseInt(month, 10) : month!;
       dateInfo = DateUtil.getDateInfo(new Date(yearNum, monthNum - 1, 1));
     }
     const monthFormatted = dateInfo.month.toString().padStart(2, '0');
@@ -154,12 +145,9 @@ export class FirestorePathUtil {
     if (dateOrYear instanceof Date) {
       dateInfo = DateUtil.getDateInfo(dateOrYear);
     } else {
-      if (month === undefined || day === undefined) {
-        throw new Error('month and day are required when dateOrYear is not a Date');
-      }
       const yearNum = typeof dateOrYear === 'string' ? parseInt(dateOrYear, 10) : dateOrYear;
-      const monthNum = typeof month === 'string' ? parseInt(month, 10) : month;
-      const dayNum = typeof day === 'string' ? parseInt(day, 10) : day;
+      const monthNum = typeof month === 'string' ? parseInt(month, 10) : month!;
+      const dayNum = typeof day === 'string' ? parseInt(day, 10) : day!;
       dateInfo = DateUtil.getDateInfo(new Date(yearNum, monthNum - 1, dayNum));
     }
     const now = new Date();

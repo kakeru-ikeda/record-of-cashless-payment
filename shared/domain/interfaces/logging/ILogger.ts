@@ -1,6 +1,5 @@
 import { AppError } from '@shared/errors/AppError';
-import { LoggerConfig, ErrorRecord } from '@shared/infrastructure/logging/Logger';
-import { IDiscordNotifier } from '@shared/domain/interfaces/discord/IDiscordNotifier';
+import { LoggerConfig } from '@shared/infrastructure/logging/Logger';
 
 /**
  * ログ通知オプションのインターフェース
@@ -36,7 +35,7 @@ export interface ILogger {
   /**
    * DiscordNotifierを設定
    */
-  setDiscordNotifier(discordNotifier: IDiscordNotifier): void;
+  setDiscordNotifier(discordNotifier: any): void;
 
   /**
    * DEBUGレベルのログを出力
@@ -71,14 +70,4 @@ export interface ILogger {
    * ステータスダッシュボードの描画
    */
   renderStatusDashboard(): void;
-
-  /**
-   * サービスステータスのMapを取得
-   */
-  getServices(): Map<string, ServiceStatus>;
-
-  /**
-   * エラー履歴を取得
-   */
-  getErrorHistory(): ErrorRecord[];
 }

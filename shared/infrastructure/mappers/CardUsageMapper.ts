@@ -13,8 +13,7 @@ export class CardUsageMapper {
    */
   static toNotification(entity: CardUsage): CardUsageNotificationDTO {
     /* eslint-disable camelcase */
-    // created_at is intentionally excluded from notification DTO
-    const { datetime_of_use, created_at: _created_at, ...rest } = entity;
+    const { datetime_of_use, created_at, ...rest } = entity;
     return {
       ...rest,
       datetime_of_use: datetime_of_use.toDate().toISOString(),

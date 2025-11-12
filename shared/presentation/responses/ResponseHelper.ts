@@ -9,7 +9,7 @@ export interface Response {
     status: number;
     success: boolean;
     message: string;
-    data?: unknown;
+    data?: any;
 }
 
 /**
@@ -25,7 +25,7 @@ export class ResponseHelper {
      * @param data レスポンスデータ（オプション）
      * @returns 標準化されたレスポンスオブジェクト
      */
-    static createResponse(status: number, success: boolean, message: string, data?: unknown): Response {
+    static createResponse(status: number, success: boolean, message: string, data?: any): Response {
         return { status, success, message, data };
     }
 
@@ -35,7 +35,7 @@ export class ResponseHelper {
      * @param data レスポンスデータ（オプション）
      * @returns 成功レスポンスオブジェクト
      */
-    static success(message: string, data?: unknown): Response {
+    static success(message: string, data?: any): Response {
         return this.createResponse(200, true, message, data);
     }
 
@@ -46,7 +46,7 @@ export class ResponseHelper {
      * @param data エラー詳細データ（オプション）
      * @returns エラーレスポンスオブジェクト
      */
-    static error(status = 500, message: string, data?: unknown): Response {
+    static error(status = 500, message: string, data?: any): Response {
         return this.createResponse(status, false, message, data);
     }
 
@@ -77,7 +77,7 @@ export class ResponseHelper {
      * @param errors バリデーションエラーの詳細
      * @returns 400エラーレスポンスオブジェクト
      */
-    static validationError(message = '入力データが不正です', errors?: unknown): Response {
+    static validationError(message = '入力データが不正です', errors?: any): Response {
         return this.error(400, message, errors);
     }
 
@@ -87,7 +87,7 @@ export class ResponseHelper {
      * @param data エラー詳細データ（オプション）
      * @returns 401エラーレスポンスオブジェクト
      */
-    static unauthorized(message = '認証が必要です', data?: unknown): Response {
+    static unauthorized(message = '認証が必要です', data?: any): Response {
         return this.error(401, message, data);
     }
 
@@ -97,7 +97,7 @@ export class ResponseHelper {
      * @param data エラー詳細データ（オプション）
      * @returns 401エラーレスポンスオブジェクト
      */
-    static invalidToken(message = '認証トークンが無効または期限切れです', data?: unknown): Response {
+    static invalidToken(message = '認証トークンが無効または期限切れです', data?: any): Response {
         return this.error(401, message, data);
     }
 
@@ -107,7 +107,7 @@ export class ResponseHelper {
      * @param data エラー詳細データ（オプション）
      * @returns 403エラーレスポンスオブジェクト
      */
-    static forbidden(message = 'この操作を実行する権限がありません', data?: unknown): Response {
+    static forbidden(message = 'この操作を実行する権限がありません', data?: any): Response {
         return this.error(403, message, data);
     }
 }

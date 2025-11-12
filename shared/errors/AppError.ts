@@ -36,7 +36,7 @@ export enum ErrorType {
 export class AppError extends Error {
     readonly type: ErrorType;
     readonly statusCode: number;
-    readonly details?: unknown;
+    readonly details?: any;
     readonly originalError?: Error;
 
     /**
@@ -48,7 +48,7 @@ export class AppError extends Error {
     constructor(
         message: string,
         type: ErrorType = ErrorType.GENERAL,
-        details?: unknown,
+        details?: any,
         originalError?: Error
     ) {
         super(message);
@@ -76,7 +76,7 @@ export class AppError extends Error {
         return parts.filter(Boolean).join('\n');
     }
 
-    toJSON(): Record<string, unknown> {
+    toJSON(): Record<string, any> {
         return {
             type: this.type,
             message: this.message,

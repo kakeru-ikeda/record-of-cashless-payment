@@ -27,22 +27,6 @@ export interface RawEmailMessage {
 }
 
 /**
- * メールボックス情報の型定義（再帰的な子要素を含む）
- */
-interface MailboxInfo {
-  path: string;
-  name: string;
-  children?: MailboxInfo[];
-}
-
-/**
- * IMAP エラーコードを持つエラーの型定義
- */
-interface ImapError extends Error {
-  code?: string;
-}
-
-/**
  * IMAP接続・管理を専門に行うアダプタークラス
  * ImapFlowライブラリのラッパーとして機能し、接続管理・再接続・メール取得などの低レベル操作を担当
  */
@@ -93,7 +77,7 @@ export class ImapEmailClient extends EventEmitter implements IEmailClient {
         const appError = new AppError(
           'IMAPクライアントでエラーが発生しました',
           ErrorType.EMAIL,
-          { code: (err as ImapError).code, message: err.message },
+          { code: (err as any).code, message: err.message },
           err
         );
 
@@ -167,7 +151,7 @@ export class ImapEmailClient extends EventEmitter implements IEmailClient {
    * @param exactMatch 完全一致で検索するか
    * @returns 見つかった場合はメールボックスのパス、見つからなければnull
    */
-  private findMailboxPath(mailboxes: MailboxInfo[], searchName: string, exactMatch = false): string | null {
+  private findMailboxPath(mailboxes: any[], searchName: string, exactMatch = false): string | null {
     const context = `${this.serviceContext}:${searchName}`;
 
     if (!mailboxes || !mailboxes.length || !searchName) return null;
@@ -233,7 +217,7 @@ export class ImapEmailClient extends EventEmitter implements IEmailClient {
 
       // 接続エラーの場合は接続状態を更新
       if (error instanceof Error && (
-        (error as ImapError).code === 'NoConnection' ||
+        (error as any).code === 'NoConnection' ||
         error.message.includes('Connection not available')
       )) {
         this.isConnected = false;
@@ -289,7 +273,7 @@ export class ImapEmailClient extends EventEmitter implements IEmailClient {
 
       // 接続エラーの場合は接続状態を更新
       if (error instanceof Error && (
-        (error as ImapError).code === 'NoConnection' ||
+        (error as any).code === 'NoConnection' ||
         error.message.includes('Connection not available')
       )) {
         this.isConnected = false;
