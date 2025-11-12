@@ -1,4 +1,26 @@
 /**
+ * サービスステータス表示データの型定義
+ */
+interface ServiceDisplayData {
+  name: string;
+  status: string;
+  message: string;
+  lastUpdated?: string;
+  errorCount: number;
+  lastErrorTime?: string;
+}
+
+/**
+ * エラー表示データの型定義
+ */
+interface ErrorDisplayData {
+  timestamp?: string;
+  service: string;
+  message: string;
+  details?: unknown;
+}
+
+/**
  * モニタリングダッシュボード向けのビュークラス
  */
 export class MonitoringView {
@@ -10,8 +32,8 @@ export class MonitoringView {
    * @returns レンダリングされたHTMLテンプレート
    */
   public renderDashboard(
-    servicesData: any[],
-    errorsData: any[]
+    servicesData: ServiceDisplayData[],
+    errorsData: ErrorDisplayData[]
   ): string {
     // サービスデータとエラーデータをJSON文字列化
     const servicesJson = JSON.stringify(servicesData);

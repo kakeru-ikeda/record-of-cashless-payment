@@ -1,8 +1,9 @@
 import { Request, Response } from 'express';
-import { logger } from '@shared/infrastructure/logging/Logger';
+import { logger, ErrorRecord } from '@shared/infrastructure/logging/Logger';
 import { AppError, ErrorType } from '@shared/errors/AppError';
 import { ResponseHelper } from '@shared/presentation/responses/ResponseHelper';
 import { MonitoringView } from '@presentation/api/views/MonitoringView';
+import { ServiceStatus } from '@shared/domain/interfaces/logging/ILogger';
 
 /**
  * モニタリングコントローラー - サーバー状態の監視用エンドポイント実装
@@ -33,10 +34,10 @@ export class MonitoringController {
   public getServiceStatus = (req: Request, res: Response): void => {
     try {
       // Loggerクラスからサービスステータスマップにアクセスするためのメソッドを呼び出す
-      const serviceStatuses = (logger as any).services || new Map();
+      const serviceStatuses = logger.getServices();
 
       // レスポンスデータを作成
-      const servicesData = Array.from(serviceStatuses.values()).map((service: any) => ({
+      const servicesData = Array.from(serviceStatuses.values()).map((service: ServiceStatus) => ({
         name: service.name,
         status: service.status,
         message: service.message || '',
@@ -74,10 +75,10 @@ export class MonitoringController {
   public getErrorLogs = (req: Request, res: Response): void => {
     try {
       // Loggerのエラー履歴にアクセス
-      const errorHistory = (logger as any).errorHistory || [];
+      const errorHistory = logger.getErrorHistory();
 
       // エラーデータを作成
-      const errorsData = errorHistory.map((error: any) => ({
+      const errorsData = errorHistory.map((error: ErrorRecord) => ({
         timestamp: error.timestamp?.toISOString(),
         service: error.service,
         message: error.message,
@@ -113,11 +114,11 @@ export class MonitoringController {
   public renderDashboard = (req: Request, res: Response): void => {
     try {
       // サービスステータスデータを取得
-      const serviceStatuses = (logger as any).services || new Map();
-      const errorHistory = (logger as any).errorHistory || [];
+      const serviceStatuses = logger.getServices();
+      const errorHistory = logger.getErrorHistory();
 
       // サービスデータを準備
-      const servicesData = Array.from(serviceStatuses.values()).map((service: any) => ({
+      const servicesData = Array.from(serviceStatuses.values()).map((service: ServiceStatus) => ({
         name: service.name,
         status: service.status,
         message: service.message || '',
@@ -127,7 +128,7 @@ export class MonitoringController {
       }));
 
       // エラーデータを準備
-      const errorsData = errorHistory.map((error: any) => ({
+      const errorsData = errorHistory.map((error: ErrorRecord) => ({
         timestamp: error.timestamp?.toISOString(),
         service: error.service,
         message: error.message,

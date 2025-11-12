@@ -1,4 +1,3 @@
-import { Firestore } from 'firebase-admin/firestore';
 import { DailyReport, WeeklyReport, MonthlyReport } from '@shared/domain/entities/Reports';
 import { IReportCrudRepository } from '@shared/domain/interfaces/database/repositories/IReportCrudRepository';
 import { Environment } from '@shared/infrastructure/config/Environment';
@@ -24,18 +23,18 @@ export class FirestoreReportRepository implements IReportCrudRepository {
     @ErrorHandler.errorDecorator('FirestoreReportRepository', {
         defaultMessage: 'Firestoreの初期化に失敗しました',
     })
-    async initialize(): Promise<Firestore> {
+    async initialize(): Promise<void> {
         // Cloud Functions環境の判定
         const isCloudFunctions = Environment.isCloudFunctions();
         this.firestoreService.setCloudFunctions(isCloudFunctions);
 
         if (isCloudFunctions) {
             // Cloud Functions環境ではサービスアカウントキーは不要
-            return await this.firestoreService.initialize();
+            await this.firestoreService.initialize();
         } else {
             // ローカル環境ではサービスアカウントキーが必要
             const serviceAccountPath = Environment.getFirebaseAdminKeyPath();
-            return await this.firestoreService.initialize(serviceAccountPath);
+            await this.firestoreService.initialize(serviceAccountPath);
         }
     }
 

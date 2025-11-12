@@ -8,7 +8,7 @@ export interface IReportCrudRepository {
     /**
      * 初期化処理
      */
-    initialize(): Promise<any>;
+    initialize(): Promise<void>;
 
     /**
      * 日次レポートを取得する（特定の日）

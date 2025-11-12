@@ -124,10 +124,14 @@ export class ErrorHandler {
         if (error instanceof AppError) {
             // 追加情報がある場合は新しいインスタンスを作成
             if (additionalDetails) {
+                const mergedDetails = {
+                    ...(typeof error.details === 'object' && error.details !== null ? error.details as Record<string, unknown> : {}),
+                    ...additionalDetails
+                };
                 return new AppError(
                     customMessage || error.message,
                     error.type,
-                    { ...error.details, ...additionalDetails },
+                    mergedDetails,
                     error.originalError
                 );
             }

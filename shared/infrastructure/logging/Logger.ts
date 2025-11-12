@@ -27,7 +27,7 @@ export interface ErrorRecord {
   service: string;
   message: string;
   errorType?: ErrorType;
-  details?: any;
+  details?: unknown;
 }
 
 /**
@@ -195,8 +195,8 @@ export class Logger implements ILogger {
       }
 
       // Discord通知（非同期で実行、プロミスは無視）
-      if (options?.notify && this.isDiscordNotificationEnabled()) {
-        this.discordNotifier!.notifyLogging(message, options.title || 'デバッグ情報', context)
+      if (options?.notify && this.discordNotifier) {
+        this.discordNotifier.notifyLogging(message, options.title || 'デバッグ情報', context)
           .catch((err) => console.warn(`Discord通知エラー: ${err instanceof Error ? err.message : String(err)}`));
       }
     }
@@ -215,8 +215,8 @@ export class Logger implements ILogger {
       }
 
       // Discord通知（非同期で実行、プロミスは無視）
-      if (options?.notify && this.isDiscordNotificationEnabled()) {
-        this.discordNotifier!.notifyLogging(message, options.title || 'お知らせ', context)
+      if (options?.notify && this.discordNotifier) {
+        this.discordNotifier.notifyLogging(message, options.title || 'お知らせ', context)
           .catch((err) => console.warn(`Discord通知エラー: ${err instanceof Error ? err.message : String(err)}`));
       }
     }
@@ -233,8 +233,8 @@ export class Logger implements ILogger {
       }
 
       // Discord通知（非同期で実行、プロミスは無視）
-      if (options?.notify && this.isDiscordNotificationEnabled()) {
-        this.discordNotifier!.notifyLogging(message, options.title || '⚠️ 警告', context)
+      if (options?.notify && this.discordNotifier) {
+        this.discordNotifier.notifyLogging(message, options.title || '⚠️ 警告', context)
           .catch((err) => console.warn(`Discord通知エラー: ${err instanceof Error ? err.message : String(err)}`));
       }
     }
@@ -286,8 +286,8 @@ export class Logger implements ILogger {
     }
 
     // Discord通知（非同期で実行、プロミスは無視）
-    if (options?.notify && this.isDiscordNotificationEnabled()) {
-      this.discordNotifier!.notifyError(error as AppError, context)
+    if (options?.notify && this.discordNotifier) {
+      this.discordNotifier.notifyError(error as AppError, context)
         .catch((err) => console.warn(`Discord通知エラー: ${err instanceof Error ? err.message : String(err)}`));
     }
   }
@@ -332,6 +332,20 @@ export class Logger implements ILogger {
         }
       }
     }
+  }
+
+  /**
+   * サービスステータスのMapを取得
+   */
+  public getServices(): Map<string, ServiceStatus> {
+    return this.services;
+  }
+
+  /**
+   * エラー履歴を取得
+   */
+  public getErrorHistory(): ErrorRecord[] {
+    return this.errorHistory;
   }
 
   /**

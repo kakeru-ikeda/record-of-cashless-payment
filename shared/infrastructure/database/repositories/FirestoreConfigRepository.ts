@@ -1,5 +1,5 @@
 import { Firestore } from 'firebase-admin/firestore';
-import { ReportThresholds } from '@shared/domain/entities/ReportThresholds';
+import { ReportThresholds, ThresholdLevels } from '@shared/domain/entities/ReportThresholds';
 import { IConfigRepository } from '@shared/domain/interfaces/database/repositories/IConfigRepository';
 import { Environment } from '@shared/infrastructure/config/Environment';
 import { FirestoreService } from '@shared/infrastructure/database/FirestoreService';
@@ -93,7 +93,7 @@ export class FirestoreConfigRepository implements IConfigRepository {
             );
         }
 
-        const validateLevels = (levels: any, type: string) => {
+        const validateLevels = (levels: ThresholdLevels, type: string) => {
             if (!levels.level1 || !levels.level2 || !levels.level3) {
                 throw new AppError(
                     `${type}のしきい値設定にlevel1、level2、level3が含まれていません`,

@@ -11,6 +11,7 @@ import { EmailController } from '@presentation/email/controllers/EmailController
 import { IHttpAppConfig } from '@domain/interfaces/infrastructure/config/IHttpAppConfig';
 import { IDependencyContainer } from '@domain/interfaces/infrastructure/config/IDependencyContainer';
 import { ResponseHelper } from '@shared/presentation/responses/ResponseHelper';
+import { AppError } from '@shared/errors/AppError';
 
 /**
  * アプリケーション設定を管理するクラス
@@ -126,10 +127,10 @@ export class HttpAppConfig implements IHttpAppConfig {
     });
 
     // エラーハンドラー
-    this.app.use((error: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    this.app.use((error: Error, req: express.Request, res: express.Response, _next: express.NextFunction) => {
       logger.error(error, 'API');
 
-      const statusCode = (error as any).statusCode || 500;
+      const statusCode = (error as AppError).statusCode || 500;
       const response = ResponseHelper.error(
           statusCode,
           'Internal Server Error',

@@ -4,6 +4,7 @@
  */
 import { EventEmitter } from 'events';
 import { RawEmailMessage } from '@infrastructure/email/ImapEmailClient';
+import { ImapFlow } from 'imapflow';
 
 export interface IImapConnectionConfig {
     host: string;
@@ -21,7 +22,7 @@ export interface IEmailClient extends EventEmitter {
      * @param mailboxName 接続するメールボックス名
      * @returns 接続したクライアント
      */
-    connect(mailboxName?: string): Promise<any>;
+    connect(mailboxName?: string): Promise<ImapFlow>;
 
     /**
      * 未読メッセージを取得する

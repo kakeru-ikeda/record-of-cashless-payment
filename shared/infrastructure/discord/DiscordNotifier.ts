@@ -23,6 +23,26 @@ enum NotificationType {
 }
 
 /**
+ * Discord Embedフィールドの型定義
+ */
+interface DiscordEmbedField {
+    name: string;
+    value: string;
+    inline?: boolean;
+}
+
+/**
+ * Discord Embedの型定義
+ */
+interface DiscordEmbed {
+    title?: string;
+    description?: string;
+    color?: number;
+    fields?: DiscordEmbedField[];
+    timestamp?: string;
+}
+
+/**
  * Discord Webhookを使用した通知のオプションインターフェース
  */
 interface DiscordNotifierOptions {
@@ -105,7 +125,7 @@ export class DiscordNotifier implements IDiscordNotifier {
      */
     private async _send(
         webhookUrl: string,
-        embeds: any[],
+        embeds: DiscordEmbed[],
         notificationType: string
     ): Promise<boolean> {
         try {

@@ -157,10 +157,10 @@ export class DateUtil {
      * 日付を指定したフォーマットで文字列に変換する
      * @param date 対象の日付
      * @param format フォーマット（例: 'yyyy-MM-dd'）※省略時はISO形式
-     * @param locale ロケール（省略時は'ja-JP'）
+     * @param _locale ロケール（省略時は'ja-JP'） - 将来の拡張用
      * @returns フォーマットされた日付文字列
      */
-    static formatDate(date: Date, format?: string, locale = 'ja-JP'): string {
+    static formatDate(date: Date, format?: string, _locale = 'ja-JP'): string {
         if (!format) {
             // フォーマット指定がない場合はISO形式（日本時間）で返す
             return date.toISOString().replace('T', ' ').substring(0, 19);
