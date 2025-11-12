@@ -11,7 +11,7 @@ import { logger } from '@shared/infrastructure/logging/Logger';
 export class FirestoreService {
     private static instance: FirestoreService;
     private db: Firestore | null = null;
-    private _isCloudFunctions: boolean = false;
+    private _isCloudFunctions = false;
     private readonly serviceContext = 'FirestoreService';
 
     /**
@@ -27,6 +27,7 @@ export class FirestoreService {
     /**
      * コンストラクタ - privateでシングルトンパターンを強制
      */
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
     private constructor() { }
 
     /**
@@ -103,7 +104,13 @@ export class FirestoreService {
 
         try {
             // 環境変数の状態をログ出力（デバッグ用）
-            logger.info(`Firebase初期化: Cloud Functions判定=${this.isCloudFunctions()}, FUNCTION_TARGET=${process.env.FUNCTION_TARGET}, FIREBASE_CONFIG=${process.env.FIREBASE_CONFIG ? '設定済み' : '未設定'}, GOOGLE_CLOUD_PROJECT=${process.env.GOOGLE_CLOUD_PROJECT}`, this.serviceContext);
+            logger.info(
+                `Firebase初期化: Cloud Functions判定=${this.isCloudFunctions()}, ` +
+                `FUNCTION_TARGET=${process.env.FUNCTION_TARGET}, ` +
+                `FIREBASE_CONFIG=${process.env.FIREBASE_CONFIG ? '設定済み' : '未設定'}, ` +
+                `GOOGLE_CLOUD_PROJECT=${process.env.GOOGLE_CLOUD_PROJECT}`,
+                this.serviceContext,
+            );
 
             if (this.isCloudFunctions()) {
                 // Cloud Functions環境では、Firebase Admin SDKが自動初期化されているかチェック
@@ -122,7 +129,7 @@ export class FirestoreService {
                             admin.initializeApp({
                                 credential: admin.credential.cert(
                                     JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'))
-                                )
+                                ),
                             });
                             logger.info('ローカル環境でFirestoreに接続しました', this.serviceContext);
                         } catch (error) {
@@ -300,9 +307,9 @@ export class FirestoreService {
             const query = queryFn(collection);
             const snapshot = await query.get();
 
-            return snapshot.docs.map(doc => ({
+            return snapshot.docs.map((doc) => ({
                 id: doc.id,
-                ...doc.data()
+                ...doc.data(),
             } as unknown as T));
         } catch (error) {
             const appError = new AppError(

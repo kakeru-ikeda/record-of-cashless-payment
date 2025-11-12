@@ -1,6 +1,8 @@
 import { Firestore } from 'firebase-admin/firestore';
 import { CardUsage } from '@shared/domain/entities/CardUsage';
-import { ICardUsageCrudRepository } from '@domain/interfaces/infrastructure/database/repositories/ICardUsageCrudRepository';
+import {
+  ICardUsageCrudRepository,
+} from '@domain/interfaces/infrastructure/database/repositories/ICardUsageCrudRepository';
 import { Environment } from '@shared/infrastructure/config/Environment';
 import { FirestoreService } from '@shared/infrastructure/database/FirestoreService';
 import { FirestorePathUtil } from '@shared/utils/FirestorePathUtil';
@@ -22,7 +24,7 @@ export class FirestoreCardUsageRepository implements ICardUsageCrudRepository {
    * Firestoreへの接続を初期化する
    */
   @ErrorHandler.errorDecorator('FirestoreCardUsageRepository', {
-    defaultMessage: 'Firestoreの初期化に失敗しました'
+    defaultMessage: 'Firestoreの初期化に失敗しました',
   })
   async initialize(): Promise<Firestore> {
     // Cloud Functions環境の判定
@@ -45,7 +47,7 @@ export class FirestoreCardUsageRepository implements ICardUsageCrudRepository {
    * @returns 保存されたパス
    */
   @ErrorHandler.errorDecorator('FirestoreCardUsageRepository', {
-    defaultMessage: 'カード利用情報の保存に失敗しました'
+    defaultMessage: 'カード利用情報の保存に失敗しました',
   })
   async save(cardUsage: CardUsage): Promise<string> {
     // Firestoreへの接続を初期化
@@ -62,7 +64,7 @@ export class FirestoreCardUsageRepository implements ICardUsageCrudRepository {
     const completeCardUsage: CardUsage = {
       ...cardUsage,
       memo: cardUsage.memo || '', // デフォルト値は空文字
-      is_active: cardUsage.is_active !== undefined ? cardUsage.is_active : true // デフォルト値はtrue
+      is_active: cardUsage.is_active !== undefined ? cardUsage.is_active : true, // デフォルト値はtrue
     };
 
     // 共通サービスを使用してドキュメントを保存
@@ -78,7 +80,7 @@ export class FirestoreCardUsageRepository implements ICardUsageCrudRepository {
    * @returns カード利用情報
    */
   @ErrorHandler.errorDecorator('FirestoreCardUsageRepository', {
-    defaultMessage: 'カード利用情報の取得に失敗しました'
+    defaultMessage: 'カード利用情報の取得に失敗しました',
   })
   async getByTimestamp(timestamp: string): Promise<CardUsage | null> {
     // Firestoreへの接続を初期化
@@ -106,7 +108,7 @@ export class FirestoreCardUsageRepository implements ICardUsageCrudRepository {
    * @returns カード利用情報（IDとパス情報を含む）
    */
   @ErrorHandler.errorDecorator('FirestoreCardUsageRepository', {
-    defaultMessage: 'カード利用情報の取得に失敗しました'
+    defaultMessage: 'カード利用情報の取得に失敗しました',
   })
   async getById(id: string): Promise<(CardUsage & { id: string, path: string }) | null> {
     await this.initialize();
@@ -163,7 +165,7 @@ export class FirestoreCardUsageRepository implements ICardUsageCrudRepository {
    * @returns カード利用情報の配列（IDとパス情報を含む）
    */
   @ErrorHandler.errorDecorator('FirestoreCardUsageRepository', {
-    defaultMessage: 'カード利用情報の取得に失敗しました'
+    defaultMessage: 'カード利用情報の取得に失敗しました',
   })
   async getByYearMonth(year: string, month: string): Promise<(CardUsage & { id: string, path: string })[]> {
     await this.initialize();
@@ -214,7 +216,7 @@ export class FirestoreCardUsageRepository implements ICardUsageCrudRepository {
    * @returns 更新後のカード利用情報（IDとパス情報を含む）
    */
   @ErrorHandler.errorDecorator('FirestoreCardUsageRepository', {
-    defaultMessage: 'カード利用情報の更新に失敗しました'
+    defaultMessage: 'カード利用情報の更新に失敗しました',
   })
   async update(id: string, updateData: Partial<CardUsage>): Promise<(CardUsage & { id: string, path: string }) | null> {
     await this.initialize();
@@ -247,7 +249,7 @@ export class FirestoreCardUsageRepository implements ICardUsageCrudRepository {
    * @returns 削除されたカード利用情報のIDとパス
    */
   @ErrorHandler.errorDecorator('FirestoreCardUsageRepository', {
-    defaultMessage: 'カード利用情報の削除に失敗しました'
+    defaultMessage: 'カード利用情報の削除に失敗しました',
   })
   async delete(id: string): Promise<{ id: string, path: string } | null> {
     await this.initialize();

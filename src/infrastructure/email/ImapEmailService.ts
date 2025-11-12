@@ -47,8 +47,8 @@ export class ImapEmailService implements IEmailService {
       secure: true,
       auth: {
         user: this.user,
-        pass: this.password
-      }
+        pass: this.password,
+      },
     };
 
     this.imapClient = new ImapEmailClient(config);
@@ -86,7 +86,7 @@ export class ImapEmailService implements IEmailService {
 
         // 再接続後に即時メール確認を実行
         this.pollForNewMessages(this._lastCallback, `${this.serviceContext}:${this._lastConnectedMailbox}`)
-          .catch(error => {
+          .catch((error) => {
             const appError = new AppError(
               '再接続後のメール確認中にエラーが発生しました',
               ErrorType.EMAIL,
@@ -107,7 +107,7 @@ export class ImapEmailService implements IEmailService {
    * @param callback 新しいメールを受信した時のコールバック
    */
   async connect(
-    mailboxName: string = 'INBOX', // デフォルトでINBOXを使用
+    mailboxName = 'INBOX', // デフォルトでINBOXを使用
     callback: (email: ParsedEmail) => Promise<void>
   ): Promise<void> {
     // コンテキストをメールボックス固有に設定
@@ -142,10 +142,10 @@ export class ImapEmailService implements IEmailService {
     if (this.isMonitoring) return;
 
     this.isMonitoring = true;
-    logger.info("メールポーリング監視を開始します（IDLEモードなし）", context);
+    logger.info('メールポーリング監視を開始します（IDLEモードなし）', context);
 
     // 初回は即時実行
-    this.pollForNewMessages(callback, context).catch(error => {
+    this.pollForNewMessages(callback, context).catch((error) => {
       const appError = new AppError(
         '初回メール確認中にエラーが発生しました',
         ErrorType.EMAIL,
@@ -231,7 +231,7 @@ export class ImapEmailService implements IEmailService {
    */
   @ErrorHandler.errorDecorator('ImapEmailService', {
     defaultMessage: 'メールからカード利用情報の抽出に失敗しました',
-    rethrow: true
+    rethrow: true,
   })
   async parseCardUsageFromEmail(emailContent: string, cardCompany: CardCompany = CardCompany.MUFG): Promise<CardUsage> {
     // カード利用情報の抽出

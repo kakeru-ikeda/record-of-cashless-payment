@@ -21,7 +21,7 @@ export class DailyReportFactory {
         totalCount: number,
         lastUpdatedBy: string,
         documentIdList: string[] = [],
-        hasNotified: boolean = false
+        hasNotified = false
     ): DailyReport {
         return {
             totalAmount,
@@ -30,7 +30,7 @@ export class DailyReportFactory {
             lastUpdatedBy,
             documentIdList,
             date: date instanceof Timestamp ? date : Timestamp.fromDate(new Date(date)),
-            hasNotified
+            hasNotified,
         };
     }
 
@@ -54,7 +54,7 @@ export class DailyReportFactory {
             lastUpdatedBy: data.lastUpdatedBy,
             documentIdList: data.documentIdList,
             date: data.date,
-            hasNotified: data.hasNotified
+            hasNotified: data.hasNotified,
         };
     }
 
@@ -94,10 +94,10 @@ export class WeeklyReportFactory {
         totalCount: number,
         lastUpdatedBy: string,
         documentIdList: string[] = [],
-        hasNotifiedLevel1: boolean = false,
-        hasNotifiedLevel2: boolean = false,
-        hasNotifiedLevel3: boolean = false,
-        hasReportSent: boolean = false
+        hasNotifiedLevel1 = false,
+        hasNotifiedLevel2 = false,
+        hasNotifiedLevel3 = false,
+        hasReportSent = false
     ): WeeklyReport {
         return {
             totalAmount,
@@ -105,12 +105,14 @@ export class WeeklyReportFactory {
             lastUpdated: FieldValue.serverTimestamp(),
             lastUpdatedBy,
             documentIdList,
-            termStartDate: termStartDate instanceof Timestamp ? termStartDate : Timestamp.fromDate(new Date(termStartDate)),
+            termStartDate: termStartDate instanceof Timestamp ?
+                termStartDate :
+                Timestamp.fromDate(new Date(termStartDate)),
             termEndDate: termEndDate instanceof Timestamp ? termEndDate : Timestamp.fromDate(new Date(termEndDate)),
             hasNotifiedLevel1,
             hasNotifiedLevel2,
             hasNotifiedLevel3,
-            hasReportSent
+            hasReportSent,
         };
     }
 
@@ -141,7 +143,7 @@ export class WeeklyReportFactory {
             hasNotifiedLevel1: data.hasNotifiedLevel1,
             hasNotifiedLevel2: data.hasNotifiedLevel2,
             hasNotifiedLevel3: data.hasNotifiedLevel3,
-            hasReportSent: data.hasReportSent || false
+            hasReportSent: data.hasReportSent || false,
         };
     }
 
@@ -197,10 +199,10 @@ export class MonthlyReportFactory {
         totalCount: number,
         lastUpdatedBy: string,
         documentIdList: string[] = [],
-        hasNotifiedLevel1: boolean = false,
-        hasNotifiedLevel2: boolean = false,
-        hasNotifiedLevel3: boolean = false,
-        hasReportSent: boolean = false
+        hasNotifiedLevel1 = false,
+        hasNotifiedLevel2 = false,
+        hasNotifiedLevel3 = false,
+        hasReportSent = false
     ): MonthlyReport {
         return {
             totalAmount,
@@ -208,12 +210,14 @@ export class MonthlyReportFactory {
             lastUpdated: FieldValue.serverTimestamp(),
             lastUpdatedBy,
             documentIdList,
-            monthStartDate: monthStartDate instanceof Timestamp ? monthStartDate : Timestamp.fromDate(new Date(monthStartDate)),
+            monthStartDate: monthStartDate instanceof Timestamp ?
+                monthStartDate :
+                Timestamp.fromDate(new Date(monthStartDate)),
             monthEndDate: monthEndDate instanceof Timestamp ? monthEndDate : Timestamp.fromDate(new Date(monthEndDate)),
             hasNotifiedLevel1,
             hasNotifiedLevel2,
             hasNotifiedLevel3,
-            hasReportSent
+            hasReportSent,
         };
     }
 
@@ -244,7 +248,7 @@ export class MonthlyReportFactory {
             hasNotifiedLevel1: data.hasNotifiedLevel1,
             hasNotifiedLevel2: data.hasNotifiedLevel2,
             hasNotifiedLevel3: data.hasNotifiedLevel3,
-            hasReportSent: data.hasReportSent || false
+            hasReportSent: data.hasReportSent || false,
         };
     }
 

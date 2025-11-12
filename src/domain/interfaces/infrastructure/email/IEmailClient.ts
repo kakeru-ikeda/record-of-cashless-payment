@@ -2,8 +2,8 @@
  * メールクライアント接続管理のインターフェース
  * IMAP接続・管理を抽象化し、メール取得などの低レベル操作を定義
  */
-import { EventEmitter } from "events";
-import { RawEmailMessage } from "@infrastructure/email/ImapEmailClient";
+import { EventEmitter } from 'events';
+import { RawEmailMessage } from '@infrastructure/email/ImapEmailClient';
 
 export interface IImapConnectionConfig {
     host: string;

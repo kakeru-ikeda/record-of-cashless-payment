@@ -34,7 +34,7 @@ export class ReportController {
             const errorResponse = ResponseHelper.fromAppError(appError);
             res.status(errorResponse.status).json(errorResponse);
         }
-    }
+    };
 
     /**
      * 月次レポート取得
@@ -52,7 +52,7 @@ export class ReportController {
             const errorResponse = ResponseHelper.fromAppError(appError);
             res.status(errorResponse.status).json(errorResponse);
         }
-    }
+    };
 
     /**
      * 週次レポート取得（特定の週）
@@ -70,7 +70,7 @@ export class ReportController {
             const errorResponse = ResponseHelper.fromAppError(appError);
             res.status(errorResponse.status).json(errorResponse);
         }
-    }
+    };
 
     /**
      * 月内の全日次レポート取得
@@ -88,7 +88,7 @@ export class ReportController {
             const errorResponse = ResponseHelper.fromAppError(appError);
             res.status(errorResponse.status).json(errorResponse);
         }
-    }
+    };
 
     /**
      * 月内の全週次レポート取得
@@ -106,5 +106,5 @@ export class ReportController {
             const errorResponse = ResponseHelper.fromAppError(appError);
             res.status(errorResponse.status).json(errorResponse);
         }
-    }
+    };
 }

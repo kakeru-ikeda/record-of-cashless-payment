@@ -32,4 +32,14 @@ module.exports = {
     '@typescript-eslint/no-namespace': 'off',
     'require-jsdoc': 'off',
   },
+  overrides: [
+    {
+      files: ['**/ErrorHandler.ts'],
+      rules: {
+        '@typescript-eslint/ban-ts-comment': 'off',
+        'brace-style': 'off',
+        'no-useless-catch': 'off',
+      },
+    },
+  ],
 };

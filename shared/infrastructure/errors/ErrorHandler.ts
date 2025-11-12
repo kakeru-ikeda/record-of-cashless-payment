@@ -43,9 +43,9 @@ export class ErrorHandler {
     static errorDecorator(context: string, options?: {
         suppressNotification?: boolean; // Discord通知を抑制するかどうか
         defaultMessage?: string; // カスタムエラーメッセージ
-        rethrow?: boolean;  // エラーを再スローするかどうか
+        rethrow?: boolean; // エラーを再スローするかどうか
     }) {
-        return function (
+        return function(
             _target: any,
             _propertyKey: string | symbol,
             descriptor: PropertyDescriptor
@@ -53,7 +53,7 @@ export class ErrorHandler {
             const originalMethod = descriptor.value;
             if (!originalMethod) return descriptor;
 
-            descriptor.value = async function (...args: any[]): Promise<any> {
+            descriptor.value = async function(...args: any[]): Promise<any> {
                 try {
                     return await originalMethod.apply(this, args);
                 } catch (error) {
@@ -63,7 +63,7 @@ export class ErrorHandler {
                     // 拡張されたエラーハンドラを使用
                     const appError = await ErrorHandler.handle(error, context, {
                         ...options,
-                        additionalInfo
+                        additionalInfo,
                     });
 
                     // 設定に応じてエラーを再スロー
@@ -115,7 +115,11 @@ export class ErrorHandler {
      * @param error 元のエラー
      * @returns AppErrorインスタンス
      */
-    static convertToAppError(error: any, customMessage?: string, additionalDetails?: Record<string, unknown>): AppError {
+    static convertToAppError(
+        error: any,
+        customMessage?: string,
+        additionalDetails?: Record<string, unknown>,
+    ): AppError {
         // すでにAppErrorインスタンスならそのまま返す
         if (error instanceof AppError) {
             // 追加情報がある場合は新しいインスタンスを作成

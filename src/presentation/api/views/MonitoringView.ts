@@ -4,7 +4,7 @@
 export class MonitoringView {
   /**
    * ダッシュボードのHTMLを生成する
-   * 
+   *
    * @param servicesData サービスステータスデータ
    * @param errorsData エラーログデータ
    * @returns レンダリングされたHTMLテンプレート

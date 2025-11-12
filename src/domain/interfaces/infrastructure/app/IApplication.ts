@@ -14,7 +14,7 @@ export interface IApplication {
     /**
      * テストモードでアプリケーションを実行する
      * サンプルデータを使用した動作確認を行う
-     * 
+     *
      * @param cardCompany テスト対象のカード会社
      */
     runInTestMode(cardCompany: CardCompany): Promise<void>;

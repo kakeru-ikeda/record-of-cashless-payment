@@ -13,13 +13,13 @@ import { IDiscordNotifier } from '@shared/domain/interfaces/discord/IDiscordNoti
  * 通知の種類を表す列挙型
  */
 enum NotificationType {
-    USAGE = 'usage',                  // カード利用通知
-    ALERT_WEEKLY = 'alert_weekly',    // 週次アラート通知
-    ALERT_MONTHLY = 'alert_monthly',  // 月次アラート通知
-    REPORT_DAILY = 'report_daily',    // 日次レポート通知
-    REPORT_WEEKLY = 'report_weekly',  // 週次レポート通知
+    USAGE = 'usage', // カード利用通知
+    ALERT_WEEKLY = 'alert_weekly', // 週次アラート通知
+    ALERT_MONTHLY = 'alert_monthly', // 月次アラート通知
+    REPORT_DAILY = 'report_daily', // 日次レポート通知
+    REPORT_WEEKLY = 'report_weekly', // 週次レポート通知
     REPORT_MONTHLY = 'report_monthly', // 月次レポート通知
-    ERROR_LOG = 'error_log'           // エラーログ通知
+    ERROR_LOG = 'error_log' // エラーログ通知
 }
 
 /**
@@ -41,13 +41,13 @@ interface DiscordNotifierOptions {
 export class DiscordNotifier implements IDiscordNotifier {
     private readonly serviceContext = 'DiscordNotifier';
     // 各種通知用Webhook URL
-    private readonly usageWebhookUrl: string;            // 利用明細通知用
-    private readonly alertWeeklyWebhookUrl: string;      // 週次アラート通知用
-    private readonly alertMonthlyWebhookUrl: string;     // 月次アラート通知用
-    private readonly reportDailyWebhookUrl: string;      // 日次レポート通知用
-    private readonly reportWeeklyWebhookUrl: string;     // 週次レポート通知用
-    private readonly reportMonthlyWebhookUrl: string;    // 月次レポート通知用
-    private readonly loggingWebhookUrl: string;          // エラーログ通知用
+    private readonly usageWebhookUrl: string; // 利用明細通知用
+    private readonly alertWeeklyWebhookUrl: string; // 週次アラート通知用
+    private readonly alertMonthlyWebhookUrl: string; // 月次アラート通知用
+    private readonly reportDailyWebhookUrl: string; // 日次レポート通知用
+    private readonly reportWeeklyWebhookUrl: string; // 週次レポート通知用
+    private readonly reportMonthlyWebhookUrl: string; // 月次レポート通知用
+    private readonly loggingWebhookUrl: string; // エラーログ通知用
 
     /**
      * コンストラクタ
@@ -163,7 +163,7 @@ export class DiscordNotifier implements IDiscordNotifier {
                 day: 'numeric',
                 hour: '2-digit',
                 minute: '2-digit',
-                hour12: false
+                hour12: false,
             });
             const formattedAmount = data.amount.toLocaleString() + '円';
 
@@ -176,19 +176,19 @@ export class DiscordNotifier implements IDiscordNotifier {
                         {
                             name: '日時',
                             value: formattedDate || '不明',
-                            inline: false
+                            inline: false,
                         },
                         {
                             name: '利用先',
                             value: data.where_to_use || '不明',
-                            inline: false
+                            inline: false,
                         },
                         {
                             name: 'カード名',
-                            value: data.card_name || '不明'
-                        }
-                    ]
-                }
+                            value: data.card_name || '不明',
+                        },
+                    ],
+                },
             ];
 
             return this._send(webhookUrl, embeds, 'カード利用');
@@ -212,7 +212,9 @@ export class DiscordNotifier implements IDiscordNotifier {
     async notifyWeeklyReport(data: WeeklyReportNotificationDTO): Promise<boolean> {
         try {
             // アラートレベルが0より大きいならアラート通知、それ以外は定期レポート
-            const notificationType = data.alertLevel > 0 ? NotificationType.ALERT_WEEKLY : NotificationType.REPORT_WEEKLY;
+            const notificationType = data.alertLevel > 0 ?
+                NotificationType.ALERT_WEEKLY :
+                NotificationType.REPORT_WEEKLY;
             const webhookUrl = this.getWebhookUrl(notificationType);
 
             const formattedAmount = data.totalAmount.toLocaleString() + '円';
@@ -249,15 +251,15 @@ export class DiscordNotifier implements IDiscordNotifier {
                         {
                             name: '期間',
                             value: data.period || '不明',
-                            inline: false
+                            inline: false,
                         },
                         {
                             name: '利用件数',
                             value: `${data.totalCount}件` || '0件',
-                            inline: false
-                        }
-                    ]
-                }
+                            inline: false,
+                        },
+                    ],
+                },
             ];
 
             // 追加情報があれば追加
@@ -265,7 +267,7 @@ export class DiscordNotifier implements IDiscordNotifier {
                 embeds[0].fields.push({
                     name: '補足情報',
                     value: data.additionalInfo,
-                    inline: false
+                    inline: false,
                 });
             }
 
@@ -305,15 +307,15 @@ export class DiscordNotifier implements IDiscordNotifier {
                         {
                             name: '日付',
                             value: data.date || '不明',
-                            inline: false
+                            inline: false,
                         },
                         {
                             name: '利用件数',
                             value: `${data.totalCount}件` || '0件',
-                            inline: false
-                        }
-                    ]
-                }
+                            inline: false,
+                        },
+                    ],
+                },
             ];
 
             // 追加情報があれば追加
@@ -321,7 +323,7 @@ export class DiscordNotifier implements IDiscordNotifier {
                 embeds[0].fields.push({
                     name: '補足情報',
                     value: data.additionalInfo,
-                    inline: false
+                    inline: false,
                 });
             }
 
@@ -346,7 +348,9 @@ export class DiscordNotifier implements IDiscordNotifier {
     async notifyMonthlyReport(data: MonthlyReportNotificationDTO): Promise<boolean> {
         try {
             // アラートレベルが0より大きいならアラート通知、それ以外は定期レポート
-            const notificationType = data.alertLevel > 0 ? NotificationType.ALERT_MONTHLY : NotificationType.REPORT_MONTHLY;
+            const notificationType = data.alertLevel > 0 ?
+                NotificationType.ALERT_MONTHLY :
+                NotificationType.REPORT_MONTHLY;
             const webhookUrl = this.getWebhookUrl(notificationType);
 
             const formattedAmount = data.totalAmount.toLocaleString() + '円';
@@ -383,15 +387,15 @@ export class DiscordNotifier implements IDiscordNotifier {
                         {
                             name: '期間',
                             value: data.period || '不明',
-                            inline: false
+                            inline: false,
                         },
                         {
                             name: '利用件数',
                             value: `${data.totalCount}件` || '0件',
-                            inline: false
-                        }
-                    ]
-                }
+                            inline: false,
+                        },
+                    ],
+                },
             ];
 
             // 追加情報があれば追加
@@ -399,7 +403,7 @@ export class DiscordNotifier implements IDiscordNotifier {
                 embeds[0].fields.push({
                     name: '補足情報',
                     value: data.additionalInfo,
-                    inline: false
+                    inline: false,
                 });
             }
 
@@ -475,31 +479,31 @@ export class DiscordNotifier implements IDiscordNotifier {
             const embeds = [
                 {
                     title: `${errorIcon} エラー発生: ${error.type}`,
-                    description: `エラーが検出されました\n-`,
+                    description: 'エラーが検出されました\n-',
                     color: color,
                     fields: [
                         {
                             name: 'エラーメッセージ',
                             value: error.message || '不明なエラー',
-                            inline: false
+                            inline: false,
                         },
                         {
                             name: 'エラータイプ',
                             value: error.type || '不明',
-                            inline: true
+                            inline: true,
                         },
                         {
                             name: 'コンテキスト',
                             value: serviceContext || '不明',
-                            inline: true
+                            inline: true,
                         },
                         {
                             name: '発生時刻',
                             value: timestamp || '不明',
-                            inline: false
-                        }
-                    ]
-                }
+                            inline: false,
+                        },
+                    ],
+                },
             ];
 
             // 追加情報があれば追加
@@ -508,7 +512,7 @@ export class DiscordNotifier implements IDiscordNotifier {
                 embeds[0].fields.push({
                     name: '詳細情報',
                     value: `\`\`\`json\n${detailsText}\n\`\`\``,
-                    inline: false
+                    inline: false,
                 });
             }
 
@@ -518,7 +522,7 @@ export class DiscordNotifier implements IDiscordNotifier {
                 embeds[0].fields.push({
                     name: 'スタックトレース',
                     value: `\`\`\`\n${stackTrace}${stackTrace.length >= 1000 ? '...(省略)' : ''}\n\`\`\``,
-                    inline: false
+                    inline: false,
                 });
             }
 
@@ -556,26 +560,26 @@ export class DiscordNotifier implements IDiscordNotifier {
             const embeds = [
                 {
                     title: `📝 ${messageTitle}`,
-                    description: `ログメッセージが記録されました\n-`,
+                    description: 'ログメッセージが記録されました\n-',
                     color: 7506394, // 灰色
                     fields: [
                         {
                             name: 'メッセージ',
                             value: message || '空のメッセージ',
-                            inline: false
+                            inline: false,
                         },
                         {
                             name: 'コンテキスト',
                             value: serviceContext || '不明',
-                            inline: true
+                            inline: true,
                         },
                         {
                             name: '記録時刻',
                             value: timestamp || '不明',
-                            inline: true
-                        }
-                    ]
-                }
+                            inline: true,
+                        },
+                    ],
+                },
             ];
 
             return this._send(webhookUrl, embeds, 'ログメッセージ');

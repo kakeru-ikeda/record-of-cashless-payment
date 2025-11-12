@@ -70,7 +70,7 @@ export class AppError extends Error {
             `[${this.type}] ${this.message}`,
             this.details ? `詳細: ${JSON.stringify(this.details)}` : '',
             this.originalError ? `元のエラー: ${this.originalError.message}` : '',
-            this.stack ? `スタックトレース: ${this.stack}` : ''
+            this.stack ? `スタックトレース: ${this.stack}` : '',
         ];
 
         return parts.filter(Boolean).join('\n');
@@ -82,7 +82,7 @@ export class AppError extends Error {
             message: this.message,
             statusCode: this.statusCode,
             details: this.details,
-            stack: process.env.NODE_ENV !== 'production' ? this.stack : undefined
+            stack: process.env.NODE_ENV !== 'production' ? this.stack : undefined,
         };
     }
 }

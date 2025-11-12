@@ -50,11 +50,11 @@ export class Logger implements ILogger {
   private static instance: Logger;
   private config: LoggerConfig;
   private services: Map<string, ServiceStatus> = new Map();
-  private lastStatusRender: number = 0;
+  private lastStatusRender = 0;
   private suppressedMessages: Map<string, { count: number, lastTime: number }> = new Map();
-  private suppressionInterval: number = 60000; // 1分間
+  private suppressionInterval = 60000; // 1分間
   private dashboardTimer: NodeJS.Timeout | null = null;
-  private dashboardRendered: boolean = false;
+  private dashboardRendered = false;
   private errorStatsTimer: NodeJS.Timeout | null = null; // エラー統計用タイマーの参照を保持
 
   // エラー統計と履歴
@@ -75,7 +75,7 @@ export class Logger implements ILogger {
       'INFO': LogLevel.INFO,
       'WARN': LogLevel.WARN,
       'ERROR': LogLevel.ERROR,
-      'NONE': LogLevel.NONE
+      'NONE': LogLevel.NONE,
     };
 
     this.config = {
@@ -84,7 +84,7 @@ export class Logger implements ILogger {
       compactMode: process.env.COMPACT_LOGS === 'true',
       statusRefreshInterval: parseInt(process.env.STATUS_REFRESH_INTERVAL || '30000', 10),
       errorHistorySize: parseInt(process.env.ERROR_HISTORY_SIZE || '10', 10),
-      errorStatsTimeWindow: parseInt(process.env.ERROR_STATS_TIME_WINDOW || '3600000', 10) // デフォルト1時間
+      errorStatsTimeWindow: parseInt(process.env.ERROR_STATS_TIME_WINDOW || '3600000', 10), // デフォルト1時間
     };
 
     // テスト環境ではタイマーを設定しない
@@ -138,7 +138,7 @@ export class Logger implements ILogger {
     // サービスごとのエラー統計をクリーンアップ
     for (const [service, stats] of this.serviceErrorStats.entries()) {
       // 指定された時間枠より古いエラー時刻を削除
-      stats.times = stats.times.filter(time => time > cutoffTime);
+      stats.times = stats.times.filter((time) => time > cutoffTime);
       stats.count = stats.times.length;
 
       // 統計情報を更新
@@ -197,7 +197,7 @@ export class Logger implements ILogger {
       // Discord通知（非同期で実行、プロミスは無視）
       if (options?.notify && this.isDiscordNotificationEnabled()) {
         this.discordNotifier!.notifyLogging(message, options.title || 'デバッグ情報', context)
-          .catch(err => console.warn(`Discord通知エラー: ${err instanceof Error ? err.message : String(err)}`));
+          .catch((err) => console.warn(`Discord通知エラー: ${err instanceof Error ? err.message : String(err)}`));
       }
     }
   }
@@ -217,7 +217,7 @@ export class Logger implements ILogger {
       // Discord通知（非同期で実行、プロミスは無視）
       if (options?.notify && this.isDiscordNotificationEnabled()) {
         this.discordNotifier!.notifyLogging(message, options.title || 'お知らせ', context)
-          .catch(err => console.warn(`Discord通知エラー: ${err instanceof Error ? err.message : String(err)}`));
+          .catch((err) => console.warn(`Discord通知エラー: ${err instanceof Error ? err.message : String(err)}`));
       }
     }
   }
@@ -235,7 +235,7 @@ export class Logger implements ILogger {
       // Discord通知（非同期で実行、プロミスは無視）
       if (options?.notify && this.isDiscordNotificationEnabled()) {
         this.discordNotifier!.notifyLogging(message, options.title || '⚠️ 警告', context)
-          .catch(err => console.warn(`Discord通知エラー: ${err instanceof Error ? err.message : String(err)}`));
+          .catch((err) => console.warn(`Discord通知エラー: ${err instanceof Error ? err.message : String(err)}`));
       }
     }
   }
@@ -277,7 +277,7 @@ export class Logger implements ILogger {
       service: context || 'unknown',
       message: error.message,
       errorType: (error as AppError).type,
-      details: (error as AppError).details
+      details: (error as AppError).details,
     });
 
     // サービスステータスを更新
@@ -288,7 +288,7 @@ export class Logger implements ILogger {
     // Discord通知（非同期で実行、プロミスは無視）
     if (options?.notify && this.isDiscordNotificationEnabled()) {
       this.discordNotifier!.notifyError(error as AppError, context)
-        .catch(err => console.warn(`Discord通知エラー: ${err instanceof Error ? err.message : String(err)}`));
+        .catch((err) => console.warn(`Discord通知エラー: ${err instanceof Error ? err.message : String(err)}`));
     }
   }
 
@@ -304,7 +304,7 @@ export class Logger implements ILogger {
     const existingStatus = this.services.get(name) || {
       name,
       status: 'offline',
-      lastUpdated: new Date()
+      lastUpdated: new Date(),
     };
 
     // 既存のエラー統計を維持
@@ -317,7 +317,7 @@ export class Logger implements ILogger {
       message,
       lastUpdated: new Date(),
       errorCount: errorStats?.count || existingStatus.errorCount || 0,
-      lastErrorTime: status === 'error' ? new Date() : existingStatus.lastErrorTime
+      lastErrorTime: status === 'error' ? new Date() : existingStatus.lastErrorTime,
     });
 
     // コンパクトモードの場合、状態が変わったら即時描画
@@ -346,7 +346,7 @@ export class Logger implements ILogger {
 
     // 時間枠外の古いエントリを削除
     const cutoffTime = new Date(Date.now() - this.config.errorStatsTimeWindow);
-    stats.times = stats.times.filter(time => time > cutoffTime);
+    stats.times = stats.times.filter((time) => time > cutoffTime);
 
     // カウントを更新
     stats.count = stats.times.length;
@@ -382,7 +382,7 @@ export class Logger implements ILogger {
     const timestamp = new Date().toISOString();
     const emoji = this.getLogEmoji(level);
 
-    let contextStr = context ? `[${context}]` : '';
+    const contextStr = context ? `[${context}]` : '';
 
     // コンパクトモードではなければ通常のログ出力
     if (!this.config.compactMode) {
@@ -394,7 +394,7 @@ export class Logger implements ILogger {
       const statusMap = {
         'debug': 'online',
         'info': 'online',
-        'warn': 'warning'
+        'warn': 'warning',
       } as const;
 
       this.updateServiceStatus(context, statusMap[level], level === 'warn' ? message : undefined);
@@ -409,7 +409,7 @@ export class Logger implements ILogger {
       'debug': '🔍',
       'info': 'ℹ️',
       'warn': '⚠️',
-      'error': '❌'
+      'error': '❌',
     };
     return emojiMap[level] || '';
   }
@@ -417,7 +417,12 @@ export class Logger implements ILogger {
   /**
    * 重複ログの抑制処理
    */
-  private handleSuppression(key: string, message: string, context?: string, level: 'debug' | 'info' | 'warn' | 'error' = 'info'): void {
+  private handleSuppression(
+    key: string,
+    message: string,
+    context?: string,
+    level: 'debug' | 'info' | 'warn' | 'error' = 'info',
+  ): void {
     const now = Date.now();
     const record = this.suppressedMessages.get(key);
 
@@ -465,8 +470,8 @@ export class Logger implements ILogger {
     const statusIcons = {
       'online': '🟢', // オンライン：緑の丸
       'offline': '⚪', // オフライン：白い丸
-      'error': '🔴',   // エラー：赤い丸
-      'warning': '🟡'  // 警告：黄色い丸
+      'error': '🔴', // エラー：赤い丸
+      'warning': '🟡', // 警告：黄色い丸
     };
 
     // サービスをステータスでソート
@@ -477,7 +482,7 @@ export class Logger implements ILogger {
         return statusOrder[a.status] - statusOrder[b.status];
       });
 
-    sortedServices.forEach(service => {
+    sortedServices.forEach((service) => {
       const statusIcon = statusIcons[service.status];
       let line = `${statusIcon} ${service.name}: ${this.getStatusText(service.status)}`;
 
@@ -566,7 +571,7 @@ export class Logger implements ILogger {
       'online': 'オンライン',
       'offline': 'オフライン',
       'error': 'エラー',
-      'warning': '警告'
+      'warning': '警告',
     };
     return statusTexts[status] || '';
   }
@@ -579,6 +584,6 @@ export const logger = process.env.NODE_ENV === 'test'
       // テストの場合は遅延初期化して、必要なときだけインスタンスを作成
       const instance = Logger.getInstance();
       return instance[prop as keyof Logger];
-    }
+    },
   })
   : Logger.getInstance();

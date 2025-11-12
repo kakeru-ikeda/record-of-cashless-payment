@@ -11,6 +11,7 @@ export class ServiceRoutes {
     private serviceController: ServiceController;
 
     constructor(serviceController: ServiceController) {
+        // eslint-disable-next-line new-cap
         this.router = Router();
         this.serviceController = serviceController;
         this.initializeRoutes();

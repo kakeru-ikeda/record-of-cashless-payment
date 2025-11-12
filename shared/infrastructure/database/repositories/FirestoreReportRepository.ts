@@ -22,7 +22,7 @@ export class FirestoreReportRepository implements IReportCrudRepository {
      * Firestoreへの接続を初期化する
      */
     @ErrorHandler.errorDecorator('FirestoreReportRepository', {
-        defaultMessage: 'Firestoreの初期化に失敗しました'
+        defaultMessage: 'Firestoreの初期化に失敗しました',
     })
     async initialize(): Promise<Firestore> {
         // Cloud Functions環境の判定
@@ -43,7 +43,7 @@ export class FirestoreReportRepository implements IReportCrudRepository {
      * 日次レポートを取得する
      */
     @ErrorHandler.errorDecorator('FirestoreReportRepository', {
-        defaultMessage: '日次レポートの取得に失敗しました'
+        defaultMessage: '日次レポートの取得に失敗しました',
     })
     async getDailyReport(year: string, month: string, day: string): Promise<DailyReport | null> {
         await this.initialize();
@@ -66,13 +66,14 @@ export class FirestoreReportRepository implements IReportCrudRepository {
      * 月内の全日次レポートを取得する
      */
     @ErrorHandler.errorDecorator('FirestoreReportRepository', {
-        defaultMessage: '月内の日次レポート一覧の取得に失敗しました'
+        defaultMessage: '月内の日次レポート一覧の取得に失敗しました',
     })
     async getMonthlyDailyReports(year: string, month: string): Promise<DailyReport[]> {
         await this.initialize();
 
         // FirestorePathUtilを使用してベースパスを取得
-        const dailyReportBasePath = FirestorePathUtil.getDailyReportPath(year, month, '01').replace(/\/\d{2}$/, ''); // 月単位のパスに変更
+        const dailyReportBasePath = FirestorePathUtil.getDailyReportPath(year, month, '01')
+            .replace(/\/\d{2}$/, ''); // 月単位のパスに変更
 
         // 月内の全ての日次レポートを取得
         const reports = await this.firestoreService.query(
@@ -88,7 +89,7 @@ export class FirestoreReportRepository implements IReportCrudRepository {
      * 月次レポートを取得する
      */
     @ErrorHandler.errorDecorator('FirestoreReportRepository', {
-        defaultMessage: '月次レポートの取得に失敗しました'
+        defaultMessage: '月次レポートの取得に失敗しました',
     })
     async getMonthlyReport(year: string, month: string): Promise<MonthlyReport | null> {
         await this.initialize();
@@ -111,7 +112,7 @@ export class FirestoreReportRepository implements IReportCrudRepository {
      * 週次レポートを取得する（特定の週）
      */
     @ErrorHandler.errorDecorator('FirestoreReportRepository', {
-        defaultMessage: '週次レポートの取得に失敗しました'
+        defaultMessage: '週次レポートの取得に失敗しました',
     })
     async getWeeklyReport(year: string, month: string, term: string): Promise<WeeklyReport | null> {
         await this.initialize();
@@ -134,13 +135,14 @@ export class FirestoreReportRepository implements IReportCrudRepository {
      * 月内の全週次レポートを取得する
      */
     @ErrorHandler.errorDecorator('FirestoreReportRepository', {
-        defaultMessage: '月内の週次レポート一覧の取得に失敗しました'
+        defaultMessage: '月内の週次レポート一覧の取得に失敗しました',
     })
     async getMonthlyWeeklyReports(year: string, month: string): Promise<WeeklyReport[]> {
         await this.initialize();
 
         // FirestorePathUtilを使用してベースパスを取得
-        const weeklyReportBasePath = FirestorePathUtil.getWeeklyReportPath(year, month, '01').replace(/\/term\d+$/, ''); // 月単位のパスに変更
+        const weeklyReportBasePath = FirestorePathUtil.getWeeklyReportPath(year, month, '01')
+            .replace(/\/term\d+$/, ''); // 月単位のパスに変更
 
         // 月内の全ての週次レポートを取得
         const reports = await this.firestoreService.query(
@@ -156,7 +158,7 @@ export class FirestoreReportRepository implements IReportCrudRepository {
      * 日次レポートを保存する
      */
     @ErrorHandler.errorDecorator('FirestoreReportRepository', {
-        defaultMessage: '日次レポートの保存に失敗しました'
+        defaultMessage: '日次レポートの保存に失敗しました',
     })
     async saveDailyReport(report: DailyReport, year: string, month: string, day: string): Promise<string> {
         await this.initialize();
@@ -173,7 +175,7 @@ export class FirestoreReportRepository implements IReportCrudRepository {
      * 週次レポートを保存する
      */
     @ErrorHandler.errorDecorator('FirestoreReportRepository', {
-        defaultMessage: '週次レポートの保存に失敗しました'
+        defaultMessage: '週次レポートの保存に失敗しました',
     })
     async saveWeeklyReport(report: WeeklyReport, year: string, month: string, term: string): Promise<string> {
         await this.initialize();
@@ -190,7 +192,7 @@ export class FirestoreReportRepository implements IReportCrudRepository {
      * 月次レポートを保存する
      */
     @ErrorHandler.errorDecorator('FirestoreReportRepository', {
-        defaultMessage: '月次レポートの保存に失敗しました'
+        defaultMessage: '月次レポートの保存に失敗しました',
     })
     async saveMonthlyReport(report: MonthlyReport, year: string, month: string): Promise<string> {
         await this.initialize();
@@ -209,7 +211,7 @@ export class FirestoreReportRepository implements IReportCrudRepository {
      * 日次レポートを更新する
      */
     @ErrorHandler.errorDecorator('FirestoreReportRepository', {
-        defaultMessage: '日次レポートの更新に失敗しました'
+        defaultMessage: '日次レポートの更新に失敗しました',
     })
     async updateDailyReport(report: Partial<DailyReport>, year: string, month: string, day: string): Promise<string> {
         await this.initialize();
@@ -229,9 +231,14 @@ export class FirestoreReportRepository implements IReportCrudRepository {
      * 週次レポートを更新する
      */
     @ErrorHandler.errorDecorator('FirestoreReportRepository', {
-        defaultMessage: '週次レポートの更新に失敗しました'
+        defaultMessage: '週次レポートの更新に失敗しました',
     })
-    async updateWeeklyReport(report: Partial<WeeklyReport>, year: string, month: string, term: string): Promise<string> {
+    async updateWeeklyReport(
+        report: Partial<WeeklyReport>,
+        year: string,
+        month: string,
+        term: string,
+    ): Promise<string> {
         await this.initialize();
 
         // パス情報を取得（実際の日付を使用）
@@ -249,7 +256,7 @@ export class FirestoreReportRepository implements IReportCrudRepository {
      * 月次レポートを更新する
      */
     @ErrorHandler.errorDecorator('FirestoreReportRepository', {
-        defaultMessage: '月次レポートの更新に失敗しました'
+        defaultMessage: '月次レポートの更新に失敗しました',
     })
     async updateMonthlyReport(report: Partial<MonthlyReport>, year: string, month: string): Promise<string> {
         await this.initialize();

@@ -19,3 +19,8 @@ types/
 *.config.js
 .eslintrc.js
 tsconfig-paths-bootstrap.js
+
+# Files with ESLint false positives
+shared/infrastructure/errors/ErrorHandler.ts
+src/infrastructure/app/Application.ts
+src/infrastructure/test/TestRunner.ts

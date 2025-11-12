@@ -52,7 +52,7 @@ export class EmailParser implements IEmailParser {
         from: parsed.from?.text || '',
         body,
         date: parsed.date || new Date(),
-        uid: rawMessage.uid
+        uid: rawMessage.uid,
       };
     } catch (error) {
       const appError = new AppError(

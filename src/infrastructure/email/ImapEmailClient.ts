@@ -54,9 +54,9 @@ export class ImapEmailClient extends EventEmitter implements IEmailClient {
    * @param mailboxName 接続するメールボックス名
    * @returns 接続したクライアント
    */
-  async connect(mailboxName: string = 'INBOX'): Promise<ImapFlow> {
+  async connect(mailboxName = 'INBOX'): Promise<ImapFlow> {
     const context = `${this.serviceContext}:${mailboxName}`;
-    logger.info("IMAPサーバーに接続しています...", context);
+    logger.info('IMAPサーバーに接続しています...', context);
 
     try {
       // クライアントの初期化
@@ -66,10 +66,10 @@ export class ImapEmailClient extends EventEmitter implements IEmailClient {
         secure: this.config.secure,
         auth: {
           user: this.config.auth.user,
-          pass: this.config.auth.pass
+          pass: this.config.auth.pass,
         },
         logger: false,
-        emitLogs: false
+        emitLogs: false,
       });
 
       // エラーイベントをキャッチして、未処理のエラーを防ぐ
@@ -84,7 +84,7 @@ export class ImapEmailClient extends EventEmitter implements IEmailClient {
         // ErrorHandlerを使用してエラーを処理（初期エラーは通知を抑制）
         await ErrorHandler.handle(appError, context, {
           suppressNotification: true, // 頻繁に発生する可能性があるので通知を抑制
-          additionalInfo: { mailboxName: this.currentMailbox }
+          additionalInfo: { mailboxName: this.currentMailbox },
         });
 
         this.isConnected = false;
@@ -99,10 +99,10 @@ export class ImapEmailClient extends EventEmitter implements IEmailClient {
 
       // サーバーに接続
       await this.client.connect();
-      logger.info("IMAPサーバーに接続しました", context);
+      logger.info('IMAPサーバーに接続しました', context);
 
       // 利用可能なメールボックスの一覧を取得
-      logger.info("利用可能なメールボックスを確認しています...", context);
+      logger.info('利用可能なメールボックスを確認しています...', context);
       const mailboxes = await this.client.list();
 
       // 指定されたメールボックス名が存在するか確認
@@ -151,7 +151,7 @@ export class ImapEmailClient extends EventEmitter implements IEmailClient {
    * @param exactMatch 完全一致で検索するか
    * @returns 見つかった場合はメールボックスのパス、見つからなければnull
    */
-  private findMailboxPath(mailboxes: any[], searchName: string, exactMatch: boolean = false): string | null {
+  private findMailboxPath(mailboxes: any[], searchName: string, exactMatch = false): string | null {
     const context = `${this.serviceContext}:${searchName}`;
 
     if (!mailboxes || !mailboxes.length || !searchName) return null;
@@ -188,7 +188,7 @@ export class ImapEmailClient extends EventEmitter implements IEmailClient {
    */
   @ErrorHandler.errorDecorator('fetchUnseenMessages', {
     suppressNotification: true, // 頻繁に発生する可能性がある
-    rethrow: false // falseにして内部でハンドリング
+    rethrow: false, // falseにして内部でハンドリング
   })
   async fetchUnseenMessages(): Promise<string[]> {
     const context = `${this.serviceContext}:${this.currentMailbox}`;
@@ -197,15 +197,15 @@ export class ImapEmailClient extends EventEmitter implements IEmailClient {
     try {
       // 未読メールを検索 (UNSEEN検索フラグを使用)
       const messages = await this.client.search({ seen: false });
-      
+
       // messagesがfalseまたはnullの場合（検索結果がない場合）は空配列を返す
       if (!messages || !Array.isArray(messages)) {
-        logger.info(`未読メール検索結果: 0 件`, context);
+        logger.info('未読メール検索結果: 0 件', context);
         return [];
       }
-      
+
       logger.info(`未読メール検索結果: ${messages.length} 件`, context);
-      return messages.map(seq => seq.toString());
+      return messages.map((seq) => seq.toString());
     } catch (error) {
       const appError = new AppError(
         '未読メール取得中にエラーが発生しました',
@@ -239,7 +239,7 @@ export class ImapEmailClient extends EventEmitter implements IEmailClient {
    */
   @ErrorHandler.errorDecorator('fetchMessage', {
     suppressNotification: true, // 頻繁に発生する可能性がある
-    rethrow: false
+    rethrow: false,
   })
   async fetchMessage(uid: string): Promise<RawEmailMessage | null> {
     const context = `${this.serviceContext}:${this.currentMailbox}`;
@@ -260,7 +260,7 @@ export class ImapEmailClient extends EventEmitter implements IEmailClient {
 
       return {
         uid: uid,
-        source: message.source
+        source: message.source,
       };
     } catch (error) {
       const appError = new AppError(
@@ -294,7 +294,7 @@ export class ImapEmailClient extends EventEmitter implements IEmailClient {
    */
   @ErrorHandler.errorDecorator('markAsSeen', {
     suppressNotification: true,
-    rethrow: false
+    rethrow: false,
   })
   async markAsSeen(uid: string): Promise<boolean> {
     const context = `${this.serviceContext}:${this.currentMailbox}`;
@@ -322,10 +322,10 @@ export class ImapEmailClient extends EventEmitter implements IEmailClient {
    */
   @ErrorHandler.errorDecorator('reconnect', {
     suppressNotification: true, // デフォルトで通知を抑制
-    rethrow: false // エラーを再スローしない
+    rethrow: false, // エラーを再スローしない
   })
   private async reconnect(mailboxName: string, context: string): Promise<void> {
-    logger.info(`前回接続をクローズして再接続準備`, context);
+    logger.info('前回接続をクローズして再接続準備', context);
 
     // 再接続タイマーをクリア（安全のため）
     if (this.reconnectTimer) {
@@ -353,7 +353,7 @@ export class ImapEmailClient extends EventEmitter implements IEmailClient {
       await this.connect(mailboxName);
       logger.info(`IMAP再接続処理が正常に完了しました: ${mailboxName}`, context, {
         notify: true,
-        title: `🔵 IMAP再接続成功`,
+        title: '🔵 IMAP再接続成功',
       });
 
       // 明示的にreconnectedイベントを発火
@@ -407,7 +407,7 @@ export class ImapEmailClient extends EventEmitter implements IEmailClient {
           // ErrorHandlerを使用してエラーを処理
           await ErrorHandler.handle(appError, context, {
             suppressNotification: true, // 通常のKeepAliveエラーは通知を抑制
-            additionalInfo: { mailboxName: this.currentMailbox }
+            additionalInfo: { mailboxName: this.currentMailbox },
           });
 
           this.isConnected = false;
@@ -445,7 +445,7 @@ export class ImapEmailClient extends EventEmitter implements IEmailClient {
         ),
         context,
         { suppressNotification: false } // 明示的に通知を有効化
-      ).catch(err => {
+      ).catch((err) => {
         logger.warn(`再接続エラー通知中に問題が発生しました: ${err}`, context);
       });
     }
@@ -503,7 +503,7 @@ export class ImapEmailClient extends EventEmitter implements IEmailClient {
           error instanceof Error ? error : new Error(String(error))
         );
         await ErrorHandler.handle(appError, context, {
-          suppressNotification: true // クローズ時のエラーは通知しない
+          suppressNotification: true, // クローズ時のエラーは通知しない
         });
       } finally {
         this.client = null;

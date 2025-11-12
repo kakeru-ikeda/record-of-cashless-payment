@@ -11,6 +11,7 @@ export class CardUsageRoutes {
     private cardUsageController: CardUsageController;
 
     constructor(cardUsageController: CardUsageController) {
+        // eslint-disable-next-line new-cap
         this.router = Router();
         this.cardUsageController = cardUsageController;
         this.initializeRoutes();

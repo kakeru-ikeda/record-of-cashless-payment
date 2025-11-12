@@ -24,7 +24,7 @@ export class Application implements IApplication {
    * アプリケーションを初期化
    */
   @ErrorHandler.errorDecorator('Application', {
-    defaultMessage: 'アプリケーションの初期化に失敗しました'
+    defaultMessage: 'アプリケーションの初期化に失敗しました',
   })
   public async initialize(): Promise<void> {
     // 依存関係を初期化
@@ -45,7 +45,7 @@ export class Application implements IApplication {
 
     logger.info('システムを起動しています', 'App', {
       notify: true,
-      title: '🟢 RoCP System起動'
+      title: '🟢 RoCP System起動',
     });
   }
 
@@ -53,7 +53,7 @@ export class Application implements IApplication {
    * テストモードでアプリケーションを実行
    */
   @ErrorHandler.errorDecorator('Application', {
-    defaultMessage: 'テストモードの実行に失敗しました'
+    defaultMessage: 'テストモードの実行に失敗しました',
   })
   public async runInTestMode(cardCompany: CardCompany): Promise<void> {
     logger.info('メール通知サービスをテストモードで起動します', 'App');
@@ -69,7 +69,7 @@ export class Application implements IApplication {
    * 通常モードでアプリケーションを実行（メール監視）
    */
   @ErrorHandler.errorDecorator('Application', {
-    defaultMessage: '通常モードの実行に失敗しました'
+    defaultMessage: '通常モードの実行に失敗しました',
   })
   public async runInNormalMode(): Promise<void> {
     logger.info('メール監視モードで実行しています...', 'App');
@@ -103,8 +103,8 @@ export class Application implements IApplication {
    */
   @ErrorHandler.errorDecorator('Application', {
     defaultMessage: 'アプリケーションのシャットダウンに失敗しました',
-    suppressNotification: false,  // シャットダウン時のエラーは通知する
-    rethrow: false  // シャットダウン時にエラーが発生しても処理を継続する
+    suppressNotification: false, // シャットダウン時のエラーは通知する
+    rethrow: false, // シャットダウン時にエラーが発生しても処理を継続する
   })
   public async shutdown(): Promise<void> {
     logger.info('システムが終了処理を開始しました。メールボックス監視を停止します。', 'App', {
@@ -137,7 +137,7 @@ export class Application implements IApplication {
    */
   @ErrorHandler.errorDecorator('Application', {
     defaultMessage: 'タイマークリーンアップに失敗しました',
-    rethrow: false  // クリーンアップ時のエラーは無視して処理を続行
+    rethrow: false, // クリーンアップ時のエラーは無視して処理を続行
   })
   private cleanupUnresolvedTimers(): void {
     // アクティブなハンドルを取得

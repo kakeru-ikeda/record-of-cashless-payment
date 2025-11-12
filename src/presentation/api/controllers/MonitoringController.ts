@@ -22,7 +22,7 @@ export class MonitoringController {
    */
   public healthCheck = (req: Request, res: Response): void => {
     const response = ResponseHelper.success('Server is running', {
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
     res.status(response.status).json(response);
   };
@@ -42,12 +42,12 @@ export class MonitoringController {
         message: service.message || '',
         lastUpdated: service.lastUpdated?.toISOString(),
         errorCount: service.errorCount || 0,
-        lastErrorTime: service.lastErrorTime?.toISOString()
+        lastErrorTime: service.lastErrorTime?.toISOString(),
       }));
 
       const response = ResponseHelper.success('サービスステータスを取得しました', {
         timestamp: new Date().toISOString(),
-        services: servicesData
+        services: servicesData,
       });
 
       res.status(response.status).json(response);
@@ -81,12 +81,12 @@ export class MonitoringController {
         timestamp: error.timestamp?.toISOString(),
         service: error.service,
         message: error.message,
-        details: error.details
+        details: error.details,
       }));
 
       const response = ResponseHelper.success('エラーログを取得しました', {
         timestamp: new Date().toISOString(),
-        errors: errorsData
+        errors: errorsData,
       });
 
       res.status(response.status).json(response);
@@ -123,7 +123,7 @@ export class MonitoringController {
         message: service.message || '',
         lastUpdated: service.lastUpdated?.toISOString(),
         errorCount: service.errorCount || 0,
-        lastErrorTime: service.lastErrorTime?.toISOString()
+        lastErrorTime: service.lastErrorTime?.toISOString(),
       }));
 
       // エラーデータを準備
@@ -131,7 +131,7 @@ export class MonitoringController {
         timestamp: error.timestamp?.toISOString(),
         service: error.service,
         message: error.message,
-        details: error.details
+        details: error.details,
       }));
 
       // ビューを使用してHTMLをレンダリング

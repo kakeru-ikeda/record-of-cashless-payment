@@ -1,5 +1,7 @@
 import { CardUsageNotificationDTO } from '@shared/domain/dto/CardUsageNotificationDTO';
-import { ICardUsageCrudRepository } from '@domain/interfaces/infrastructure/database/repositories/ICardUsageCrudRepository';
+import {
+  ICardUsageCrudRepository,
+} from '@domain/interfaces/infrastructure/database/repositories/ICardUsageCrudRepository';
 import { IProcessEmailUseCase } from '@domain/interfaces/usecases/email/IProcessEmailUseCase';
 import { ImapEmailService } from '@infrastructure/email/ImapEmailService';
 import { logger } from '@shared/infrastructure/logging/Logger';
@@ -32,9 +34,12 @@ export class ProcessEmailUseCase implements IProcessEmailUseCase {
    * @returns 処理されたカード利用情報と保存パス
    */
   @ErrorHandler.errorDecorator('ProcessEmailUseCase', {
-    defaultMessage: 'メール処理中にエラーが発生しました'
+    defaultMessage: 'メール処理中にエラーが発生しました',
   })
-  async execute(emailBody: string, cardCompany: CardCompany = CardCompany.MUFG): Promise<{ usage: CardUsageNotificationDTO, savedPath: string }> {
+  async execute(
+    emailBody: string,
+    cardCompany: CardCompany = CardCompany.MUFG,
+  ): Promise<{ usage: CardUsageNotificationDTO, savedPath: string }> {
     logger.info(`${cardCompany}のメール本文の解析を開始します...`, this.serviceContext);
 
     // メール本文からカード利用情報を抽出
@@ -57,7 +62,7 @@ export class ProcessEmailUseCase implements IProcessEmailUseCase {
    * @returns 処理結果
    */
   @ErrorHandler.errorDecorator('ProcessEmailUseCase', {
-    defaultMessage: 'テスト実行中にエラーが発生しました'
+    defaultMessage: 'テスト実行中にエラーが発生しました',
   })
   async executeTest(emailBody: string, cardCompany: CardCompany = CardCompany.MUFG): Promise<{
     parsedData: CardUsageNotificationDTO;
@@ -77,7 +82,7 @@ export class ProcessEmailUseCase implements IProcessEmailUseCase {
     const usage = CardUsageMapper.toNotification(cardUsage);
     return {
       parsedData: usage,
-      savedPath
+      savedPath,
     };
   }
 }

@@ -22,7 +22,7 @@ export class DependencyContainer implements IDependencyContainer {
   private processEmailUseCase: ProcessEmailUseCase;
   private processCardCompanyEmailUseCase: ProcessCardCompanyEmailUseCase;
   private notifyCardUsageUseCase: NotifyCardUsageUseCase;
-  private cardUsage
+  private cardUsage;
   private emailController: EmailController;
 
   /**

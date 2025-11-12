@@ -1,4 +1,8 @@
-import { DailyReportNotificationDTO, WeeklyReportNotificationDTO, MonthlyReportNotificationDTO } from '@shared/domain/dto/ReportNotificationDTOs';
+import {
+  DailyReportNotificationDTO,
+  WeeklyReportNotificationDTO,
+  MonthlyReportNotificationDTO,
+} from '@shared/domain/dto/ReportNotificationDTOs';
 
 /**
  * レポート通知UseCaseのインターフェース
