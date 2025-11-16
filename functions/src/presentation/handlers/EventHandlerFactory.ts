@@ -3,6 +3,7 @@ import { ProcessFirestoreDocumentUseCase } from '../../application/usecases/Proc
 import { ScheduleReportDeliveryUseCase } from '../../application/usecases/ScheduleReportDeliveryUseCase';
 import { ReportRecalculationUseCase } from '../../application/usecases/ReportRecalculationUseCase';
 import { ReportSchedulingService } from '../../application/services/ReportSchedulingService';
+import { ReportRecalculationService } from '../../application/services/ReportRecalculationService';
 import { FirestoreDataExplorerService } from '../../infrastructure/services/FirestoreDataExplorerService';
 import { FirestoreDocumentCreatedHandler } from './FirestoreDocumentCreatedHandler';
 import { DailyReportScheduleHandler } from './DailyReportScheduleHandler';
@@ -109,9 +110,12 @@ export class EventHandlerFactory {
         const dataExplorerService = new FirestoreDataExplorerService(
             this.container.firestoreService
         );
+        const recalculationService = new ReportRecalculationService(
+            this.container.reportUseCase
+        );
         const recalculationUseCase = new ReportRecalculationUseCase(
             dataExplorerService,
-            this.container.reportProcessingService
+            recalculationService
         );
         return new ReportRecalculationHttpHandler(recalculationUseCase);
     }
@@ -125,9 +129,12 @@ export class EventHandlerFactory {
         const dataExplorerService = new FirestoreDataExplorerService(
             this.container.firestoreService
         );
+        const recalculationService = new ReportRecalculationService(
+            this.container.reportUseCase
+        );
         const recalculationUseCase = new ReportRecalculationUseCase(
             dataExplorerService,
-            this.container.reportProcessingService
+            recalculationService
         );
         return new ReportRecalculationScheduleHandler(recalculationUseCase);
     }

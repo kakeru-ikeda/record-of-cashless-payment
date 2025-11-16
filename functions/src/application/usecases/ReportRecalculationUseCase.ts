@@ -1,5 +1,5 @@
 import { FirestoreDataExplorerService } from '../../infrastructure/services/FirestoreDataExplorerService';
-import { ReportProcessingService } from '../services/ReportProcessingService';
+import { ReportRecalculationService } from '../services/ReportRecalculationService';
 import {
     ReportRecalculationRequest,
     ReportRecalculationResult,
@@ -19,7 +19,7 @@ export class ReportRecalculationUseCase {
 
     constructor(
         private readonly dataExplorerService: FirestoreDataExplorerService,
-        private readonly reportProcessingService: ReportProcessingService
+        private readonly recalculationService: ReportRecalculationService
     ) { }
 
     /**
@@ -69,43 +69,63 @@ export class ReportRecalculationUseCase {
                 return this.handleDryRun(cardUsageDocuments, request, result);
             }
 
-            // 3. 各カード利用データに対してレポート処理を実行
-            let processedCount = 0;
-            const batchSize = 50; // バッチサイズ
+            // 3. 各レポートタイプを再集計
+            for (const reportType of request.reportTypes) {
+                try {
+                    logger.info(`${reportType}レポートの再集計を開始`, this.serviceContext);
 
-            for (let i = 0; i < cardUsageDocuments.length; i += batchSize) {
-                const batch = cardUsageDocuments.slice(i, i + batchSize);
+                    let stats: { created: number; updated: number };
 
-                /* eslint-disable-next-line */
-                logger.info(`バッチ処理 ${Math.floor(i / batchSize) + 1}/${Math.ceil(cardUsageDocuments.length / batchSize)}: ${batch.length}件`, this.serviceContext);
+                    switch (reportType) {
+                        case 'daily':
+                            stats = await this.recalculationService.recalculateDailyReports(
+                                cardUsageDocuments,
+                                request.executedBy
+                            );
+                            result.reportsCreated.daily = stats.created;
+                            result.reportsUpdated.daily = stats.updated;
+                            break;
 
-                for (const cardUsage of batch) {
-                    try {
-                        await this.processCardUsageDocument(cardUsage, request, result);
-                        processedCount++;
-                    } catch (error) {
-                        const errorInfo: ReportRecalculationError = {
-                            documentPath: cardUsage.path,
-                            message: error instanceof Error ? error.message : String(error),
-                            details: error instanceof AppError ? error.details : undefined,
-                        };
-                        result.errors.push(errorInfo);
-                        logger.error(error as Error, this.serviceContext);
+                        case 'weekly':
+                            stats = await this.recalculationService.recalculateWeeklyReports(
+                                cardUsageDocuments,
+                                request.executedBy
+                            );
+                            result.reportsCreated.weekly = stats.created;
+                            result.reportsUpdated.weekly = stats.updated;
+                            break;
+
+                        case 'monthly':
+                            stats = await this.recalculationService.recalculateMonthlyReports(
+                                cardUsageDocuments,
+                                request.executedBy
+                            );
+                            result.reportsCreated.monthly = stats.created;
+                            result.reportsUpdated.monthly = stats.updated;
+                            break;
                     }
-                }
 
-                // バッチ間での短い待機
-                if (i + batchSize < cardUsageDocuments.length) {
-                    await new Promise((resolve) => setTimeout(resolve, 100));
+                    logger.info(
+                        `${reportType}レポートの再集計完了 - 作成: ${stats.created}, 更新: ${stats.updated}`,
+                        this.serviceContext
+                    );
+                } catch (error) {
+                    const errorInfo: ReportRecalculationError = {
+                        documentPath: `${reportType}-reports`,
+                        message: error instanceof Error ? error.message : String(error),
+                        details: error instanceof AppError ? error.details : undefined,
+                    };
+                    result.errors.push(errorInfo);
+                    logger.error(error as Error, this.serviceContext);
                 }
             }
 
             result.endTime = new Date();
-            result.success = result.errors.length === 0 || result.errors.length < cardUsageDocuments.length * 0.1;
+            result.success = result.errors.length === 0 || result.errors.length < request.reportTypes.length * 0.5;
 
             const duration = result.endTime.getTime() - result.startTime.getTime();
             logger.info(`レポート再集計完了: ${duration}ms`, this.serviceContext);
-            logger.info(`処理済み: ${processedCount}件, エラー: ${result.errors.length}件`, this.serviceContext);
+            logger.info(`エラー: ${result.errors.length}件`, this.serviceContext);
             /* eslint-disable-next-line */
             logger.info(`作成レポート - Daily: ${result.reportsCreated.daily}, Weekly: ${result.reportsCreated.weekly}, Monthly: ${result.reportsCreated.monthly}`, this.serviceContext);
             /* eslint-disable-next-line */
@@ -200,52 +220,5 @@ export class ReportRecalculationUseCase {
             expectedProcessing,
             dateStats: Object.fromEntries(Array.from(dateStats.entries())),
         });
-    }
-
-    /**
-     * 単一のカード利用ドキュメントを処理
-     */
-    private async processCardUsageDocument(
-        cardUsage: CardUsageDocument,
-        request: ReportRecalculationRequest,
-        result: ReportRecalculationResult
-    ): Promise<void> {
-        // Firestoreドキュメントスナップショットを模擬
-        const mockDocument = {
-            ref: { path: cardUsage.path },
-            data: () => cardUsage.data,
-        } as any;
-
-        const data = { amount: cardUsage.data.amount };
-        const params = cardUsage.params;
-
-        // 各レポートタイプを処理
-        for (const reportType of request.reportTypes) {
-            try {
-                switch (reportType) {
-                    case 'daily':
-                        await this.reportProcessingService.processDailyReport(mockDocument, data, params);
-                        result.reportsCreated.daily++; // 実際は作成/更新を区別する必要があるが、簡略化
-                        break;
-
-                    case 'weekly':
-                        await this.reportProcessingService.processWeeklyReport(mockDocument, data, params);
-                        result.reportsCreated.weekly++;
-                        break;
-
-                    case 'monthly':
-                        await this.reportProcessingService.processMonthlyReport(mockDocument, data, params);
-                        result.reportsCreated.monthly++;
-                        break;
-                }
-            } catch (error) {
-                throw new AppError(
-                    `${reportType}レポート処理中にエラー`,
-                    ErrorType.GENERAL,
-                    { cardUsage, reportType },
-                    error instanceof Error ? error : undefined
-                );
-            }
-        }
     }
 }
